@@ -1,0 +1,79 @@
+[data-theme='dark'] {
+  --apex-bg: #0B1120;
+  --apex-surface: #111827;
+  --apex-surface-elevated: #1E293B;
+  --apex-text: #F1F5F9;
+  --apex-text-muted: #94A3B8;
+  --apex-border: #1E293B;
+  --apex-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  --apex-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --apex-glass-bg: rgba(17, 24, 39, 0.75);
+  --apex-glass-border: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .form-control,
+[data-theme='dark'] .form-select {
+  background-color: var(--apex-surface-elevated);
+  border-color: var(--apex-border);
+  color: var(--apex-text);
+}
+
+[data-theme='dark'] .form-control::placeholder {
+  color: var(--apex-text-muted);
+}
+
+[data-theme='dark'] .apex-table thead th {
+  background: var(--apex-surface-elevated);
+}
+
+[data-theme='dark'] .apex-table tbody tr:hover {
+  background: rgba(20, 184, 166, 0.06);
+}
+
+[data-theme='dark'] .dropdown-menu {
+  background: var(--apex-surface-elevated);
+  border-color: var(--apex-border);
+}
+
+[data-theme='dark'] .dropdown-item {
+  color: var(--apex-text);
+}
+
+[data-theme='dark'] .dropdown-item:hover {
+  background: rgba(15, 118, 110, 0.15);
+}
+
+[data-theme='dark'] .modal-content {
+  background: var(--apex-surface);
+  border-color: var(--apex-border);
+}
+
+[data-theme='dark'] .btn-close {
+  filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Tenant theme overrides — applied via JS from TenantContext */
+[data-tenant-theme='custom'] {
+  /* CSS variables set dynamically on documentElement */
+}
+
+/* Sidebar dark mode */
+[data-theme='dark'] .apex-sidebar {
+  background: linear-gradient(180deg, #0F172A 0%, #111827 100%);
+  border-color: var(--apex-border);
+}
+
+[data-theme='dark'] .apex-navbar {
+  background: var(--apex-surface);
+  border-color: var(--apex-border);
+}
+
+[data-theme='dark'] .apex-stat-card {
+  background: var(--apex-surface);
+  border-color: var(--apex-border);
+}
+
+[data-theme='dark'] .apex-sidebar-link:hover,
+[data-theme='dark'] .apex-sidebar-link.active {
+  background: rgba(15, 118, 110, 0.2);
+}

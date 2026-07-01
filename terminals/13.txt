@@ -1,0 +1,293 @@
+---
+pid: 13848
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; $env:DATABASE_URL=\"sqlite:///E:/apex/backend/test_db.sqlite3\"; $env:SECRET_KEY=\"test-key\"; python -m pytest tests/ -x 2>&1"
+started_at: 2026-06-30T21:26:51.438Z
+running_for_ms: 100002   
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 15 items
+
+tests/test_auth.py::TestAuthentication::test_login_success FAILED        [  6%]
+
+================================== FAILURES ===================================
+____________________ TestAuthentication.test_login_success ____________________
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py:1033: in connect_check_health
+    sock = self._connect()
+           ^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py:1581: in _connect
+    raise err
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py:1565: in _connect
+    sock.connect(socket_address)
+E   ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+During handling of the above exception, another exception occurred:
+tests\test_auth.py:14: in test_login_success
+    response = api_client.post("/api/v1/auth/login/", {
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:503: in dispatch
+    self.initial(request, *args, **kwargs)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:422: in initial
+    self.check_throttles(request)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:365: in check_throttles
+    if not throttle.allow_request(request, self):
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\throttling.py:123: in allow_request
+    self.history = self.cache.get(self.key, [])
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\cache\backends\redis.py:188: in get
+    return self._cache.get(key, default)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\cache\backends\redis.py:100: in get
+    value = client.get(key)
+            ^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\commands\core.py:3194: in get
+    return self.execute_command("GET", name, keys=[name])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\client.py:787: in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\client.py:793: in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\utils.py:258: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py:3139: in get_connection
+    connection.connect()
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py:1006: in connect
+    self.retry.call_with_retry(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\retry.py:132: in call_with_retry
+    raise error
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\retry.py:120: in call_with_retry
+    return do()
+           ^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py:1007: in <lambda>
+    lambda: self.connect_check_health(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py:1055: in connect_check_health
+    raise e
+E   redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+---------------------------- Captured stderr setup ----------------------------
+Creating test database for alias 'default'...
+---------------------------- Captured stderr call -----------------------------
+ERROR 2026-06-30 14:27:11,941 log Internal Server Error: /api/v1/auth/login/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1033, in connect_check_health
+    sock = self._connect()
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1581, in _connect
+    raise err
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1565, in _connect
+    sock.connect(socket_address)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 503, in dispatch
+    self.initial(request, *args, **kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 422, in initial
+    self.check_throttles(request)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 365, in check_throttles
+    if not throttle.allow_request(request, self):
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\throttling.py", line 123, in allow_request
+    self.history = self.cache.get(self.key, [])
+                   ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\cache\backends\redis.py", line 188, in get
+    return self._cache.get(key, default)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\cache\backends\redis.py", line 100, in get
+    value = client.get(key)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\commands\core.py", line 3194, in get
+    return self.execute_command("GET", name, keys=[name])
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\client.py", line 787, in execute_command
+    return self._execute_command(*args, **options)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\client.py", line 793, in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\utils.py", line 258, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 3139, in get_connection
+    connection.connect()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1006, in connect
+    self.retry.call_with_retry(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        lambda: self.connect_check_health(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        lambda error: self.disconnect(error),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\retry.py", line 132, in call_with_retry
+    raise error
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\retry.py", line 120, in call_with_retry
+    return do()
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1007, in <lambda>
+    lambda: self.connect_check_health(
+            ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        check_health=True, retry_socket_connect=False
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ),
+    ^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1055, in connect_check_health
+    raise e
+redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/auth/login/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1033, in connect_check_health
+    sock = self._connect()
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1581, in _connect
+    raise err
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1565, in _connect
+    sock.connect(socket_address)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 503, in dispatch
+    self.initial(request, *args, **kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 422, in initial
+    self.check_throttles(request)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 365, in check_throttles
+    if not throttle.allow_request(request, self):
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\throttling.py", line 123, in allow_request
+    self.history = self.cache.get(self.key, [])
+                   ~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\cache\backends\redis.py", line 188, in get
+    return self._cache.get(key, default)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\cache\backends\redis.py", line 100, in get
+    value = client.get(key)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\commands\core.py", line 3194, in get
+    return self.execute_command("GET", name, keys=[name])
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\client.py", line 787, in execute_command
+    return self._execute_command(*args, **options)
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\client.py", line 793, in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\utils.py", line 258, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 3139, in get_connection
+    connection.connect()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1006, in connect
+    self.retry.call_with_retry(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        lambda: self.connect_check_health(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+        lambda error: self.disconnect(error),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\retry.py", line 132, in call_with_retry
+    raise error
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\retry.py", line 120, in call_with_retry
+    return do()
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1007, in <lambda>
+    lambda: self.connect_check_health(
+            ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        check_health=True, retry_socket_connect=False
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ),
+    ^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\redis\connection.py", line 1055, in connect_check_health
+    raise e
+redis.exceptions.ConnectionError: Error 10061 connecting to localhost:6379. No connection could be made because the target machine actively refused it.
+-------------------------- Captured stderr teardown ---------------------------
+Destroying test database for alias 'default'...
+=========================== short test summary info ===========================
+FAILED tests/test_auth.py::TestAuthentication::test_login_success - redis.exc...
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+============================= 1 failed in 17.62s ==============================

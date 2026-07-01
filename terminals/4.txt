@@ -1,0 +1,14 @@
+---
+pid: 1164
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; pip install -q -r requirements.txt 2>&1 | Select-Object -Last 5"
+started_at: 2026-06-30T21:23:39.974Z
+running_for_ms: 295005   
+---
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+  WARNING: The scripts coverage-3.14.exe, coverage.exe and coverage3.exe are installed in 
+'C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Scripts' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+  WARNING: The scripts py.test.exe and pytest.exe are installed in 
+'C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Scripts' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.

@@ -1,0 +1,20 @@
+---
+pid: 12896
+cwd: "E:\apex"
+command: "Push-Location E:\\apex\\frontend; npm install --prefer-offline 2>&1 | Select-Object -Last 20; Pop-Location"
+started_at: 2026-06-30T21:28:11.259Z
+running_for_ms: 24988    
+---
+node.exe : npm error code ENOTEMPTY
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm error code ENOTEMPTY:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+npm error syscall rmdir
+npm error path E:\apex\frontend\node_modules\eslint\lib
+npm error errno -4051
+npm error ENOTEMPTY: directory not empty, rmdir 'E:\apex\frontend\node_modules\eslint\lib'
+npm error A complete log of this run can be found in: 
+C:\Users\solid\AppData\Local\npm-cache\_logs\2026-06-30T21_28_12_335Z-debug-0.log

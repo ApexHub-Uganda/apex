@@ -1,0 +1,54 @@
+---
+pid: 10584
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; $env:DATABASE_URL=\"sqlite:///E:/apex/backend/test_db.sqlite3\"; $env:SECRET_KEY=\"test-key\"; python -m pytest tests/ 2>&1"
+started_at: 2026-06-30T21:27:18.146Z
+running_for_ms: 75014    
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 15 items
+
+tests/test_auth.py::TestAuthentication::test_login_success PASSED        [  6%]
+tests/test_auth.py::TestAuthentication::test_login_invalid_credentials PASSED [ 13%]
+tests/test_auth.py::TestAuthentication::test_me_endpoint PASSED          [ 20%]
+tests/test_auth.py::TestAuthentication::test_logout PASSED               [ 26%]
+tests/test_auth.py::TestAuthentication::test_super_admin_login PASSED    [ 33%]
+tests/test_subscriptions.py::TestSubscriptions::test_list_public_plans PASSED [ 40%]
+tests/test_subscriptions.py::TestSubscriptions::test_tenant_has_feature_from_plan PASSED [ 46%]
+tests/test_subscriptions.py::TestSubscriptions::test_subscription_expiry PASSED [ 53%]
+tests/test_subscriptions.py::TestSubscriptions::test_subscription_grace_period PASSED [ 60%]
+tests/test_subscriptions.py::TestSubscriptions::test_current_subscription_endpoint FAILED [ 66%]
+tests/test_subscriptions.py::TestSubscriptions::test_plan_default_feature_flags PASSED [ 73%]
+tests/test_tenant_isolation.py::TestTenantIsolation::test_student_queryset_filtered_by_tenant PASSED [ 80%]
+tests/test_tenant_isolation.py::TestTenantIsolation::test_api_returns_only_tenant_students PASSED [ 86%]
+tests/test_tenant_isolation.py::TestTenantIsolation::test_super_admin_can_filter_by_tenant PASSED [ 93%]
+tests/test_tenant_isolation.py::TestTenantIsolation::test_cross_tenant_data_not_visible_in_academics PASSED [100%]
+
+================================== FAILURES ===================================
+____________ TestSubscriptions.test_current_subscription_endpoint _____________
+tests\test_subscriptions.py:49: in test_current_subscription_endpoint
+    assert response.data["tenant"] == str(tenant.id)
+E   AssertionError: assert UUID('f260d662-d3f8-4e3f-9a22-d65e70bb90e0') == 'f260d662-d3f8-4e3f-9a22-d65e70bb90e0'
+E    +  where 'f260d662-d3f8-4e3f-9a22-d65e70bb90e0' = str(UUID('f260d662-d3f8-4e3f-9a22-d65e70bb90e0'))
+E    +    where UUID('f260d662-d3f8-4e3f-9a22-d65e70bb90e0') = <Tenant: Test School>.id
+============================== warnings summary ===============================
+tests/test_auth.py::TestAuthentication::test_login_success
+tests/test_auth.py::TestAuthentication::test_logout
+tests/test_auth.py::TestAuthentication::test_super_admin_login
+  C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\jwt\api_jwt.py:147: InsecureKeyLengthWarning: The HMAC key is 8 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    return self._jws.encode(
+
+tests/test_auth.py::TestAuthentication::test_logout
+  C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\jwt\api_jwt.py:368: InsecureKeyLengthWarning: The HMAC key is 8 bytes long, which is below the minimum recommended length of 32 bytes for SHA256. See RFC 7518 Section 3.2.
+    decoded = self.decode_complete(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_subscriptions.py::TestSubscriptions::test_current_subscription_endpoint
+================== 1 failed, 14 passed, 4 warnings in 22.67s ==================

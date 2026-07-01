@@ -1,0 +1,16 @@
+---
+pid: 10564
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm install 2>&1"
+started_at: 2026-06-30T21:29:49.282Z
+running_for_ms: 5415003  
+---
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'E:\apex\frontend\node_modules\@react-aria\ssr\node_modules\react-aria\dist\private\intl\steplist'
+npm error code ENOENT
+npm error syscall spawn C:\WINDOWS\system32\cmd.exe
+npm error path E:\apex\frontend\node_modules\esbuild
+npm error errno -4058
+npm error enoent spawn C:\WINDOWS\system32\cmd.exe ENOENT
+npm error enoent This is related to npm not being able to find a file.
+npm error enoent
+npm error A complete log of this run can be found in: C:\Users\solid\AppData\Local\npm-cache\_logs\2026-06-30T21_29_50_403Z-debug-0.log

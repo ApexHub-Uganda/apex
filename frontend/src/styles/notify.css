@@ -1,0 +1,79 @@
+/* react-hot-toast */
+.apex-toast {
+  font-family: inherit;
+}
+
+@keyframes apex-toast-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.apex-toast-spin {
+  animation: apex-toast-spin 0.9s linear infinite;
+}
+
+/* sweetalert2 — minimal Apex Hub theme */
+.apex-swal-popup {
+  border-radius: 16px !important;
+  padding: 1.5rem 1.25rem 1.25rem !important;
+  background: var(--apex-surface, #ffffff) !important;
+  color: var(--apex-text, #1e293b) !important;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.14) !important;
+  border: 1px solid var(--apex-border, #e2e8f0) !important;
+}
+
+.apex-swal-title {
+  font-size: 1.125rem !important;
+  font-weight: 700 !important;
+  color: var(--apex-text, #1e293b) !important;
+}
+
+.apex-swal-text {
+  font-size: 0.875rem !important;
+  color: var(--apex-text-muted, #64748b) !important;
+  line-height: 1.5 !important;
+}
+
+.apex-swal-btn {
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 0.5rem 1.125rem !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  margin: 0.25rem !important;
+  transition: opacity 0.15s ease, transform 0.15s ease !important;
+}
+
+.apex-swal-btn:active {
+  transform: scale(0.98);
+}
+
+.apex-swal-confirm {
+  background: #059669 !important;
+  color: #fff !important;
+}
+
+.apex-swal-cancel {
+  background: var(--apex-bg, #f1f5f9) !important;
+  color: var(--apex-text, #334155) !important;
+}
+
+.apex-swal-deny {
+  background: #dc2626 !important;
+  color: #fff !important;
+}
+
+.swal2-icon {
+  transform: scale(0.85);
+  margin: 0.75rem auto 0.5rem !important;
+}
+
+/* Custom react-icons — remove default colored icon bubble */
+.apex-toast > div:first-child {
+  background: transparent !important;
+  box-shadow: none !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  margin-right: 4px;
+}

@@ -1,0 +1,159 @@
+import api from './api';
+
+const unwrapList = (response) => {
+  const data = response?.data ?? response;
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data?.data?.results)) return data.data.results;
+  if (Array.isArray(data?.data)) return data.data;
+  return [];
+};
+
+const unwrapData = (response) => {
+  const data = response?.data ?? response;
+  return data?.data ?? data;
+};
+
+const createCrudService = (basePath) => ({
+  list: (params) => api.get(basePath, { params }).then((r) => unwrapList(r)),
+  get: (id) => api.get(`${basePath}${id}/`).then((r) => unwrapData(r)),
+  create: (payload) => api.post(basePath, payload).then((r) => unwrapData(r)),
+  update: (id, payload) => api.patch(`${basePath}${id}/`, payload).then((r) => unwrapData(r)),
+  delete: (id) => api.delete(`${basePath}${id}/`).then((r) => unwrapData(r)),
+});
+
+export const schoolsService = {
+  ...createCrudService('/tenants/'),
+  getDetail: (id) => api.get(`/analytics/school/${id}/`).then((r) => unwrapData(r)),
+  verify: (id) => api.post(`/tenants/${id}/verify/`).then((r) => unwrapData(r)),
+  suspend: (id, reason = '') => api.post(`/tenants/${id}/suspend/`, { reason }).then((r) => unwrapData(r)),
+  unsuspend: (id) => api.post(`/tenants/${id}/unsuspend/`).then((r) => unwrapData(r)),
+};
+
+export const platformNotificationsService = {
+  list: (params) => api.get('/platform/notifications/', { params }).then((r) => unwrapList(r)),
+  getSummary: () => api.get('/platform/notifications/summary/').then((r) => unwrapData(r)),
+  approve: (id) => api.post(`/platform/notifications/${id}/approve/`).then((r) => unwrapData(r)),
+  dismiss: (id) => api.post(`/platform/notifications/${id}/dismiss/`).then((r) => unwrapData(r)),
+  markRead: (id) => api.post(`/platform/notifications/${id}/mark_read/`).then((r) => unwrapData(r)),
+  markAllRead: () => api.post('/platform/notifications/mark_all_read/').then((r) => unwrapData(r)),
+};
+
+export const plansService = createCrudService('/subscriptions/plans/manage/');
+
+export const featuresService = {
+  getCatalog: () =>
+    api.get('/subscriptions/features/catalog/').then((r) => {
+      const data = unwrapData(r);
+      return data?.categories ?? [];
+    }),
+  listCategories: () => api.get('/subscriptions/features/categories/').then((r) => unwrapList(r)),
+  createCategory: (payload) => api.post('/subscriptions/features/categories/', payload).then((r) => unwrapData(r)),
+  updateCategory: (id, payload) => api.patch(`/subscriptions/features/categories/${id}/`, payload).then((r) => unwrapData(r)),
+  listFeatures: (params) => api.get('/subscriptions/features/manage/', { params }).then((r) => unwrapList(r)),
+  createFeature: (payload) => api.post('/subscriptions/features/manage/', payload).then((r) => unwrapData(r)),
+  updateFeature: (id, payload) => api.patch(`/subscriptions/features/manage/${id}/`, payload).then((r) => unwrapData(r)),
+};
+
+export const subscriptionsService = {
+  ...createCrudService('/subscriptions/'),
+  activate: (id, periodDays = 30) =>
+    api.post(`/subscriptions/${id}/activate/`, { period_days: periodDays }).then((r) => unwrapData(r)),
+  suspend: (id) => api.post(`/subscriptions/${id}/suspend/`).then((r) => unwrapData(r)),
+};
+
+export const billingService = {
+  listTransactions: (params) =>
+    api.get('/subscriptions/payments/transactions/', { params }).then((r) => unwrapList(r)),
+  listProviders: () =>
+    api.get('/subscriptions/payments/providers/', { page_size: 20 }).then((r) => unwrapList(r)),
+};
+
+const downloadBlob = (response, fallbackName) => {
+  const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/pdf' });
+  const disposition = response.headers['content-disposition'] || '';
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] || fallbackName;
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
+export const auditLogsService = {
+  list: (params) => api.get('/audit/logs/', { params }).then((r) => unwrapList(r)),
+  get: (id) => api.get(`/audit/logs/${id}/`).then((r) => unwrapData(r)),
+  filterOptions: () => api.get('/audit/logs/filter-options/').then((r) => unwrapData(r)),
+  exportPdf: (id) =>
+    api.get(`/audit/logs/${id}/export-pdf/`, { responseType: 'blob' }).then((r) => {
+      downloadBlob(r, `audit-log-${id}.pdf`);
+    }),
+  exportListPdf: (params) =>
+    api.get('/audit/logs/export-pdf/', { params, responseType: 'blob' }).then((r) => {
+      downloadBlob(r, 'audit-logs-export.pdf');
+    }),
+};
+
+export const broadcastService = createCrudService('/platform/broadcasts/');
+
+export const settingsService = {
+  get: () => api.get('/platform/settings/general/').then((r) => unwrapData(r)),
+  update: (payload) => api.patch('/platform/settings/general/', payload).then((r) => unwrapData(r)),
+};
+
+export const studentsService = createCrudService('/school-admin/students/');
+export const staffService = createCrudService('/school-admin/staff/');
+export const classesService = createCrudService('/school-admin/classes/');
+export const attendanceService = createCrudService('/school-admin/attendance/');
+export const financeService = createCrudService('/school-admin/finance/');
+export const libraryService = createCrudService('/school-admin/library/');
+export const hostelService = createCrudService('/school-admin/hostel/');
+export const transportService = createCrudService('/school-admin/transport/');
+export const inventoryService = createCrudService('/school-admin/inventory/');
+export const hrService = createCrudService('/school-admin/hr/');
+export const payrollService = createCrudService('/school-admin/payroll/');
+export const reportsService = {
+  list: (params) => api.get('/school-admin/reports/', { params }).then((r) => unwrapList(r)),
+  generate: (payload) => api.post('/school-admin/reports/generate/', payload).then((r) => unwrapData(r)),
+};
+export const communicationService = createCrudService('/school-admin/communication/');
+export const notificationFeedService = {
+  getFeed: () => api.get('/auth/notifications/feed/').then((r) => unwrapData(r)),
+  markAllRead: () => api.post('/auth/notifications/feed/', { action: 'mark_all_read' }).then((r) => unwrapData(r)),
+};
+
+export const notificationsService = {
+  list: (params) => api.get('/communication/notifications/', { params }).then((r) => unwrapList(r)),
+  markRead: (id) => api.post(`/communication/notifications/${id}/mark_read/`).then((r) => unwrapData(r)),
+  markAllRead: () => api.post('/communication/notifications/mark_all_read/').then((r) => unwrapData(r)),
+  getSummary: () => api.get('/communication/notifications/summary/').then((r) => unwrapData(r)),
+};
+
+export default {
+  schoolsService,
+  platformNotificationsService,
+  plansService,
+  subscriptionsService,
+  auditLogsService,
+  broadcastService,
+  settingsService,
+  studentsService,
+  staffService,
+  classesService,
+  attendanceService,
+  financeService,
+  libraryService,
+  hostelService,
+  transportService,
+  inventoryService,
+  hrService,
+  payrollService,
+  reportsService,
+  communicationService,
+  notificationsService,
+  notificationFeedService,
+};

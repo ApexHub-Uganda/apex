@@ -1,0 +1,18 @@
+---
+pid: 2852
+cwd: "E:\apex"
+command: "Remove-Item -Recurse -Force E:\\apex\\frontend\\node_modules -ErrorAction SilentlyContinue; cd E:\\apex\\frontend; npm install"
+started_at: 2026-06-30T21:35:02.040Z
+running_for_ms: 5104998  
+---
+
+added 326 packages, and audited 327 packages in 57s
+npm warn allow-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn allow-scripts   esbuild@0.25.12 (postinstall: node install.js)
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to review, or `npm approve-scripts <pkg>` to allow.
+
+121 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities

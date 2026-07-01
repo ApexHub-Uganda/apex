@@ -1,0 +1,13 @@
+---
+pid: 12948
+cwd: "E:\apex"
+command: "Push-Location E:\\apex\\frontend; npm install; Pop-Location"
+started_at: 2026-06-30T21:25:03.698Z
+running_for_ms: 215015   
+---
+npm error code ENOTEMPTY
+npm error syscall rmdir
+npm error path E:\apex\frontend\node_modules\caniuse-lite
+npm error errno -4051
+npm error ENOTEMPTY: directory not empty, rmdir 'E:\apex\frontend\node_modules\caniuse-lite'
+npm error A complete log of this run can be found in: C:\Users\solid\AppData\Local\npm-cache\_logs\2026-06-30T21_25_06_739Z-debug-0.log

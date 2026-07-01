@@ -1,0 +1,1 @@
+export { useTenantContext as useTenant } from '../context/TenantContext';

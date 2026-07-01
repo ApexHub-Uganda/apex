@@ -1,0 +1,580 @@
+---
+pid: 5876
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py -q 2>&1"
+started_at: 2026-07-01T08:47:01.075Z
+running_for_ms: 13135012 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: Faker-40.27.0, django-4.12.0
+collected 7 items
+
+tests\test_subscriptions.py EEEEEEE                                      [100%]
+
+=================================== ERRORS ====================================
+_________ ERROR at setup of TestSubscriptions.test_list_public_plans __________
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   sqlite3.OperationalError: no such table: subscriptions_feature_category
+
+The above exception was the direct cause of the following exception:
+venv\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+venv\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+venv\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+venv\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\commands\migrate.py:353: in handle
+    post_migrate_state = executor.migrate(
+venv\Lib\site-packages\django\db\migrations\executor.py:135: in migrate
+    state = self._migrate_all_forwards(
+venv\Lib\site-packages\django\db\migrations\executor.py:167: in _migrate_all_forwards
+    state = self.apply_migration(
+venv\Lib\site-packages\django\db\migrations\executor.py:255: in apply_migration
+    state = migration.apply(state, schema_editor)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\migrations\migration.py:132: in apply
+    operation.database_forwards(
+venv\Lib\site-packages\django\db\migrations\operations\special.py:196: in database_forwards
+    self.code(from_state.apps, schema_editor)
+apps\subscriptions\migrations\0002_enterprise_feature_catalog.py:16: in seed_catalog_and_plans
+    seed_feature_catalog()
+apps\subscriptions\seed_features.py:23: in seed_feature_catalog
+    category, _ = FeatureCategory.objects.update_or_create(
+venv\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:990: in update_or_create
+    obj, created = self.select_for_update().get_or_create(
+venv\Lib\site-packages\django\db\models\query.py:948: in get_or_create
+    return self.get(**kwargs), False
+           ^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:631: in get
+    num = len(clone)
+          ^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:368: in __len__
+    self._fetch_all()
+venv\Lib\site-packages\django\db\models\query.py:1954: in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:93: in __iter__
+    results = compiler.execute_sql(
+venv\Lib\site-packages\django\db\models\sql\compiler.py:1623: in execute_sql
+    cursor.execute(sql, params)
+venv\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+venv\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.OperationalError: no such table: subscriptions_feature_category
+____ ERROR at setup of TestSubscriptions.test_tenant_has_feature_from_plan ____
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   sqlite3.OperationalError: no such table: subscriptions_feature_category
+
+The above exception was the direct cause of the following exception:
+venv\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+venv\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+venv\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+venv\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\commands\migrate.py:353: in handle
+    post_migrate_state = executor.migrate(
+venv\Lib\site-packages\django\db\migrations\executor.py:135: in migrate
+    state = self._migrate_all_forwards(
+venv\Lib\site-packages\django\db\migrations\executor.py:167: in _migrate_all_forwards
+    state = self.apply_migration(
+venv\Lib\site-packages\django\db\migrations\executor.py:255: in apply_migration
+    state = migration.apply(state, schema_editor)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\migrations\migration.py:132: in apply
+    operation.database_forwards(
+venv\Lib\site-packages\django\db\migrations\operations\special.py:196: in database_forwards
+    self.code(from_state.apps, schema_editor)
+apps\subscriptions\migrations\0002_enterprise_feature_catalog.py:16: in seed_catalog_and_plans
+    seed_feature_catalog()
+apps\subscriptions\seed_features.py:23: in seed_feature_catalog
+    category, _ = FeatureCategory.objects.update_or_create(
+venv\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:990: in update_or_create
+    obj, created = self.select_for_update().get_or_create(
+venv\Lib\site-packages\django\db\models\query.py:948: in get_or_create
+    return self.get(**kwargs), False
+           ^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:631: in get
+    num = len(clone)
+          ^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:368: in __len__
+    self._fetch_all()
+venv\Lib\site-packages\django\db\models\query.py:1954: in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:93: in __iter__
+    results = compiler.execute_sql(
+venv\Lib\site-packages\django\db\models\sql\compiler.py:1623: in execute_sql
+    cursor.execute(sql, params)
+venv\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+venv\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.OperationalError: no such table: subscriptions_feature_category
+________ ERROR at setup of TestSubscriptions.test_subscription_expiry _________
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   sqlite3.OperationalError: no such table: subscriptions_feature_category
+
+The above exception was the direct cause of the following exception:
+venv\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+venv\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+venv\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+venv\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\commands\migrate.py:353: in handle
+    post_migrate_state = executor.migrate(
+venv\Lib\site-packages\django\db\migrations\executor.py:135: in migrate
+    state = self._migrate_all_forwards(
+venv\Lib\site-packages\django\db\migrations\executor.py:167: in _migrate_all_forwards
+    state = self.apply_migration(
+venv\Lib\site-packages\django\db\migrations\executor.py:255: in apply_migration
+    state = migration.apply(state, schema_editor)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\migrations\migration.py:132: in apply
+    operation.database_forwards(
+venv\Lib\site-packages\django\db\migrations\operations\special.py:196: in database_forwards
+    self.code(from_state.apps, schema_editor)
+apps\subscriptions\migrations\0002_enterprise_feature_catalog.py:16: in seed_catalog_and_plans
+    seed_feature_catalog()
+apps\subscriptions\seed_features.py:23: in seed_feature_catalog
+    category, _ = FeatureCategory.objects.update_or_create(
+venv\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:990: in update_or_create
+    obj, created = self.select_for_update().get_or_create(
+venv\Lib\site-packages\django\db\models\query.py:948: in get_or_create
+    return self.get(**kwargs), False
+           ^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:631: in get
+    num = len(clone)
+          ^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:368: in __len__
+    self._fetch_all()
+venv\Lib\site-packages\django\db\models\query.py:1954: in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:93: in __iter__
+    results = compiler.execute_sql(
+venv\Lib\site-packages\django\db\models\sql\compiler.py:1623: in execute_sql
+    cursor.execute(sql, params)
+venv\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+venv\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.OperationalError: no such table: subscriptions_feature_category
+_____ ERROR at setup of TestSubscriptions.test_subscription_grace_period ______
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   sqlite3.OperationalError: no such table: subscriptions_feature_category
+
+The above exception was the direct cause of the following exception:
+venv\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+venv\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+venv\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+venv\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\commands\migrate.py:353: in handle
+    post_migrate_state = executor.migrate(
+venv\Lib\site-packages\django\db\migrations\executor.py:135: in migrate
+    state = self._migrate_all_forwards(
+venv\Lib\site-packages\django\db\migrations\executor.py:167: in _migrate_all_forwards
+    state = self.apply_migration(
+venv\Lib\site-packages\django\db\migrations\executor.py:255: in apply_migration
+    state = migration.apply(state, schema_editor)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\migrations\migration.py:132: in apply
+    operation.database_forwards(
+venv\Lib\site-packages\django\db\migrations\operations\special.py:196: in database_forwards
+    self.code(from_state.apps, schema_editor)
+apps\subscriptions\migrations\0002_enterprise_feature_catalog.py:16: in seed_catalog_and_plans
+    seed_feature_catalog()
+apps\subscriptions\seed_features.py:23: in seed_feature_catalog
+    category, _ = FeatureCategory.objects.update_or_create(
+venv\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:990: in update_or_create
+    obj, created = self.select_for_update().get_or_create(
+venv\Lib\site-packages\django\db\models\query.py:948: in get_or_create
+    return self.get(**kwargs), False
+           ^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:631: in get
+    num = len(clone)
+          ^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:368: in __len__
+    self._fetch_all()
+venv\Lib\site-packages\django\db\models\query.py:1954: in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:93: in __iter__
+    results = compiler.execute_sql(
+venv\Lib\site-packages\django\db\models\sql\compiler.py:1623: in execute_sql
+    cursor.execute(sql, params)
+venv\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+venv\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.OperationalError: no such table: subscriptions_feature_category
+___ ERROR at setup of TestSubscriptions.test_current_subscription_endpoint ____
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   sqlite3.OperationalError: no such table: subscriptions_feature_category
+
+The above exception was the direct cause of the following exception:
+venv\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+venv\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+venv\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+venv\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\commands\migrate.py:353: in handle
+    post_migrate_state = executor.migrate(
+venv\Lib\site-packages\django\db\migrations\executor.py:135: in migrate
+    state = self._migrate_all_forwards(
+venv\Lib\site-packages\django\db\migrations\executor.py:167: in _migrate_all_forwards
+    state = self.apply_migration(
+venv\Lib\site-packages\django\db\migrations\executor.py:255: in apply_migration
+    state = migration.apply(state, schema_editor)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\migrations\migration.py:132: in apply
+    operation.database_forwards(
+venv\Lib\site-packages\django\db\migrations\operations\special.py:196: in database_forwards
+    self.code(from_state.apps, schema_editor)
+apps\subscriptions\migrations\0002_enterprise_feature_catalog.py:16: in seed_catalog_and_plans
+    seed_feature_catalog()
+apps\subscriptions\seed_features.py:23: in seed_feature_catalog
+    category, _ = FeatureCategory.objects.update_or_create(
+venv\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:990: in update_or_create
+    obj, created = self.select_for_update().get_or_create(
+venv\Lib\site-packages\django\db\models\query.py:948: in get_or_create
+    return self.get(**kwargs), False
+           ^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:631: in get
+    num = len(clone)
+          ^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:368: in __len__
+    self._fetch_all()
+venv\Lib\site-packages\django\db\models\query.py:1954: in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:93: in __iter__
+    results = compiler.execute_sql(
+venv\Lib\site-packages\django\db\models\sql\compiler.py:1623: in execute_sql
+    cursor.execute(sql, params)
+venv\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+venv\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.OperationalError: no such table: subscriptions_feature_category
+__ ERROR at setup of TestSubscriptions.test_plan_feature_catalog_assignment ___
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   sqlite3.OperationalError: no such table: subscriptions_feature_category
+
+The above exception was the direct cause of the following exception:
+venv\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+venv\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+venv\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+venv\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\commands\migrate.py:353: in handle
+    post_migrate_state = executor.migrate(
+venv\Lib\site-packages\django\db\migrations\executor.py:135: in migrate
+    state = self._migrate_all_forwards(
+venv\Lib\site-packages\django\db\migrations\executor.py:167: in _migrate_all_forwards
+    state = self.apply_migration(
+venv\Lib\site-packages\django\db\migrations\executor.py:255: in apply_migration
+    state = migration.apply(state, schema_editor)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\migrations\migration.py:132: in apply
+    operation.database_forwards(
+venv\Lib\site-packages\django\db\migrations\operations\special.py:196: in database_forwards
+    self.code(from_state.apps, schema_editor)
+apps\subscriptions\migrations\0002_enterprise_feature_catalog.py:16: in seed_catalog_and_plans
+    seed_feature_catalog()
+apps\subscriptions\seed_features.py:23: in seed_feature_catalog
+    category, _ = FeatureCategory.objects.update_or_create(
+venv\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:990: in update_or_create
+    obj, created = self.select_for_update().get_or_create(
+venv\Lib\site-packages\django\db\models\query.py:948: in get_or_create
+    return self.get(**kwargs), False
+           ^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:631: in get
+    num = len(clone)
+          ^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:368: in __len__
+    self._fetch_all()
+venv\Lib\site-packages\django\db\models\query.py:1954: in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:93: in __iter__
+    results = compiler.execute_sql(
+venv\Lib\site-packages\django\db\models\sql\compiler.py:1623: in execute_sql
+    cursor.execute(sql, params)
+venv\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+venv\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.OperationalError: no such table: subscriptions_feature_category
+________ ERROR at setup of TestSubscriptions.test_feature_catalog_api _________
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   sqlite3.OperationalError: no such table: subscriptions_feature_category
+
+The above exception was the direct cause of the following exception:
+venv\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+venv\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+venv\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+venv\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\core\management\commands\migrate.py:353: in handle
+    post_migrate_state = executor.migrate(
+venv\Lib\site-packages\django\db\migrations\executor.py:135: in migrate
+    state = self._migrate_all_forwards(
+venv\Lib\site-packages\django\db\migrations\executor.py:167: in _migrate_all_forwards
+    state = self.apply_migration(
+venv\Lib\site-packages\django\db\migrations\executor.py:255: in apply_migration
+    state = migration.apply(state, schema_editor)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\migrations\migration.py:132: in apply
+    operation.database_forwards(
+venv\Lib\site-packages\django\db\migrations\operations\special.py:196: in database_forwards
+    self.code(from_state.apps, schema_editor)
+apps\subscriptions\migrations\0002_enterprise_feature_catalog.py:16: in seed_catalog_and_plans
+    seed_feature_catalog()
+apps\subscriptions\seed_features.py:23: in seed_feature_catalog
+    category, _ = FeatureCategory.objects.update_or_create(
+venv\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:990: in update_or_create
+    obj, created = self.select_for_update().get_or_create(
+venv\Lib\site-packages\django\db\models\query.py:948: in get_or_create
+    return self.get(**kwargs), False
+           ^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:631: in get
+    num = len(clone)
+          ^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:368: in __len__
+    self._fetch_all()
+venv\Lib\site-packages\django\db\models\query.py:1954: in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\models\query.py:93: in __iter__
+    results = compiler.execute_sql(
+venv\Lib\site-packages\django\db\models\sql\compiler.py:1623: in execute_sql
+    cursor.execute(sql, params)
+venv\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+venv\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+venv\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+venv\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.OperationalError: no such table: subscriptions_feature_category
+=========================== short test summary info ===========================
+ERROR tests/test_subscriptions.py::TestSubscriptions::test_list_public_plans
+ERROR tests/test_subscriptions.py::TestSubscriptions::test_tenant_has_feature_from_plan
+ERROR tests/test_subscriptions.py::TestSubscriptions::test_subscription_expiry
+ERROR tests/test_subscriptions.py::TestSubscriptions::test_subscription_grace_period
+ERROR tests/test_subscriptions.py::TestSubscriptions::test_current_subscription_endpoint
+ERROR tests/test_subscriptions.py::TestSubscriptions::test_plan_feature_catalog_assignment
+ERROR tests/test_subscriptions.py::TestSubscriptions::test_feature_catalog_api
+============================= 7 errors in 12.44s ==============================

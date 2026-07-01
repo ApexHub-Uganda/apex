@@ -1,0 +1,23 @@
+---
+pid: 10036
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build"
+started_at: 2026-06-30T22:48:52.709Z
+running_for_ms: 675003   
+---
+
+> apex-hub-frontend@1.0.0 build
+> vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 566 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   1.15 kB │ gzip:   0.56 kB
+dist/assets/index-FGFXHCRF.css  238.53 kB │ gzip:  33.00 kB
+dist/assets/vendor-CU0nwaM0.js   50.47 kB │ gzip:  17.86 kB
+dist/assets/motion-C16hkUmo.js  115.10 kB │ gzip:  38.14 kB
+dist/assets/charts-6A5LqvcI.js  185.45 kB │ gzip:  64.72 kB
+dist/assets/index-DQJ2kG82.js   408.95 kB │ gzip: 123.45 kB
+✓ built in 9.68s

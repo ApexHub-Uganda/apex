@@ -1,0 +1,7 @@
+---
+pid: 7260
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 30"
+started_at: 2026-06-30T21:23:59.985Z
+running_for_ms: 275006   
+---

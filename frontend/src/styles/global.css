@@ -1,0 +1,825 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --apex-primary: #0F766E;
+  --apex-primary-dark: #0D5F58;
+  --apex-primary-light: #14B8A6;
+  --apex-secondary: #FF7F50;
+  --apex-secondary-dark: #E86A3D;
+  --apex-accent: #F5E6CA;
+  --apex-accent-dark: #E8D4A8;
+
+  --apex-bg: #F8FAFC;
+  --apex-surface: #FFFFFF;
+  --apex-surface-elevated: #FFFFFF;
+  --apex-text: #0F172A;
+  --apex-text-muted: #64748B;
+  --apex-border: #E2E8F0;
+  --apex-shadow: 0 4px 24px rgba(15, 118, 110, 0.08);
+  --apex-shadow-lg: 0 12px 40px rgba(15, 23, 42, 0.12);
+  --apex-radius: 12px;
+  --apex-radius-lg: 16px;
+  --apex-sidebar-width: 280px;
+  --apex-navbar-height: 64px;
+  --apex-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --apex-font: 'Inter', system-ui, -apple-system, sans-serif;
+  --apex-font-display: 'Plus Jakarta Sans', var(--apex-font);
+  --apex-glass-bg: rgba(255, 255, 255, 0.72);
+  --apex-glass-border: rgba(255, 255, 255, 0.4);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--apex-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--apex-text);
+  background: var(--apex-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--apex-font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+a {
+  color: var(--apex-primary);
+  text-decoration: none;
+  transition: color var(--apex-transition);
+}
+
+a:hover {
+  color: var(--apex-primary-light);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--apex-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--apex-text-muted);
+}
+
+/* Bootstrap overrides */
+.btn-primary {
+  --bs-btn-bg: var(--apex-primary);
+  --bs-btn-border-color: var(--apex-primary);
+  --bs-btn-hover-bg: var(--apex-primary-dark);
+  --bs-btn-hover-border-color: var(--apex-primary-dark);
+  --bs-btn-active-bg: var(--apex-primary-dark);
+  --bs-btn-active-border-color: var(--apex-primary-dark);
+}
+
+.text-primary {
+  color: var(--apex-primary) !important;
+}
+
+.bg-primary {
+  background-color: var(--apex-primary) !important;
+}
+
+.border-primary {
+  border-color: var(--apex-primary) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--apex-primary);
+  box-shadow: 0 0 0 0.2rem rgba(15, 118, 110, 0.15);
+}
+
+/* Apex utilities */
+.apex-card {
+  background: var(--apex-surface);
+  border: 1px solid var(--apex-border);
+  border-radius: var(--apex-radius-lg);
+  box-shadow: var(--apex-shadow);
+  transition: transform var(--apex-transition), box-shadow var(--apex-transition);
+}
+
+.apex-card:hover {
+  box-shadow: var(--apex-shadow-lg);
+}
+
+.apex-page-header {
+  margin-bottom: 1.75rem;
+}
+
+.apex-page-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--apex-text);
+}
+
+.apex-page-subtitle {
+  color: var(--apex-text-muted);
+  margin: 0.25rem 0 0;
+  font-size: 0.9375rem;
+}
+
+.apex-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.apex-badge-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.apex-badge-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #D97706;
+}
+
+.apex-badge-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #DC2626;
+}
+
+.apex-badge-info {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--apex-primary);
+}
+
+.apex-gradient-text {
+  background: linear-gradient(135deg, var(--apex-primary), var(--apex-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glassmorphism */
+.apex-glass {
+  background: var(--apex-glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--apex-glass-border);
+  border-radius: var(--apex-radius-lg);
+}
+
+/* Sidebar */
+.apex-sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+}
+
+.apex-sidebar-link.active {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #fff !important;
+}
+
+.apex-stat-card {
+  background: var(--apex-surface);
+  border: 1px solid var(--apex-border);
+}
+
+/* Layout */
+.apex-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.apex-main {
+  flex: 1;
+  margin-left: var(--apex-sidebar-width);
+  padding-top: var(--apex-navbar-height);
+  min-height: 100vh;
+  transition: margin-left var(--apex-transition);
+}
+
+.apex-content {
+  padding: 1.5rem 2rem 2rem;
+  max-width: 1600px;
+}
+
+@media (max-width: 991.98px) {
+  .apex-main {
+    margin-left: 0;
+  }
+
+  .apex-content {
+    padding: 1rem;
+  }
+}
+
+/* Auth animated background */
+.auth-bg {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.auth-bg-gradient {
+  position: absolute;
+  width: 150%;
+  height: 150%;
+  top: -25%;
+  left: -25%;
+  background: linear-gradient(
+    -45deg,
+    var(--apex-primary),
+    var(--apex-primary-light),
+    var(--apex-secondary),
+    var(--apex-accent)
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  opacity: 0.85;
+}
+
+[data-theme='dark'] .auth-bg-gradient {
+  opacity: 0.6;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.auth-bg-orbs {
+  position: absolute;
+  inset: 0;
+}
+
+.auth-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  animation: float 8s ease-in-out infinite;
+}
+
+.auth-orb-1 {
+  width: 400px;
+  height: 400px;
+  background: rgba(255, 127, 80, 0.3);
+  top: 10%;
+  right: 10%;
+}
+
+.auth-orb-2 {
+  width: 300px;
+  height: 300px;
+  background: rgba(15, 118, 110, 0.4);
+  bottom: 20%;
+  left: 5%;
+  animation-delay: -3s;
+}
+
+.auth-orb-3 {
+  width: 250px;
+  height: 250px;
+  background: rgba(245, 230, 202, 0.5);
+  top: 50%;
+  left: 40%;
+  animation-delay: -5s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-30px) scale(1.05); }
+}
+
+/* Table enhancements */
+.apex-table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--apex-radius);
+}
+
+.apex-table-wrapper--fit {
+  overflow-x: hidden;
+}
+
+.apex-table {
+  width: 100%;
+  margin: 0;
+}
+
+.apex-table--compact {
+  table-layout: fixed;
+}
+
+.apex-table--compact thead th,
+.apex-table--compact tbody td {
+  padding: 0.5rem 0.625rem;
+  font-size: 0.8125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.apex-table--compact thead th {
+  font-size: 0.6875rem;
+  padding: 0.5rem 0.625rem;
+}
+
+.apex-table--compact .apex-cell-truncate {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.apex-table--compact .apex-cell-wrap {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.apex-table thead th {
+  background: var(--apex-bg);
+  border-bottom: 2px solid var(--apex-border);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--apex-text-muted);
+  padding: 0.875rem 1rem;
+  white-space: nowrap;
+}
+
+.apex-table tbody td {
+  padding: 0.875rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--apex-border);
+}
+
+.apex-table tbody tr {
+  transition: background var(--apex-transition);
+}
+
+.apex-table tbody tr:hover {
+  background: rgba(15, 118, 110, 0.04);
+}
+
+/* Progress bar */
+.apex-progress {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--apex-border);
+  overflow: hidden;
+}
+
+.apex-progress-bar {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--apex-primary), var(--apex-primary-light));
+  transition: width 0.6s ease;
+}
+
+/* Empty state */
+.apex-empty {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--apex-text-muted);
+}
+
+.apex-empty-icon {
+  font-size: 3rem;
+  opacity: 0.4;
+  margin-bottom: 1rem;
+}
+
+/* Onboarding layout */
+.onboarding-layout {
+  background: var(--apex-bg);
+}
+
+.onboarding-header {
+  background: var(--apex-surface);
+  border-bottom: 1px solid var(--apex-border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.onboarding-main {
+  flex: 1;
+}
+
+.onboarding-footer {
+  background: var(--apex-surface);
+  border-top: 1px solid var(--apex-border);
+}
+
+/* Registration welcome page */
+.onboarding-welcome {
+  width: 100%;
+}
+
+.onboarding-hero {
+  background: linear-gradient(
+    135deg,
+    rgba(15, 118, 110, 0.08) 0%,
+    rgba(20, 184, 166, 0.06) 40%,
+    rgba(255, 127, 80, 0.05) 100%
+  );
+  border-bottom: 1px solid var(--apex-border);
+  padding: 3rem 0 2.5rem;
+}
+
+[data-theme='dark'] .onboarding-hero {
+  background: linear-gradient(
+    135deg,
+    rgba(15, 118, 110, 0.15) 0%,
+    rgba(20, 184, 166, 0.08) 40%,
+    rgba(255, 127, 80, 0.06) 100%
+  );
+}
+
+.onboarding-hero-content {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.onboarding-hero-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--apex-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.onboarding-hero-title {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  margin-bottom: 0.75rem;
+  line-height: 1.2;
+}
+
+.onboarding-hero-subtitle {
+  color: var(--apex-text-muted);
+  font-size: 1.0625rem;
+  margin-bottom: 1rem;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.onboarding-school-code {
+  display: inline-block;
+  padding: 0.375rem 1rem;
+  background: var(--apex-surface);
+  border: 1px solid var(--apex-border);
+  border-radius: 2rem;
+  font-size: 0.875rem;
+  color: var(--apex-text-muted);
+}
+
+.onboarding-notice-wrap {
+  margin-top: -1rem;
+  position: relative;
+  z-index: 1;
+  padding-bottom: 1.5rem;
+}
+
+.onboarding-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 193, 7, 0.12);
+  border: 1px solid rgba(255, 193, 7, 0.35);
+  border-radius: var(--apex-radius);
+  font-size: 0.875rem;
+}
+
+[data-theme='dark'] .onboarding-notice {
+  background: rgba(255, 193, 7, 0.08);
+  border-color: rgba(255, 193, 7, 0.2);
+}
+
+.onboarding-notice-icon {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  color: #b45309;
+}
+
+.onboarding-notice strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.onboarding-option-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--apex-surface);
+  border: 1px solid var(--apex-border);
+  border-radius: var(--apex-radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--apex-shadow);
+  transition: box-shadow var(--apex-transition), border-color var(--apex-transition);
+}
+
+.onboarding-option-card:hover {
+  box-shadow: var(--apex-shadow-lg);
+  border-color: rgba(15, 118, 110, 0.25);
+}
+
+.onboarding-option-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.onboarding-option-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.onboarding-option-icon--primary {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--apex-primary);
+}
+
+.onboarding-option-icon--secondary {
+  background: rgba(255, 127, 80, 0.12);
+  color: var(--apex-secondary);
+}
+
+.onboarding-option-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.onboarding-option-desc {
+  color: var(--apex-text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+  flex-grow: 1;
+}
+
+.onboarding-option-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.onboarding-plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.onboarding-plan-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--apex-bg);
+  border: 1px solid var(--apex-border);
+  border-radius: var(--apex-radius);
+}
+
+@media (max-width: 575.98px) {
+  .onboarding-plan-item {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .onboarding-plan-item .btn {
+    width: 100%;
+  }
+}
+
+.onboarding-plan-info {
+  min-width: 0;
+}
+
+.onboarding-plan-price {
+  font-weight: 700;
+  color: var(--apex-primary);
+  white-space: nowrap;
+}
+
+.onboarding-plan-period {
+  font-weight: 500;
+  font-size: 0.75rem;
+  color: var(--apex-text-muted);
+}
+
+.onboarding-skip {
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--apex-border);
+}
+
+.onboarding-skip-link {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--apex-text-muted);
+  transition: color var(--apex-transition);
+}
+
+.onboarding-skip-link:hover {
+  color: var(--apex-primary);
+}
+
+.onboarding-state {
+  padding: 4rem 0;
+  min-height: 50vh;
+  display: flex;
+  align-items: center;
+}
+
+.onboarding-state-card {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 2.5rem 2rem;
+  background: var(--apex-surface);
+  border: 1px solid var(--apex-border);
+  border-radius: var(--apex-radius-lg);
+  box-shadow: var(--apex-shadow);
+}
+
+.onboarding-state-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.onboarding-state-icon--warning {
+  background: rgba(255, 193, 7, 0.15);
+  color: #b45309;
+}
+
+/* School admin plan-aware dashboard */
+.school-plan-banner {
+  background: var(--apex-surface);
+  border: 1px solid var(--apex-border);
+  border-radius: var(--apex-radius-lg);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--apex-shadow);
+}
+
+.school-plan-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 2rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.school-plan-badge--trial {
+  background: rgba(245, 158, 11, 0.15);
+  color: #B45309;
+}
+
+.school-plan-badge--basic {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--apex-primary);
+}
+
+.school-plan-badge--premium {
+  background: rgba(5, 150, 105, 0.12);
+  color: #059669;
+}
+
+.school-plan-badge--plus {
+  background: rgba(255, 127, 80, 0.12);
+  color: var(--apex-secondary-dark);
+}
+
+.school-plan-trial {
+  color: #B45309;
+  display: inline-flex;
+  align-items: center;
+}
+
+.school-module-card {
+  background: var(--apex-surface);
+  border: 1px solid var(--apex-border);
+  border-radius: var(--apex-radius);
+  padding: 1.25rem;
+  transition: box-shadow var(--apex-transition), border-color var(--apex-transition);
+}
+
+.school-module-card:hover {
+  box-shadow: var(--apex-shadow);
+  border-color: rgba(15, 118, 110, 0.2);
+}
+
+.school-module-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(15, 118, 110, 0.1);
+  color: var(--apex-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.school-module-metric {
+  text-align: center;
+  padding: 0.5rem 0.25rem;
+  background: var(--apex-bg);
+  border-radius: 8px;
+}
+
+.school-upgrade-panel {
+  border-style: dashed;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.school-upgrade-item {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--apex-surface);
+  border: 1px solid var(--apex-border);
+  border-radius: 8px;
+}
+
+.school-upgrade-item-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--apex-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--apex-text-muted);
+}
+
+.school-context-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--apex-radius);
+  color: var(--apex-text);
+}
+
+.module-empty-state-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--apex-bg);
+  color: var(--apex-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

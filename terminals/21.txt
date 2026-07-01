@@ -1,0 +1,134 @@
+---
+pid: 7616
+cwd: "E:\apex"
+command: "E:\\apex\\backend\\venv\\Scripts\\python.exe E:\\apex\\backend\\manage.py runserver 0.0.0.0:8000"
+started_at: 2026-06-30T22:20:48.404Z
+running_for_ms: 2374919  
+---
+Performing system checks...
+
+INFO 2026-06-30 15:20:51,839 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+June 30, 2026 - 15:20:52
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+INFO 2026-06-30 15:21:30,741 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 200 1178
+INFO 2026-06-30 15:21:31,860 basehttp - Broken pipe from ('127.0.0.1', 64438)
+INFO 2026-06-30 15:23:25,185 basehttp "OPTIONS /api/v1/auth/login/ HTTP/1.1" 200 0
+WARNING 2026-06-30 15:23:30,355 log Unauthorized: /api/v1/auth/login/
+WARNING 2026-06-30 15:23:30,364 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 401 195
+INFO 2026-06-30 15:23:30,687 basehttp "OPTIONS /api/v1/super-admin/dashboard/ HTTP/1.1" 200 0
+WARNING 2026-06-30 15:23:30,845 log Not Found: /api/v1/super-admin/dashboard/
+WARNING 2026-06-30 15:23:30,855 basehttp "GET /api/v1/super-admin/dashboard/ HTTP/1.1" 404 7502
+INFO 2026-06-30 15:23:31,696 basehttp "OPTIONS /api/v1/auth/me/ HTTP/1.1" 200 0
+INFO 2026-06-30 15:23:31,698 basehttp "OPTIONS /api/v1/auth/me/ HTTP/1.1" 200 0
+WARNING 2026-06-30 15:23:31,725 log Unauthorized: /api/v1/auth/me/
+WARNING 2026-06-30 15:23:31,733 basehttp "GET /api/v1/auth/me/ HTTP/1.1" 401 288
+INFO 2026-06-30 15:23:31,746 basehttp "OPTIONS /api/v1/auth/token/refresh/ HTTP/1.1" 200 0
+WARNING 2026-06-30 15:23:31,783 log Unauthorized: /api/v1/auth/me/
+WARNING 2026-06-30 15:23:31,784 basehttp "GET /api/v1/auth/me/ HTTP/1.1" 401 288
+WARNING 2026-06-30 15:23:32,137 log Not Found: /api/v1/auth/token/refresh/
+WARNING 2026-06-30 15:23:32,137 basehttp "POST /api/v1/auth/token/refresh/ HTTP/1.1" 404 18573
+WARNING 2026-06-30 15:23:53,185 log Unauthorized: /api/v1/auth/login/
+WARNING 2026-06-30 15:23:53,186 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 401 195
+WARNING 2026-06-30 15:23:53,628 log Not Found: /api/v1/super-admin/dashboard/
+INFO 2026-06-30 15:23:53,657 basehttp - Broken pipe from ('127.0.0.1', 49649)
+WARNING 2026-06-30 15:23:54,117 log Unauthorized: /api/v1/auth/me/
+WARNING 2026-06-30 15:23:54,118 basehttp "GET /api/v1/auth/me/ HTTP/1.1" 401 288
+WARNING 2026-06-30 15:23:54,131 log Unauthorized: /api/v1/auth/me/
+WARNING 2026-06-30 15:23:54,149 basehttp "GET /api/v1/auth/me/ HTTP/1.1" 401 288
+WARNING 2026-06-30 15:23:54,234 log Not Found: /api/v1/auth/token/refresh/
+WARNING 2026-06-30 15:23:54,253 basehttp "POST /api/v1/auth/token/refresh/ HTTP/1.1" 404 18573
+WARNING 2026-06-30 15:25:01,530 log Unauthorized: /api/v1/auth/login/
+WARNING 2026-06-30 15:25:01,532 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 401 195
+WARNING 2026-06-30 15:25:01,817 log Not Found: /api/v1/super-admin/dashboard/
+WARNING 2026-06-30 15:25:01,830 basehttp "GET /api/v1/super-admin/dashboard/ HTTP/1.1" 404 7502
+WARNING 2026-06-30 15:25:02,543 log Unauthorized: /api/v1/auth/me/
+WARNING 2026-06-30 15:25:02,545 basehttp "GET /api/v1/auth/me/ HTTP/1.1" 401 288
+WARNING 2026-06-30 15:25:02,798 log Not Found: /api/v1/auth/token/refresh/
+WARNING 2026-06-30 15:25:02,801 basehttp "POST /api/v1/auth/token/refresh/ HTTP/1.1" 404 18573
+WARNING 2026-06-30 15:25:02,861 log Unauthorized: /api/v1/auth/me/
+WARNING 2026-06-30 15:25:02,863 basehttp "GET /api/v1/auth/me/ HTTP/1.1" 401 288
+INFO 2026-06-30 15:26:45,996 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 200 1178
+INFO 2026-06-30 15:26:46,194 basehttp "GET /api/v1/auth/me/ HTTP/1.1" 200 377
+WARNING 2026-06-30 15:26:46,240 log Not Found: /api/v1/super-admin/dashboard/
+WARNING 2026-06-30 15:26:46,240 basehttp "GET /api/v1/super-admin/dashboard/ HTTP/1.1" 404 7502
+INFO 2026-06-30 15:26:46,344 basehttp - Broken pipe from ('127.0.0.1', 54088)
+INFO 2026-06-30 15:26:55,404 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 200 1515
+INFO 2026-06-30 15:26:55,630 basehttp "GET /api/v1/auth/me/ HTTP/1.1" 200 448
+INFO 2026-06-30 15:26:55,687 basehttp - Broken pipe from ('127.0.0.1', 50122)
+INFO 2026-06-30 15:27:07,389 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 200 1178
+WARNING 2026-06-30 15:27:07,581 log Not Found: /api/v1/auth/token/refresh/
+WARNING 2026-06-30 15:27:07,581 basehttp "POST /api/v1/auth/token/refresh/ HTTP/1.1" 404 18573
+INFO 2026-06-30 15:27:07,917 basehttp "POST /api/v1/auth/refresh/ HTTP/1.1" 200 793
+INFO 2026-06-30 15:27:07,968 basehttp - Broken pipe from ('127.0.0.1', 62983)
+INFO 2026-06-30 15:32:06,553 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 200 1178
+INFO 2026-06-30 15:32:06,788 basehttp "GET /api/v1/analytics/dashboard/platform/ HTTP/1.1" 200 229
+INFO 2026-06-30 15:32:06,881 basehttp "GET /api/v1/tenants/ HTTP/1.1" 200 793
+INFO 2026-06-30 15:32:06,913 basehttp "GET /api/v1/subscriptions/current/ HTTP/1.1" 200 184
+WARNING 2026-06-30 15:32:06,954 log Not Found: /api/v1/tenant/current/
+WARNING 2026-06-30 15:32:06,954 basehttp "GET /api/v1/tenant/current/ HTTP/1.1" 404 7481
+INFO 2026-06-30 15:32:07,016 basehttp - Broken pipe from ('127.0.0.1', 54330)
+WARNING 2026-06-30 15:36:41,809 log Not Found: /
+WARNING 2026-06-30 15:36:41,809 basehttp "GET / HTTP/1.1" 404 2818
+WARNING 2026-06-30 15:36:41,969 log Not Found: /favicon.ico
+WARNING 2026-06-30 15:36:41,970 basehttp "GET /favicon.ico HTTP/1.1" 404 2869
+INFO 2026-06-30 15:36:47,218 basehttp "GET /admin HTTP/1.1" 301 0
+INFO 2026-06-30 15:36:47,606 basehttp "GET /admin/ HTTP/1.1" 302 0
+INFO 2026-06-30 15:36:47,795 basehttp "GET /admin/login/?next=/admin/ HTTP/1.1" 200 4170
+INFO 2026-06-30 15:36:48,014 basehttp "GET /static/admin/css/base.css HTTP/1.1" 200 22120
+INFO 2026-06-30 15:36:48,018 basehttp "GET /static/admin/css/dark_mode.css HTTP/1.1" 200 2808
+INFO 2026-06-30 15:36:48,022 basehttp "GET /static/admin/css/nav_sidebar.css HTTP/1.1" 200 2810
+INFO 2026-06-30 15:36:48,027 basehttp "GET /static/admin/css/login.css HTTP/1.1" 200 951
+INFO 2026-06-30 15:36:48,032 basehttp "GET /static/admin/css/responsive.css HTTP/1.1" 200 16565
+INFO 2026-06-30 15:36:48,037 basehttp "GET /static/admin/js/theme.js HTTP/1.1" 200 1653
+INFO 2026-06-30 15:36:48,041 basehttp "GET /static/admin/js/nav_sidebar.js HTTP/1.1" 200 3063
+INFO 2026-06-30 15:37:02,196 basehttp "POST /admin/login/?next=/admin/ HTTP/1.1" 200 4335
+INFO 2026-06-30 15:45:35,528 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 200 1178
+INFO 2026-06-30 15:45:36,218 basehttp - Broken pipe from ('127.0.0.1', 56503)
+WARNING 2026-06-30 15:46:13,940 log Bad Request: /api/v1/auth/login/
+WARNING 2026-06-30 15:46:13,943 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 400 176
+INFO 2026-06-30 15:46:17,325 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 200 1178
+INFO 2026-06-30 15:46:17,773 basehttp - Broken pipe from ('127.0.0.1', 49246)
+INFO 2026-06-30 15:48:59,881 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 200 1515
+INFO 2026-06-30 15:49:00,258 basehttp "GET /api/v1/tenants/current/ HTTP/1.1" 200 701
+INFO 2026-06-30 15:49:00,464 basehttp "GET /api/v1/analytics/dashboard/school/ HTTP/1.1" 200 219
+INFO 2026-06-30 15:49:00,555 basehttp - Broken pipe from ('127.0.0.1', 57710)
+INFO 2026-06-30 15:50:52,506 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 200 1178
+INFO 2026-06-30 15:50:52,772 basehttp "OPTIONS /api/v1/analytics/dashboard/platform/ HTTP/1.1" 200 0
+INFO 2026-06-30 15:50:53,083 basehttp "GET /api/v1/analytics/dashboard/platform/ HTTP/1.1" 200 229
+INFO 2026-06-30 15:51:04,593 basehttp "OPTIONS /api/v1/super-admin/broadcasts/ HTTP/1.1" 200 0
+WARNING 2026-06-30 15:51:04,844 log Not Found: /api/v1/super-admin/broadcasts/
+WARNING 2026-06-30 15:51:04,845 basehttp "GET /api/v1/super-admin/broadcasts/ HTTP/1.1" 404 7505
+INFO 2026-06-30 15:51:11,968 basehttp "OPTIONS /api/v1/super-admin/audit-logs/ HTTP/1.1" 200 0
+WARNING 2026-06-30 15:51:12,025 log Not Found: /api/v1/super-admin/audit-logs/
+WARNING 2026-06-30 15:51:12,036 basehttp "GET /api/v1/super-admin/audit-logs/ HTTP/1.1" 404 7505
+INFO 2026-06-30 15:51:16,162 basehttp "OPTIONS /api/v1/analytics/enrollment/ HTTP/1.1" 200 0
+INFO 2026-06-30 15:51:16,414 basehttp "GET /api/v1/analytics/enrollment/ HTTP/1.1" 200 105
+INFO 2026-06-30 15:51:20,053 basehttp "OPTIONS /api/v1/super-admin/subscriptions/ HTTP/1.1" 200 0
+WARNING 2026-06-30 15:51:20,122 log Not Found: /api/v1/super-admin/subscriptions/
+WARNING 2026-06-30 15:51:20,143 basehttp "GET /api/v1/super-admin/subscriptions/ HTTP/1.1" 404 7514
+INFO 2026-06-30 15:51:25,533 basehttp "OPTIONS /api/v1/super-admin/plans/ HTTP/1.1" 200 0
+WARNING 2026-06-30 15:51:25,636 log Not Found: /api/v1/super-admin/plans/
+WARNING 2026-06-30 15:51:25,654 basehttp "GET /api/v1/super-admin/plans/ HTTP/1.1" 404 7490
+INFO 2026-06-30 15:51:34,376 basehttp "OPTIONS /api/v1/super-admin/schools/ HTTP/1.1" 200 0
+WARNING 2026-06-30 15:51:34,502 log Not Found: /api/v1/super-admin/schools/
+WARNING 2026-06-30 15:51:34,506 basehttp "GET /api/v1/super-admin/schools/ HTTP/1.1" 404 7496
+INFO 2026-06-30 15:51:37,211 basehttp "GET /api/v1/analytics/dashboard/platform/ HTTP/1.1" 200 229
+WARNING 2026-06-30 15:51:51,398 log Not Found: /api/v1/super-admin/audit-logs/
+WARNING 2026-06-30 15:51:51,399 basehttp "GET /api/v1/super-admin/audit-logs/ HTTP/1.1" 404 7505
+WARNING 2026-06-30 15:51:54,226 log Not Found: /api/v1/super-admin/broadcasts/
+WARNING 2026-06-30 15:51:54,233 basehttp "GET /api/v1/super-admin/broadcasts/ HTTP/1.1" 404 7505
+INFO 2026-06-30 15:53:06,644 basehttp "GET /api/v1/auth/me/ HTTP/1.1" 200 377
+INFO 2026-06-30 15:53:06,709 basehttp "GET /api/v1/auth/me/ HTTP/1.1" 200 377
+INFO 2026-06-30 15:54:04,529 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 200 1515
+INFO 2026-06-30 15:54:04,596 basehttp "OPTIONS /api/v1/tenants/current/ HTTP/1.1" 200 0
+INFO 2026-06-30 15:54:05,845 basehttp "OPTIONS /api/v1/analytics/dashboard/school/ HTTP/1.1" 200 0
+INFO 2026-06-30 15:54:27,078 basehttp "OPTIONS /api/v1/school-admin/students/ HTTP/1.1" 200 0
+INFO 2026-06-30 15:54:30,774 basehttp "OPTIONS /api/v1/school-admin/classes/ HTTP/1.1" 200 0
+INFO 2026-06-30 15:54:51,882 basehttp "OPTIONS /api/v1/school-admin/attendance/?date= HTTP/1.1" 200 0
+INFO 2026-06-30 16:00:06,175 basehttp "OPTIONS /api/v1/super-admin/plans/ HTTP/1.1" 200 0
