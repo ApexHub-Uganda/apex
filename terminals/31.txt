@@ -3,7 +3,7 @@ pid: 4004
 cwd: "E:\apex"
 command: "Set-Location E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py -q --tb=short"
 started_at: 2026-07-01T10:54:07.639Z
-running_for_ms: 5510011  
+running_for_ms: 5520005  
 ---
 ============================= test session starts =============================
 platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0

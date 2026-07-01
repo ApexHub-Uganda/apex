@@ -3,7 +3,7 @@ pid: 14876
 cwd: "E:\apex"
 command: "cd E:\\apex\\backend; .\\venv\\Scripts\\python.exe manage.py migrate; .\\venv\\Scripts\\python.exe manage.py seed_platform --force 2>&1"
 started_at: 2026-07-01T06:55:40.473Z
-running_for_ms: 19815003 
+running_for_ms: 19825004 
 ---
 Operations to perform:
   Apply all migrations: academics, accounts, admin, analytics, attendance, audit, auth, communication, contenttypes, examinations, finance, hostel, hr, inventory, library, payroll, platform, sessions, staff, students, subscriptions, tenants, token_blacklist, transport

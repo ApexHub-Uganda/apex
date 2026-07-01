@@ -3,7 +3,7 @@ pid: 5876
 cwd: "E:\apex"
 command: "cd E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py -q 2>&1"
 started_at: 2026-07-01T08:47:01.075Z
-running_for_ms: 13135012 
+running_for_ms: 13145012 
 ---
 ============================= test session starts =============================
 platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
