@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { authService } from '../services/authService';
 import { getStoredTokens } from '../services/api';
+import { isSchoolAdminRole, isSchoolPortalRole, normalizeRole } from '../config/schoolRoles';
 
 const AuthContext = createContext(null);
 
@@ -18,6 +19,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('apex_tenant_id');
     queryClient.removeQueries({ queryKey: ['tenant', 'context'] });
     queryClient.removeQueries({ queryKey: ['school-admin-dashboard'] });
+    queryClient.removeQueries({ queryKey: ['tenant', 'role-permissions'] });
   }, [queryClient]);
 
   const loadUser = useCallback(async () => {
@@ -72,6 +74,11 @@ export function AuthProvider({ children }) {
     setUser((prev) => (prev ? { ...prev, ...updates } : null));
   };
 
+  const effectiveRole = useMemo(
+    () => normalizeRole(user?.effective_role || user?.role),
+    [user?.effective_role, user?.role],
+  );
+
   return (
     <AuthContext.Provider
       value={{
@@ -81,8 +88,11 @@ export function AuthProvider({ children }) {
         login,
         logout,
         updateUser,
+        effectiveRole,
         isSuperAdmin: user?.role === 'super_admin',
-        isSchoolAdmin: user?.role === 'school_admin',
+        isSchoolAdmin: isSchoolAdminRole(user?.role) || user?.is_school_admin,
+        isSchoolPortalUser: user?.role === 'super_admin' || isSchoolPortalRole(user?.role)
+          || user?.is_school_portal_user,
       }}
     >
       {children}

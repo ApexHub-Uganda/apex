@@ -26,6 +26,7 @@ from apps.platform.models import (
     PlatformNotification,
     SMSSetting,
     SystemHealthLog,
+    WhatsAppSetting,
 )
 from apps.platform.serializers import (
     APIKeySerializer,
@@ -33,13 +34,25 @@ from apps.platform.serializers import (
     EmailSettingSerializer,
     GlobalSettingSerializer,
     PlanAdvertisementSerializer,
+    PlatformBroadcastDeliverySerializer,
     PlatformBroadcastSerializer,
     PlatformNewsSerializer,
     PlatformNotificationSerializer,
     PlatformSettingsSerializer,
     SMSSettingSerializer,
     SystemHealthLogSerializer,
+    WhatsAppSettingSerializer,
 )
+from apps.platform.services.broadcasts import (
+    BroadcastError,
+    cancel_platform_broadcast,
+    delete_platform_broadcast,
+    duplicate_platform_broadcast,
+    preview_audience,
+    schedule_platform_broadcast,
+    send_platform_broadcast,
+)
+from apps.platform.services.providers import get_integration_channel_status
 from apps.platform.services.plan_advertisements import (
     PLAN_ORDER,
     build_default_advertisement_payload,
@@ -73,6 +86,12 @@ class EmailSettingViewSet(viewsets.ModelViewSet):
 class SMSSettingViewSet(viewsets.ModelViewSet):
     queryset = SMSSetting.objects.all()
     serializer_class = SMSSettingSerializer
+    permission_classes = [IsSuperAdmin]
+
+
+class WhatsAppSettingViewSet(viewsets.ModelViewSet):
+    queryset = WhatsAppSetting.objects.all()
+    serializer_class = WhatsAppSettingSerializer
     permission_classes = [IsSuperAdmin]
 
 
@@ -259,32 +278,147 @@ class PlanAdvertisementViewSet(viewsets.ModelViewSet):
 
 
 class PlatformBroadcastViewSet(viewsets.ModelViewSet):
-    queryset = PlatformBroadcast.objects.all()
+    queryset = PlatformBroadcast.objects.select_related("created_by").all()
     serializer_class = PlatformBroadcastSerializer
     permission_classes = [IsSuperAdmin]
     filterset_fields = ["is_active", "severity", "status", "audience"]
     search_fields = ["title", "message"]
-    ordering_fields = ["starts_at", "created_at", "status"]
+    ordering_fields = ["starts_at", "created_at", "status", "sent_at"]
 
     def perform_create(self, serializer):
-        from django.utils import timezone
+        serializer.save(created_by=self.request.user, status="draft")
 
-        broadcast = serializer.save()
-        if broadcast.status == "sent" and not broadcast.sent_at:
-            broadcast.sent_at = timezone.now()
-            broadcast.save(update_fields=["sent_at", "updated_at"])
+    def update(self, request: Request, *args, **kwargs) -> Response:
+        broadcast = self.get_object()
+        if broadcast.status in ("sent", "cancelled", "expired"):
+            return Response(
+                {"success": False, "message": "Sent, cancelled, or expired broadcasts cannot be edited."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return super().update(request, *args, **kwargs)
 
-    def perform_update(self, serializer):
-        from django.utils import timezone
+    def destroy(self, request: Request, *args, **kwargs) -> Response:
+        broadcast = self.get_object()
+        try:
+            result = delete_platform_broadcast(broadcast, actor=request.user)
+        except BroadcastError as exc:
+            return Response({"success": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            "success": True,
+            "message": f"Broadcast \"{result['title']}\" deleted.",
+            "data": result,
+        }, status=status.HTTP_200_OK)
 
-        previous = self.get_object()
-        broadcast = serializer.save()
-        if broadcast.status == "sent" and not broadcast.sent_at:
-            broadcast.sent_at = timezone.now()
-            broadcast.save(update_fields=["sent_at", "updated_at"])
-        elif previous.status != "sent" and broadcast.status == "sent":
-            broadcast.sent_at = timezone.now()
-            broadcast.save(update_fields=["sent_at", "updated_at"])
+    @action(detail=True, methods=["post"])
+    def delete_broadcast(self, request: Request, pk: str = None) -> Response:
+        """Database-driven delete (alternative to HTTP DELETE)."""
+        broadcast = self.get_object()
+        try:
+            result = delete_platform_broadcast(broadcast, actor=request.user)
+        except BroadcastError as exc:
+            return Response({"success": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            "success": True,
+            "message": f"Broadcast \"{result['title']}\" deleted.",
+            "data": result,
+        })
+
+    @action(detail=False, methods=["get"])
+    def channel_status(self, request: Request) -> Response:
+        return Response({"success": True, "data": get_integration_channel_status()})
+
+    @action(detail=False, methods=["post"])
+    def preview(self, request: Request) -> Response:
+        audience = request.data.get("audience", "all")
+        channels = request.data.get("channels", [])
+        return Response({
+            "success": True,
+            "data": preview_audience(audience=audience, channels=channels),
+        })
+
+    @action(detail=True, methods=["post"])
+    def send(self, request: Request, pk: str = None) -> Response:
+        broadcast = self.get_object()
+        try:
+            result = send_platform_broadcast(broadcast, actor=request.user)
+        except BroadcastError as exc:
+            return Response({"success": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        broadcast.refresh_from_db()
+        return Response({
+            "success": True,
+            "message": (
+                f"Broadcast sent to {result['recipient_count']} school admin(s) "
+                f"across {len(result['channels'])} channel(s)."
+            ),
+            "data": {
+                **PlatformBroadcastSerializer(broadcast).data,
+                "send_result": result,
+            },
+        })
+
+    @action(detail=True, methods=["post"])
+    def schedule(self, request: Request, pk: str = None) -> Response:
+        broadcast = self.get_object()
+        starts_at = request.data.get("starts_at")
+        if starts_at:
+            from django.utils.dateparse import parse_datetime
+            parsed = parse_datetime(starts_at)
+            if parsed is None:
+                return Response(
+                    {"success": False, "message": "Invalid schedule date/time."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            starts_at = parsed
+        try:
+            schedule_platform_broadcast(broadcast, starts_at=starts_at)
+        except BroadcastError as exc:
+            return Response({"success": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        broadcast.refresh_from_db()
+        return Response({
+            "success": True,
+            "message": "Broadcast scheduled.",
+            "data": PlatformBroadcastSerializer(broadcast).data,
+        })
+
+    @action(detail=True, methods=["post"])
+    def cancel(self, request: Request, pk: str = None) -> Response:
+        broadcast = self.get_object()
+        try:
+            cancel_platform_broadcast(broadcast)
+        except BroadcastError as exc:
+            return Response({"success": False, "message": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        broadcast.refresh_from_db()
+        return Response({
+            "success": True,
+            "message": "Scheduled broadcast cancelled.",
+            "data": PlatformBroadcastSerializer(broadcast).data,
+        })
+
+    @action(detail=True, methods=["post"])
+    def duplicate(self, request: Request, pk: str = None) -> Response:
+        source = self.get_object()
+        copy = duplicate_platform_broadcast(source, actor=request.user)
+        return Response({
+            "success": True,
+            "message": "Broadcast duplicated as draft.",
+            "data": PlatformBroadcastSerializer(copy).data,
+        }, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["get"])
+    def deliveries(self, request: Request, pk: str = None) -> Response:
+        broadcast = self.get_object()
+        qs = broadcast.deliveries.select_related("recipient", "tenant").order_by("-created_at")
+        channel = request.query_params.get("channel")
+        delivery_status = request.query_params.get("status")
+        if channel:
+            qs = qs.filter(channel=channel)
+        if delivery_status:
+            qs = qs.filter(status=delivery_status)
+        page = self.paginate_queryset(qs)
+        serializer = PlatformBroadcastDeliverySerializer(page or qs, many=True)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response({"success": True, "data": serializer.data})
 
 
 class SystemHealthLogViewSet(viewsets.ReadOnlyModelViewSet):

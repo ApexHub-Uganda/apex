@@ -37,6 +37,8 @@ export function Login() {
         navigate(from, { replace: true });
       } else if (result.user.role === 'super_admin') {
         navigate('/super-admin', { replace: true });
+      } else if (result.user.is_school_portal_user || result.user.role !== 'student') {
+        navigate('/school-admin', { replace: true });
       } else {
         navigate('/school-admin', { replace: true });
       }

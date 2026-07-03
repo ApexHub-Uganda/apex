@@ -143,6 +143,25 @@ class SMSSetting(PlatformModel):
         verbose_name = "SMS setting"
 
 
+class WhatsAppSetting(PlatformModel):
+    """WhatsApp Business API gateway configuration."""
+
+    provider = models.CharField(max_length=50, choices=[
+        ("twilio", "Twilio"),
+        ("meta", "Meta Cloud API"),
+        ("africas_talking", "Africa's Talking"),
+        ("custom", "Custom"),
+    ], default="meta")
+    api_key = models.CharField(max_length=255, blank=True)
+    api_secret = models.CharField(max_length=255, blank=True)
+    phone_number_id = models.CharField(max_length=50, blank=True)
+    business_account_id = models.CharField(max_length=50, blank=True)
+    is_active = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "WhatsApp setting"
+
+
 class APIKey(PlatformModel):
     """Platform API keys for integrations."""
 
@@ -218,6 +237,11 @@ class PlanAdvertisement(PlatformModel):
 class PlatformBroadcast(PlatformModel):
     """System-wide broadcast messages."""
 
+    CHANNEL_CHOICES = [
+        ("email", "Email"),
+        ("sms", "SMS"),
+        ("whatsapp", "WhatsApp"),
+    ]
     AUDIENCE_CHOICES = [
         ("all", "All Schools"),
         ("trial", "Trial Plans"),
@@ -230,11 +254,13 @@ class PlatformBroadcast(PlatformModel):
         ("draft", "Draft"),
         ("scheduled", "Scheduled"),
         ("sent", "Sent"),
+        ("cancelled", "Cancelled"),
         ("expired", "Expired"),
     ]
 
     title = models.CharField(max_length=255)
     message = models.TextField()
+    channels = models.JSONField(default=list, blank=True)
     audience = models.CharField(max_length=30, choices=AUDIENCE_CHOICES, default="all")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
     severity = models.CharField(max_length=10, choices=[
@@ -244,9 +270,65 @@ class PlatformBroadcast(PlatformModel):
     starts_at = models.DateTimeField()
     ends_at = models.DateTimeField(null=True, blank=True)
     sent_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    recipient_count = models.PositiveIntegerField(default=0)
+    delivered_count = models.PositiveIntegerField(default=0)
+    failed_count = models.PositiveIntegerField(default=0)
+    skipped_count = models.PositiveIntegerField(default=0)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="platform_broadcasts_created",
+    )
 
     class Meta:
         ordering = ["-starts_at"]
+        indexes = [
+            models.Index(fields=["status", "starts_at"]),
+            models.Index(fields=["audience", "status"]),
+        ]
+
+
+class PlatformBroadcastDelivery(PlatformModel):
+    """Per-recipient delivery log for a platform broadcast."""
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("sent", "Sent"),
+        ("failed", "Failed"),
+        ("skipped", "Skipped"),
+    ]
+
+    broadcast = models.ForeignKey(
+        PlatformBroadcast, on_delete=models.CASCADE, related_name="deliveries",
+    )
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="platform_broadcast_deliveries",
+    )
+    tenant = models.ForeignKey(
+        "tenants.Tenant", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="platform_broadcast_deliveries",
+    )
+    channel = models.CharField(max_length=20, choices=PlatformBroadcast.CHANNEL_CHOICES)
+    recipient_email = models.EmailField(blank=True)
+    recipient_phone = models.CharField(max_length=20, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    error_message = models.TextField(blank=True)
+    provider_reference = models.CharField(max_length=120, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["broadcast", "channel", "status"]),
+            models.Index(fields=["broadcast", "recipient"]),
+        ]
 
 
 class SystemHealthLog(PlatformModel):

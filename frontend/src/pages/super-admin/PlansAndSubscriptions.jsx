@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
@@ -9,7 +10,7 @@ import PageHeader from '../../components/PageHeader';
 import StatCard from '../../components/StatCard';
 import StatusBadge from '../../components/StatusBadge';
 import DataTable from '../../components/DataTable';
-import PlanEditorModal from '../../components/PlanEditorModal';
+
 import { DoughnutChart } from '../../components/Charts';
 import ProgressBar from '../../components/ProgressBar';
 import { PageSkeleton } from '../../components/LoadingSkeleton';
@@ -28,12 +29,18 @@ const formatCurrency = (v) => {
 };
 
 export function PlansAndSubscriptions() {
-  const [tab, setTab] = useState('overview');
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTab] = useState(searchParams.get('tab') || 'overview');
   const [subFilter, setSubFilter] = useState('');
-  const [showPlanModal, setShowPlanModal] = useState(false);
-  const [editingPlan, setEditingPlan] = useState(null);
-  const [planSaving, setPlanSaving] = useState(false);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const nextTab = searchParams.get('tab');
+    if (nextTab && nextTab !== tab) {
+      setTab(nextTab);
+    }
+  }, [searchParams, tab]);
 
   const { data: hub, isLoading: hubLoading, isError: hubError } = useQuery({
     queryKey: ['plans-subscriptions-hub'],
@@ -63,40 +70,11 @@ export function PlansAndSubscriptions() {
   };
 
   const openCreatePlan = () => {
-    setEditingPlan(null);
-    setShowPlanModal(true);
+    navigate(`/super-admin/plans/new?tab=${tab}`);
   };
 
-  const openEditPlan = async (plan) => {
-    try {
-      const full = await plansService.get(plan.id);
-      setEditingPlan(full);
-      setShowPlanModal(true);
-    } catch (err) {
-      notify.error(extractApiError(err, 'Unable to load plan details.'));
-    }
-  };
-
-  const onPlanSubmit = async (formData) => {
-    setPlanSaving(true);
-    try {
-      if (editingPlan) {
-        await plansService.update(editingPlan.id, formData);
-        notify.success('Plan updated successfully.');
-      } else {
-        await plansService.create({
-          ...formData,
-          slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '_'),
-        });
-        notify.success('Plan created successfully.');
-      }
-      setShowPlanModal(false);
-      invalidateAll();
-    } catch (err) {
-      notify.error(extractApiError(err, 'Unable to save plan.'));
-    } finally {
-      setPlanSaving(false);
-    }
+  const openEditPlan = (plan) => {
+    navigate(`/super-admin/plans/${plan.id}/edit?tab=${tab}`);
   };
 
   const deletePlan = async (plan) => {
@@ -194,7 +172,10 @@ export function PlansAndSubscriptions() {
             <button
               type="button"
               className={`nav-link text-capitalize${tab === t ? ' active' : ''}`}
-              onClick={() => setTab(t)}
+              onClick={() => {
+                setTab(t);
+                setSearchParams(t === 'overview' ? {} : { tab: t });
+              }}
             >
               {t}
             </button>
@@ -359,13 +340,6 @@ export function PlansAndSubscriptions() {
         </>
       )}
 
-      <PlanEditorModal
-        show={showPlanModal}
-        onHide={() => setShowPlanModal(false)}
-        plan={editingPlan}
-        onSave={onPlanSubmit}
-        saving={planSaving}
-      />
     </div>
   );
 }

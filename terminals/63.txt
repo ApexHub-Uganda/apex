@@ -1,0 +1,20 @@
+---
+pid: 7504
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_inheritance.py tests/test_subscription_lifecycle.py tests/test_subscriptions.py -q"
+started_at: 2026-07-03T05:48:40.437Z
+running_for_ms: 11685009 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 14 items
+
+tests\test_plan_inheritance.py ....                                      [ 28%]
+tests\test_subscription_lifecycle.py ...                                 [ 50%]
+tests\test_subscriptions.py .......                                      [100%]
+
+============================= 14 passed in 15.95s =============================

@@ -37,7 +37,7 @@ export const FREE_TRIAL_FEATURE_KEYS = [
   'dashboard_analytics', 'announcements',
 ];
 
-export const buildSchoolAdminNav = (moduleMenu = []) => {
+export const buildSchoolAdminNav = (moduleMenu = [], { isSchoolAdmin = true } = {}) => {
   const items = [
     { path: '/school-admin', label: 'Dashboard', icon: <FiHome />, featureKey: 'dashboard_analytics' },
   ];
@@ -64,20 +64,23 @@ export const buildSchoolAdminNav = (moduleMenu = []) => {
     });
   }
 
-  items.push({
-    divider: true,
-    label: 'System',
-  });
-  items.push({
-    path: '/school-admin/settings',
-    label: 'Settings',
-    icon: <FiSettings />,
-    featureKey: 'school_settings',
-    children: [
-      { path: '/school-admin/settings', label: 'School Settings', icon: <FiSettings />, featureKey: 'school_settings' },
-      { path: '/school-admin/settings/plans', label: 'Plans & Subscriptions', icon: <FiLayers />, featureKey: 'school_settings' },
-    ],
-  });
+  if (isSchoolAdmin) {
+    items.push({
+      divider: true,
+      label: 'System',
+    });
+    items.push({
+      path: '/school-admin/settings',
+      label: 'Settings',
+      icon: <FiSettings />,
+      featureKey: 'school_settings',
+      children: [
+        { path: '/school-admin/settings', label: 'School Settings', icon: <FiSettings />, featureKey: 'school_settings' },
+        { path: '/school-admin/settings/permissions', label: 'Permission Settings', icon: <FiShield />, featureKey: 'roles_permissions' },
+        { path: '/school-admin/settings/plans', label: 'Plans & Subscriptions', icon: <FiLayers />, featureKey: 'school_settings' },
+      ],
+    });
+  }
 
   return items;
 };

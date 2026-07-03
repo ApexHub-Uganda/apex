@@ -18,12 +18,14 @@ from apps.platform.views import (
     SMSSettingViewSet,
     SchoolsManagementView,
     SystemHealthLogViewSet,
+    WhatsAppSettingViewSet,
 )
 
 router = DefaultRouter()
 router.register("settings", GlobalSettingViewSet, basename="global-setting")
 router.register("email-settings", EmailSettingViewSet, basename="email-setting")
 router.register("sms-settings", SMSSettingViewSet, basename="sms-setting")
+router.register("whatsapp-settings", WhatsAppSettingViewSet, basename="whatsapp-setting")
 router.register("call-settings", CallSettingViewSet, basename="call-setting")
 router.register("notifications", PlatformNotificationViewSet, basename="platform-notification")
 router.register("api-keys", APIKeyViewSet, basename="api-key")

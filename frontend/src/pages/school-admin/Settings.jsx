@@ -1,6 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { FiSave, FiDroplet, FiToggleLeft } from 'react-icons/fi';
+import { Link } from 'react-router-dom';
+import { FiSave, FiDroplet, FiToggleLeft, FiShield } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import { useTenant } from '../../hooks/useTenant';
 import { DEFAULT_FEATURE_FLAGS } from '../../utils/mockData';
@@ -81,6 +82,22 @@ export function SchoolAdminSettings() {
                 </div>
               </div>
               <p className="text-muted small mt-2">Customize colors to match your school branding.</p>
+            </motion.div>
+          </div>
+
+          <div className="col-12">
+            <motion.div className="apex-card p-4 mb-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                  <h5 className="fw-bold mb-1 d-flex align-items-center gap-2"><FiShield /> Role Permissions</h5>
+                  <p className="text-muted small mb-0">
+                    Configure read/write access for each staff role and parent portal users.
+                  </p>
+                </div>
+                <Link to="/school-admin/settings/permissions" className="btn btn-outline-primary btn-sm">
+                  Open Permission Settings
+                </Link>
+              </div>
             </motion.div>
           </div>
 

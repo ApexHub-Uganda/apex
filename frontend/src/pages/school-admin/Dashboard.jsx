@@ -105,7 +105,9 @@ function UpgradePanel({ suggestions, planSlug }) {
 }
 
 export function SchoolAdminDashboard() {
-  const { tenant, dashboardWidgets, moduleMenu, enabledFeatureKeys } = useTenant();
+  const {
+    tenant, dashboardWidgets, moduleMenu, enabledFeatureKeys, roleProfile, isSchoolAdmin,
+  } = useTenant();
 
   const { data, isLoading } = useQuery({
     queryKey: ['school-admin-dashboard', tenant?.id],
@@ -148,19 +150,44 @@ export function SchoolAdminDashboard() {
   const statsAreEmpty = !stats.total_students && !stats.total_staff && widgets.length > 0;
   const statColClass = widgets.length > 4 ? 'col-sm-6 col-lg-4 col-xl-2' : 'col-sm-6 col-xl-3';
 
+  const dashboardTitle = roleProfile?.title || (isSchoolAdmin ? 'School Admin Dashboard' : 'Dashboard');
+  const dashboardSubtitle = roleProfile?.subtitle
+    || 'Overview of school operations, statistics, and module activity';
+  const quickActions = roleProfile?.quick_actions || [];
+
   return (
     <div className="school-dashboard">
       <PageHeader
-        centered
-        title={(
+        centered={isSchoolAdmin}
+        title={isSchoolAdmin ? (
           <SchoolNameWithBadge
             name={tenant?.name || 'School'}
             planSlug={planSlug}
             size="lg"
           />
-        )}
-        subtitle="Overview of school operations, statistics, and module activity"
+        ) : dashboardTitle}
+        subtitle={dashboardSubtitle}
       />
+
+      {quickActions.length > 0 && (
+        <motion.div className="row g-2 mb-4" {...sectionMotion}>
+          {quickActions.map((action) => {
+            const ActionIcon = resolveFeatureIcon('FiZap');
+            return (
+              <div className="col-sm-6 col-md-4 col-lg-3" key={action.path}>
+                <Link
+                  to={action.path}
+                  className="role-quick-action-card d-flex align-items-center gap-2 text-decoration-none"
+                >
+                  <span className="role-quick-action-icon"><ActionIcon size={16} /></span>
+                  <span className="small fw-semibold">{action.label}</span>
+                  <FiArrowRight size={14} className="ms-auto text-muted" />
+                </Link>
+              </div>
+            );
+          })}
+        </motion.div>
+      )}
 
       <AnimatePresence mode="popLayout">
         {widgets.length > 0 && (

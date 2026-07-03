@@ -7,7 +7,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
-from apps.core.constants import UserRole
+from apps.core.constants import UserRole, is_school_portal_role
 from apps.core.constants import TenantStatus
 from apps.core.exceptions import (
     FeatureNotAvailableError,
@@ -37,6 +37,18 @@ class IsSchoolAdmin(BasePermission):
             and request.user.is_authenticated
             and request.user.role in (UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
         )
+
+
+class IsSchoolPortalUser(BasePermission):
+    """Allow any authenticated school portal role (admin, staff, parent)."""
+
+    def has_permission(self, request: Request, view: APIView) -> bool:
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if user.role == UserRole.SUPER_ADMIN:
+            return True
+        return is_school_portal_role(user.role)
 
 
 class IsStaffMember(BasePermission):
@@ -109,6 +121,35 @@ class TenantActivePermission(BasePermission):
             raise SubscriptionExpiredError()
 
         return True
+
+
+def RequiresModuleAccess(module_key: str, *, require_write: bool = False) -> type[BasePermission]:
+    """Factory: plan feature + school role module permission."""
+
+    class _RequiresModuleAccessPermission(BasePermission):
+        def has_permission(self, request: Request, view: APIView) -> bool:
+            user = request.user
+            if not user or not user.is_authenticated:
+                return False
+            if user.role == UserRole.SUPER_ADMIN:
+                return True
+
+            tenant = getattr(user, "tenant", None)
+            if tenant is None:
+                return False
+
+            from apps.tenants.role_permissions import user_can_access_module
+
+            if not user_can_access_module(
+                tenant, user, module_key, require_write=require_write,
+            ):
+                action = "modify" if require_write else "view"
+                raise FeatureNotAvailableError(
+                    detail=f"You do not have permission to {action} the {module_key.replace('_', ' ')} module.",
+                )
+            return True
+
+    return _RequiresModuleAccessPermission
 
 
 def RequiresFeature(feature: str) -> type[BasePermission]:

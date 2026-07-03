@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { tenantService } from '../services/tenantService';
 import { useAuthContext } from './AuthContext';
 import { CORE_FEATURE_KEYS, buildFallbackModuleMenu } from '../config/navigation';
+import { getModuleKeyForFeature } from '../config/schoolModules';
 
 const TenantContext = createContext(null);
 
@@ -36,21 +37,27 @@ const normalizeTenant = (raw) => {
     enabled_feature_keys: raw.enabled_feature_keys || [],
     navigation_menu: raw.navigation_menu || [],
     module_menu: raw.module_menu || [],
+    module_permissions: raw.module_permissions || {},
+    permissions: raw.permissions || [],
+    role_profile: raw.role_profile || null,
     dashboard_widgets: raw.dashboard_widgets || [],
     subscription: raw.subscription || null,
     features_revision: raw.features_revision || null,
+    is_school_admin: Boolean(raw.is_school_admin),
+    user_role: raw.user_role || null,
   };
 };
 
 export function TenantProvider({ children }) {
-  const { isSchoolAdmin, isAuthenticated, user } = useAuthContext();
-  const shouldLoadTenant = isAuthenticated && isSchoolAdmin;
+  const { isSchoolPortalUser, isAuthenticated, user, isSchoolAdmin } = useAuthContext();
+  const shouldLoadTenant = isAuthenticated && isSchoolPortalUser;
 
   const tenantId = user?.tenant || user?.tenant_id;
   const planSlug = user?.tenant_plan_slug;
+  const userRole = user?.effective_role || user?.role;
 
   const { data, isPending, isFetching, isError, refetch } = useQuery({
-    queryKey: ['tenant', 'context', user?.id, tenantId, planSlug],
+    queryKey: ['tenant', 'context', user?.id, tenantId, planSlug, userRole],
     queryFn: () => tenantService.getSchoolContext(user),
     enabled: shouldLoadTenant && !!user,
     retry: 2,
@@ -83,6 +90,11 @@ export function TenantProvider({ children }) {
   const isReady = !shouldLoadTenant || !!tenant;
   const contextError = tenant?._error || (isError ? 'Failed to load school plan from server.' : null);
 
+  const modulePermissions = useMemo(
+    () => tenant?.module_permissions || user?.module_permissions || {},
+    [tenant?.module_permissions, user?.module_permissions],
+  );
+
   const moduleMenu = useMemo(() => {
     const fromApi = tenant?.module_menu || [];
     if (fromApi.length > 0) return fromApi;
@@ -95,18 +107,45 @@ export function TenantProvider({ children }) {
 
   useEffect(() => () => resetTenantTheme(), []);
 
+  const canAccessModule = useCallback(
+    (moduleKey, requireWrite = false) => {
+      if (!moduleKey) return true;
+      if (isSchoolAdmin) return !isSuspended;
+      const perms = modulePermissions[moduleKey];
+      if (!perms) return false;
+      return requireWrite ? Boolean(perms.can_write) : Boolean(perms.can_read);
+    },
+    [modulePermissions, isSchoolAdmin, isSuspended],
+  );
+
   const isFeatureEnabled = useCallback(
     (featureKey) => {
-      if (!isSchoolAdmin) return true;
-      if (isSuspended) return false;
       if (!featureKey) return true;
-      if (CORE_FEATURE_KEYS.includes(featureKey)) return true;
-      if (!tenant) return true;
+      if (isSuspended) return false;
+      if (CORE_FEATURE_KEYS.includes(featureKey)) {
+        return isSchoolAdmin || featureKey === 'dashboard_analytics';
+      }
+      if (!tenant) return false;
+
+      const moduleKey = getModuleKeyForFeature(featureKey);
+      if (moduleKey && !isSchoolAdmin) {
+        if (!canAccessModule(moduleKey, false)) return false;
+      }
+
       const keys = tenant.enabled_feature_keys || [];
       if (keys.includes(featureKey)) return true;
       return tenant.feature_flags?.[featureKey] === true;
     },
-    [tenant, isSchoolAdmin, isSuspended],
+    [tenant, isSchoolAdmin, isSuspended, canAccessModule],
+  );
+
+  const canWriteFeature = useCallback(
+    (featureKey) => {
+      const moduleKey = getModuleKeyForFeature(featureKey);
+      if (!moduleKey) return isSchoolAdmin;
+      return canAccessModule(moduleKey, true);
+    },
+    [canAccessModule, isSchoolAdmin],
   );
 
   return (
@@ -121,12 +160,18 @@ export function TenantProvider({ children }) {
         contextError,
         refetch,
         isFeatureEnabled,
+        canWriteFeature,
+        canAccessModule,
         featureFlags: tenant?.feature_flags || {},
         enabledFeatureKeys: tenant?.enabled_feature_keys || [],
         navigationMenu: tenant?.navigation_menu?.length ? tenant.navigation_menu : moduleMenu,
         moduleMenu,
+        modulePermissions,
+        permissions: tenant?.permissions || user?.permissions || [],
+        roleProfile: tenant?.role_profile || null,
         dashboardWidgets: tenant?.dashboard_widgets || [],
         subscription: tenant?.subscription || null,
+        isSchoolAdmin: tenant?.is_school_admin ?? isSchoolAdmin,
       }}
     >
       {children}

@@ -31,7 +31,7 @@ export function SuperAdminLayout() {
           sidebarCollapsed={sidebarCollapsed}
           onMenuClick={() => setMobileOpen(!mobileOpen)}
         />
-        <main className="apex-content">
+        <main className={`apex-content${location.pathname.includes('/plans/') && (location.pathname.endsWith('/edit') || location.pathname.endsWith('/new')) ? ' is-plan-editor' : ''}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}

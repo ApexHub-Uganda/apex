@@ -11,7 +11,7 @@ const Gated = ({ featureKey, children }) => (
 /** Paths served by dedicated page components — skip SubModulePage generation. */
 const DEDICATED_SEGMENTS = new Set([
   '', 'students', 'staff', 'classes', 'attendance', 'finance', 'library',
-  'hostel', 'transport', 'inventory', 'hr', 'payroll', 'reports',
+  'hostel', 'transport', 'inventory', 'hr', 'hr/staffs', 'payroll', 'reports',
   'communication', 'settings', 'settings/plans', 'notifications',
 ]);
 

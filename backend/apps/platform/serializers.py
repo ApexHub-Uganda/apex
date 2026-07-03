@@ -7,11 +7,14 @@ from apps.platform.models import (
     GlobalSetting,
     PlanAdvertisement,
     PlatformBroadcast,
+    PlatformBroadcastDelivery,
     PlatformNews,
     PlatformNotification,
     SMSSetting,
     SystemHealthLog,
+    WhatsAppSetting,
 )
+from apps.platform.services.broadcasts import VALID_CHANNELS, normalize_channels
 
 
 class GlobalSettingSerializer(serializers.ModelSerializer):
@@ -30,6 +33,13 @@ class EmailSettingSerializer(serializers.ModelSerializer):
 class SMSSettingSerializer(serializers.ModelSerializer):
     class Meta:
         model = SMSSetting
+        fields = "__all__"
+        extra_kwargs = {"api_secret": {"write_only": True}}
+
+
+class WhatsAppSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WhatsAppSetting
         fields = "__all__"
         extra_kwargs = {"api_secret": {"write_only": True}}
 
@@ -127,31 +137,79 @@ class PlanAdvertisementSerializer(serializers.ModelSerializer):
         return attrs
 
 
+class PlatformBroadcastDeliverySerializer(serializers.ModelSerializer):
+    recipient_name = serializers.SerializerMethodField()
+    school_name = serializers.CharField(source="tenant.name", read_only=True, default="")
+
+    class Meta:
+        model = PlatformBroadcastDelivery
+        fields = [
+            "id", "channel", "recipient", "recipient_name", "school_name",
+            "recipient_email", "recipient_phone", "status", "error_message",
+            "provider_reference", "sent_at", "created_at",
+        ]
+
+    def get_recipient_name(self, obj: PlatformBroadcastDelivery) -> str:
+        if obj.recipient:
+            return obj.recipient.full_name or obj.recipient.email
+        return obj.recipient_email or obj.recipient_phone or "—"
+
+
 class PlatformBroadcastSerializer(serializers.ModelSerializer):
     audience_display = serializers.CharField(source="get_audience_display", read_only=True)
+    channels_display = serializers.SerializerMethodField()
+    created_by_name = serializers.SerializerMethodField()
     sent_at_display = serializers.SerializerMethodField()
 
     class Meta:
         model = PlatformBroadcast
         fields = [
-            "id", "title", "message", "audience", "audience_display", "status",
-            "severity", "is_active", "starts_at", "ends_at", "sent_at",
-            "sent_at_display", "created_at", "updated_at",
+            "id", "title", "message", "channels", "channels_display",
+            "audience", "audience_display", "status", "severity", "is_active",
+            "starts_at", "ends_at", "sent_at", "sent_at_display", "cancelled_at",
+            "recipient_count", "delivered_count", "failed_count", "skipped_count",
+            "created_by", "created_by_name", "created_at", "updated_at",
         ]
+        read_only_fields = [
+            "sent_at", "cancelled_at", "recipient_count", "delivered_count",
+            "failed_count", "skipped_count", "created_by",
+        ]
+
+    def get_channels_display(self, obj: PlatformBroadcast) -> list[str]:
+        labels = {"email": "Email", "sms": "SMS", "whatsapp": "WhatsApp"}
+        return [labels.get(ch, ch) for ch in normalize_channels(obj.channels)]
+
+    def get_created_by_name(self, obj: PlatformBroadcast) -> str:
+        if obj.created_by:
+            return obj.created_by.full_name or obj.created_by.email
+        return ""
 
     def get_sent_at_display(self, obj: PlatformBroadcast) -> str:
         if obj.sent_at:
-            return obj.sent_at.strftime("%Y-%m-%d")
-        if obj.status == "sent" and obj.starts_at:
-            return obj.starts_at.strftime("%Y-%m-%d")
+            return obj.sent_at.strftime("%Y-%m-%d %H:%M")
+        if obj.status == "scheduled" and obj.starts_at:
+            return f"Scheduled {obj.starts_at.strftime('%Y-%m-%d %H:%M')}"
         return "—"
 
-    def create(self, validated_data: dict) -> PlatformBroadcast:
-        from django.utils import timezone
+    def validate_channels(self, value: list[str]) -> list[str]:
+        channels = normalize_channels(value)
+        if value and not channels:
+            raise serializers.ValidationError(
+                "Channels must include one or more of: email, sms, whatsapp.",
+            )
+        invalid = [ch for ch in value if str(ch).strip().lower() not in VALID_CHANNELS]
+        if invalid:
+            raise serializers.ValidationError(f"Invalid channels: {', '.join(invalid)}")
+        return channels
 
-        if validated_data.get("status") == "sent" and not validated_data.get("sent_at"):
-            validated_data["sent_at"] = timezone.now()
-        return super().create(validated_data)
+    def validate(self, attrs: dict) -> dict:
+        status = attrs.get("status", getattr(self.instance, "status", "draft"))
+        channels = attrs.get("channels", getattr(self.instance, "channels", []))
+        if status in ("scheduled", "sent") and not normalize_channels(channels):
+            raise serializers.ValidationError({
+                "channels": "At least one channel is required for scheduled or sent broadcasts.",
+            })
+        return attrs
 
 
 class PlatformSettingsSerializer(serializers.Serializer):

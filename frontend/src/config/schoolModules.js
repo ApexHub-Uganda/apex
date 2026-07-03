@@ -179,10 +179,11 @@ export const SCHOOL_MODULES = [
     path: '/school-admin/hr',
     sort_order: 10,
     feature_keys: [
-      'hr_departments', 'positions', 'leave_types',
+      'staff_management', 'hr_departments', 'positions', 'leave_types',
       'leave_requests', 'performance_reviews',
     ],
     children: [
+      { feature_key: 'staff_management', label: 'Staffs', path: '/school-admin/hr/staffs', icon: 'FiBriefcase' },
       { feature_key: 'hr_departments', label: 'Departments', path: '/school-admin/hr', icon: 'FiLayers' },
       { feature_key: 'leave_requests', label: 'Leave Requests', path: '/school-admin/hr/leave', icon: 'FiCalendar' },
       { feature_key: 'performance_reviews', label: 'Performance Reviews', path: '/school-admin/hr/reviews', icon: 'FiStar' },
@@ -247,6 +248,12 @@ export const SCHOOL_MODULES = [
 ];
 
 export const getModuleByKey = (key) => SCHOOL_MODULES.find((m) => m.key === key);
+
+export const getModuleKeyForFeature = (featureKey) => {
+  if (!featureKey) return null;
+  const mod = SCHOOL_MODULES.find((m) => (m.feature_keys || []).includes(featureKey));
+  return mod?.key || null;
+};
 
 /** Flatten child paths → feature_key for FeatureGate routing. */
 export const buildRouteFeatureMap = () => {

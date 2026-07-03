@@ -38,7 +38,7 @@ class TestSubscriptions:
 
     def test_subscription_grace_period(self, tenant, plan):
         sub = Subscription.objects.get(tenant=tenant)
-        sub.status = "active"
+        sub.status = "grace_period"
         sub.current_period_end = timezone.now() - timedelta(days=1)
         sub.grace_period_ends_at = timezone.now() + timedelta(days=5)
         sub.save()

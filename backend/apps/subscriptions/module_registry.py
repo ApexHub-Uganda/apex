@@ -188,6 +188,7 @@ SCHOOL_MODULES: list[dict[str, Any]] = [
             "leave_requests", "performance_reviews",
         ],
         "children": [
+            {"feature_key": "staff_management", "label": "Staffs", "path": "/school-admin/hr/staffs", "icon": "FiBriefcase"},
             {"feature_key": "hr_departments", "label": "Departments", "path": "/school-admin/hr", "icon": "FiLayers"},
             {"feature_key": "leave_requests", "label": "Leave Requests", "path": "/school-admin/hr/leave", "icon": "FiCalendar"},
             {"feature_key": "performance_reviews", "label": "Performance Reviews", "path": "/school-admin/hr/reviews", "icon": "FiStar"},

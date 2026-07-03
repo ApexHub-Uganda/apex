@@ -27,6 +27,9 @@ def invalidate_tenant_cache(tenant_id: str) -> None:
     cache.delete(TENANT_NAV_CACHE.format(tenant_id=tenant_id))
     cache.delete(TENANT_MODULES_CACHE.format(tenant_id=tenant_id))
     cache.delete(TENANT_WIDGETS_CACHE.format(tenant_id=tenant_id))
+    from apps.tenants.role_permissions import invalidate_role_permissions_cache
+
+    invalidate_role_permissions_cache(tenant_id)
 
 
 def invalidate_catalog_cache() -> None:
@@ -212,6 +215,9 @@ def _nav_label(nav_key: str) -> str:
 @transaction.atomic
 def assign_plan_features(plan: Plan, feature_keys: list[str]) -> Plan:
     """Replace plan feature assignments atomically."""
+    from apps.subscriptions.plan_tiers import merge_plan_feature_keys
+
+    feature_keys = merge_plan_feature_keys(plan.slug, feature_keys)
     features = list(FeatureFlag.objects.filter(feature_key__in=feature_keys, is_active=True))
     unknown = set(feature_keys) - {f.feature_key for f in features}
     if unknown:
@@ -335,6 +341,27 @@ def _build_subscription_notification_content(
         title = "New subscription assigned"
         body = f"A {plan_name} subscription ({status_label}) has been assigned to your school."
         notification_type = "info"
+    elif event == "trial_grace_started":
+        title = "Free trial ended"
+        body = (
+            f"Your {plan_name} trial has ended. You are now in a grace period — "
+            f"renew or upgrade before access is removed."
+        )
+        notification_type = "warning"
+    elif event == "grace_period_started":
+        title = "Billing period ended"
+        body = (
+            f"Your {plan_name} billing period has ended. You are in a grace period — "
+            f"please renew to keep full access."
+        )
+        notification_type = "warning"
+    elif event == "subscription_expired":
+        title = "Subscription expired"
+        body = (
+            f"Your {plan_name} subscription has expired after the grace period. "
+            f"Renew or upgrade to restore access."
+        )
+        notification_type = "error"
     else:
         title = "Subscription updated"
         body = f"Your {plan_name} subscription status is now {status_label}."

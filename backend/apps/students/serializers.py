@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 from rest_framework import serializers
 
 from apps.students.models import Admission, Guardian, MedicalRecord, Parent, Student
 
 
 class ParentSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(read_only=True)
+
     class Meta:
         model = Parent
         fields = "__all__"
@@ -18,15 +22,12 @@ class GuardianSerializer(serializers.ModelSerializer):
 
 
 class StudentSerializer(serializers.ModelSerializer):
-    full_name = serializers.SerializerMethodField()
+    full_name = serializers.CharField(read_only=True)
 
     class Meta:
         model = Student
         fields = "__all__"
         read_only_fields = ["id", "tenant", "created_at", "updated_at", "created_by", "updated_by", "is_deleted"]
-
-    def get_full_name(self, obj: Student) -> str:
-        return f"{obj.first_name} {obj.last_name}"
 
 
 class AdmissionSerializer(serializers.ModelSerializer):

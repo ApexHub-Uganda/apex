@@ -12,6 +12,7 @@ from apps.platform.services.plan_advertisements import (
     normalize_plan_slug,
 )
 from apps.subscriptions.models import PaymentProvider, Plan
+from apps.subscriptions.plan_tiers import get_plan_feature_breakdown
 
 
 def _serialize_plan(plan: Plan, *, recommended: bool = False) -> dict[str, Any]:
@@ -29,6 +30,7 @@ def _serialize_plan(plan: Plan, *, recommended: bool = False) -> dict[str, Any]:
             "description": feature.description or "",
         })
 
+    breakdown = get_plan_feature_breakdown(plan)
     return {
         "id": str(plan.id),
         "slug": plan.slug,
@@ -48,6 +50,12 @@ def _serialize_plan(plan: Plan, *, recommended: bool = False) -> dict[str, Any]:
         ],
         "module_highlights": [f.feature_name for f in features_qs[:10]],
         "recommended": recommended,
+        "inherits_from_slug": breakdown["inherits_from_slug"],
+        "inherits_from_label": breakdown["inherits_from_label"],
+        "inherited_summary": breakdown["inherited_summary"],
+        "inherited_feature_count": breakdown["inherited_feature_count"],
+        "exclusive_feature_count": breakdown["exclusive_feature_count"],
+        "exclusive_feature_categories": breakdown["exclusive_feature_categories"],
     }
 
 

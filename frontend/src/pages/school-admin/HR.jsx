@@ -1,42 +1,94 @@
-import ModulePage from '../../components/ModulePage';
-import StatusBadge from '../../components/StatusBadge';
-import { hrService } from '../../services/moduleService';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { FiBriefcase, FiCalendar, FiLayers, FiStar, FiUsers } from 'react-icons/fi';
+import PageHeader from '../../components/PageHeader';
+import FeatureGate from '../../components/FeatureGate';
 
-const MOCK_HR = [
-  { id: 1, employee: 'Dr. Sarah Mitchell', type: 'Leave Request', details: 'Annual Leave - 5 days', from_date: '2026-07-10', status: 'pending' },
-  { id: 2, employee: 'Mr. David Kim', type: 'Leave Request', details: 'Sick Leave - 2 days', from_date: '2026-06-28', status: 'active' },
-  { id: 3, employee: 'Ms. Laura Brooks', type: 'Performance Review', details: 'Q2 2026 Review', from_date: '2026-06-30', status: 'pending' },
-  { id: 4, employee: 'Mr. John Adams', type: 'Training', details: 'Digital Teaching Workshop', from_date: '2026-07-15', status: 'active' },
+const HR_LINKS = [
+  {
+    featureKey: 'staff_management',
+    path: '/school-admin/hr/staffs',
+    label: 'Staffs',
+    icon: FiBriefcase,
+    description: 'Add employees, assign dashboard roles, and provision portal accounts with work emails.',
+    accent: 'primary',
+  },
+  {
+    featureKey: 'hr_departments',
+    path: '/school-admin/hr',
+    label: 'Departments',
+    icon: FiLayers,
+    description: 'Organize staff into academic and administrative departments.',
+    accent: 'secondary',
+  },
+  {
+    featureKey: 'leave_requests',
+    path: '/school-admin/hr/leave',
+    label: 'Leave Requests',
+    icon: FiCalendar,
+    description: 'Review and approve staff leave applications.',
+    accent: 'warning',
+  },
+  {
+    featureKey: 'performance_reviews',
+    path: '/school-admin/hr/reviews',
+    label: 'Performance Reviews',
+    icon: FiStar,
+    description: 'Track staff performance evaluations and feedback.',
+    accent: 'accent',
+  },
 ];
 
 export function HR() {
   return (
-    <ModulePage
-      title="Human Resources"
-      subtitle="Manage leave, performance, and employee records"
-      queryKey={['hr']}
-      fetchData={() => hrService.list()}
-      mockData={MOCK_HR}
-      onCreate={(data) => hrService.create(data)}
-      createLabel="New Request"
-      columns={[
-        { key: 'employee', label: 'Employee', accessor: 'employee', sortable: true },
-        { key: 'type', label: 'Type', accessor: 'type' },
-        { key: 'details', label: 'Details', accessor: 'details' },
-        { key: 'from_date', label: 'Date', accessor: 'from_date' },
-        { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
-      ]}
-      formFields={[
-        { name: 'employee', label: 'Employee', required: true },
-        { name: 'type', label: 'Type', type: 'select', options: [
-          { value: 'Leave Request', label: 'Leave Request' },
-          { value: 'Performance Review', label: 'Performance Review' },
-          { value: 'Training', label: 'Training' },
-        ]},
-        { name: 'details', label: 'Details', type: 'textarea', required: true },
-        { name: 'from_date', label: 'Date', type: 'date', required: true },
-      ]}
-    />
+    <div>
+      <PageHeader
+        title="Human Resources"
+        subtitle="Staff onboarding, departments, leave, and performance management"
+      />
+
+      <div className="row g-3">
+        {HR_LINKS.map((item, idx) => {
+          const Icon = item.icon;
+          return (
+            <div className="col-md-6 col-xl-3" key={item.path}>
+              <FeatureGate featureKey={item.featureKey}>
+                <motion.div
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.06 }}
+                >
+                  <Link to={item.path} className={`hr-hub-card hr-hub-card--${item.accent}`}>
+                    <span className="hr-hub-card-icon"><Icon size={22} /></span>
+                    <h5 className="fw-bold mb-1">{item.label}</h5>
+                    <p className="text-muted small mb-0">{item.description}</p>
+                  </Link>
+                </motion.div>
+              </FeatureGate>
+            </div>
+          );
+        })}
+      </div>
+
+      <motion.div
+        className="apex-card p-4 mt-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <div className="d-flex align-items-center gap-2 mb-2">
+          <FiUsers className="text-primary" />
+          <h6 className="fw-bold mb-0">Staff onboarding</h6>
+        </div>
+        <p className="text-muted small mb-3">
+          Use <strong>Staffs</strong> to add employees with complete profiles, work emails, and automated role assignment.
+          Dashboard access respects your subscription plan and Permission Settings.
+        </p>
+        <Link to="/school-admin/hr/staffs" className="btn btn-outline-primary btn-sm">
+          Go to Staffs
+        </Link>
+      </motion.div>
+    </div>
   );
 }
 

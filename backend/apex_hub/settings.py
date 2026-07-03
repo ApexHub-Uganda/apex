@@ -19,6 +19,7 @@ env = environ.Env(
     JWT_REFRESH_TOKEN_LIFETIME_DAYS=(int, 7),
     MAX_UPLOAD_SIZE_MB=(int, 10),
     MAINTENANCE_MODE=(bool, False),
+    INTEGRATION_LIVE_DISPATCH=(bool, False),
 )
 
 environ.Env.read_env(os.path.join(BASE_DIR.parent, ".env"))
@@ -177,10 +178,23 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 300
+CELERY_BEAT_SCHEDULE = {
+    "process-subscription-lifecycle-hourly": {
+        "task": "subscriptions.process_subscription_lifecycle",
+        "schedule": 3600.0,
+    },
+    "process-scheduled-broadcasts-hourly": {
+        "task": "platform.process_scheduled_broadcasts",
+        "schedule": 3600.0,
+    },
+}
 
 # Email
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@apexhub.io")
+
+# Outbound integrations (email / SMS / WhatsApp broadcasts)
+INTEGRATION_LIVE_DISPATCH = env("INTEGRATION_LIVE_DISPATCH")
 
 # REST Framework
 REST_FRAMEWORK = {

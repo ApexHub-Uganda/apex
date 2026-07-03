@@ -1,0 +1,34 @@
+---
+pid: 9092
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py -v 2>&1"
+started_at: 2026-07-03T07:52:40.901Z
+running_for_ms: 4240001  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 8 items
+
+tests/test_role_permissions.py::TestRolePermissions::test_librarian_default_permissions PASSED [ 12%]
+tests/test_role_permissions.py::TestRolePermissions::test_librarian_menu_filtered_by_plan_and_role FAILED [ 25%]
+tests/test_role_permissions.py::TestRolePermissions::test_parent_cannot_write_finance PASSED [ 37%]
+tests/test_role_permissions.py::TestRolePermissions::test_school_admin_has_full_plan_access PASSED [ 50%]
+tests/test_role_permissions.py::TestRolePermissions::test_custom_permissions_override_defaults PASSED [ 62%]
+tests/test_role_permissions.py::TestRolePermissions::test_context_api_for_librarian PASSED [ 75%]
+tests/test_role_permissions.py::TestRolePermissions::test_role_permission_matrix_school_admin_only PASSED [ 87%]
+tests/test_role_permissions.py::TestRolePermissions::test_plan_gating_blocks_unpaid_module_even_with_permission PASSED [100%]
+
+================================== FAILURES ===================================
+______ TestRolePermissions.test_librarian_menu_filtered_by_plan_and_role ______
+tests\test_role_permissions.py:94: in test_librarian_menu_filtered_by_plan_and_role
+    assert "finance" not in module_keys
+                            ^^^^^^^^^^^
+E   NameError: name 'module_keys' is not defined
+=========================== short test summary info ===========================
+FAILED tests/test_role_permissions.py::TestRolePermissions::test_librarian_menu_filtered_by_plan_and_role - NameError: name 'module_keys' is not defined
+======================== 1 failed, 7 passed in 20.57s =========================

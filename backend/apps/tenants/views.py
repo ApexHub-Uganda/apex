@@ -8,7 +8,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.permissions import IsSchoolAdmin, IsSuperAdmin, TenantActivePermission
+from apps.core.constants import UserRole, normalize_role
+from apps.core.permissions import IsSchoolAdmin, IsSchoolPortalUser, IsSuperAdmin, TenantActivePermission
 from apps.tenants.models import Tenant
 from apps.tenants.serializers import (
     TenantAdminCreateSerializer,
@@ -36,7 +37,25 @@ def _resolve_user_tenant(user) -> Tenant | None:
 
 
 def build_school_context_payload(tenant: Tenant | None, user) -> dict:
-    """Lightweight school context for the school-admin SPA."""
+    """Lightweight school context for the school portal SPA."""
+    from apps.tenants.role_dashboards import (
+        filter_dashboard_widgets,
+        filter_quick_actions,
+        get_role_profile,
+    )
+    from apps.tenants.role_permissions import (
+        get_user_module_menu,
+        get_user_module_permissions,
+        permissions_to_strings,
+    )
+
+    user_role = normalize_role(getattr(user, "role", None))
+    is_school_admin = bool(
+        user
+        and getattr(user, "is_authenticated", False)
+        and user.role in (UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+    )
+
     if tenant is None:
         tenant = _resolve_user_tenant(user)
 
@@ -57,7 +76,13 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
                 "school_settings": True,
             },
             "navigation_menu": [],
+            "module_menu": [],
             "dashboard_widgets": [],
+            "module_permissions": {},
+            "permissions": [],
+            "role_profile": get_role_profile(user),
+            "user_role": user_role,
+            "is_school_admin": is_school_admin,
             "subscription": None,
             "primary_color": "#0F766E",
             "secondary_color": "#FF7F50",
@@ -102,19 +127,43 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
 
     enabled_keys = list(get_enabled_feature_keys(tenant))
     feature_flags = get_tenant_feature_flags(tenant)
-    module_menu = get_tenant_module_menu(tenant)
+    plan_module_menu = get_tenant_module_menu(tenant)
+    module_permissions = get_user_module_permissions(tenant, user)
+    module_menu = get_user_module_menu(tenant, user)
+    role_profile = get_role_profile(user)
+    plan_widgets = get_tenant_dashboard_widgets(tenant)
+    dashboard_widgets = filter_dashboard_widgets(plan_widgets, module_permissions, role_profile)
+    role_profile = {
+        **role_profile,
+        "quick_actions": filter_quick_actions(role_profile, module_permissions),
+    }
     sub = tenant.active_subscription
 
-    # Core modules should always be reachable for authenticated school admins.
-    for core_key in ("dashboard_analytics", "school_settings"):
-        if core_key not in enabled_keys:
-            enabled_keys.append(core_key)
-        feature_flags[core_key] = True
+    core_keys = ("dashboard_analytics", "school_settings")
+    if is_school_admin:
+        for core_key in core_keys:
+            if core_key not in enabled_keys:
+                enabled_keys.append(core_key)
+            feature_flags[core_key] = True
+    else:
+        readable_modules = {k for k, p in module_permissions.items() if p.get("can_read")}
+        enabled_keys = [
+            k for k in enabled_keys
+            if any(
+                child["feature_key"] == k
+                for mod in plan_module_menu
+                if mod["key"] in readable_modules
+                for child in mod.get("children", [])
+            )
+            or k in core_keys[:1]
+        ]
+        feature_flags = {k: v for k, v in feature_flags.items() if k in enabled_keys}
 
     features_revision = "none"
     if sub and sub.plan:
         features_revision = (
-            f"{sub.plan_id}:{sub.updated_at.isoformat()}:{len(enabled_keys)}:{len(module_menu)}"
+            f"{sub.plan_id}:{sub.updated_at.isoformat()}:{len(enabled_keys)}:"
+            f"{len(module_menu)}:{user_role}"
         )
 
     return {
@@ -141,9 +190,14 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
         "accent_color": tenant.accent_color,
         "enabled_feature_keys": enabled_keys,
         "feature_flags": feature_flags,
-        "navigation_menu": get_tenant_navigation(tenant),
+        "navigation_menu": module_menu,
         "module_menu": module_menu,
-        "dashboard_widgets": get_tenant_dashboard_widgets(tenant),
+        "module_permissions": module_permissions,
+        "permissions": permissions_to_strings(module_permissions),
+        "role_profile": role_profile,
+        "user_role": user_role,
+        "is_school_admin": is_school_admin,
+        "dashboard_widgets": dashboard_widgets,
         "subscription": get_subscription_summary(tenant),
         "features_revision": features_revision,
     }
@@ -171,9 +225,9 @@ class TenantRegistrationView(generics.CreateAPIView):
 
 
 class SchoolContextView(APIView):
-    """Reliable school-admin context — works even while approval is pending."""
+    """Reliable school portal context — works even while approval is pending."""
 
-    permission_classes = [IsSchoolAdmin]
+    permission_classes = [IsSchoolPortalUser]
 
     def get(self, request: Request) -> Response:
         tenant = _resolve_user_tenant(request.user)
@@ -343,11 +397,71 @@ class TenantViewSet(viewsets.ModelViewSet):
         return Response(ser.data)
 
 
+class RolePermissionMatrixView(APIView):
+    """School-admin matrix for configuring role module permissions."""
+
+    permission_classes = [IsSchoolAdmin]
+
+    def get(self, request: Request) -> Response:
+        tenant = _resolve_user_tenant(request.user)
+        if tenant is None:
+            return Response(
+                {"success": False, "error": {"message": "No school linked to this account."}},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        from apps.tenants.role_permissions import get_role_permission_matrix
+
+        return Response({
+            "success": True,
+            "data": get_role_permission_matrix(tenant),
+        })
+
+    def put(self, request: Request) -> Response:
+        tenant = _resolve_user_tenant(request.user)
+        if tenant is None:
+            return Response(
+                {"success": False, "error": {"message": "No school linked to this account."}},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        from apps.tenants.role_permissions import save_role_permissions
+
+        permissions = request.data.get("permissions", [])
+        if not isinstance(permissions, list):
+            return Response(
+                {"success": False, "error": {"message": "permissions must be a list."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        matrix = save_role_permissions(tenant, permissions, actor=request.user)
+        return Response({
+            "success": True,
+            "message": "Role permissions updated.",
+            "data": matrix,
+        })
+
+    def post(self, request: Request) -> Response:
+        """Reset role permissions to defaults (optional ?role=)."""
+        tenant = _resolve_user_tenant(request.user)
+        if tenant is None:
+            return Response(
+                {"success": False, "error": {"message": "No school linked to this account."}},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        from apps.tenants.role_permissions import reset_role_permissions
+
+        role = request.data.get("role") or request.query_params.get("role")
+        matrix = reset_role_permissions(tenant, role=role)
+        return Response({
+            "success": True,
+            "message": "Role permissions reset to defaults.",
+            "data": matrix,
+        })
+
+
 class CurrentTenantView(generics.RetrieveAPIView):
     """Get current user's tenant (allowed while pending approval)."""
 
     serializer_class = TenantSerializer
-    permission_classes = [IsSchoolAdmin]
+    permission_classes = [IsSchoolPortalUser]
 
     def get_object(self) -> Tenant:
         tenant = getattr(self.request.user, "tenant", None)

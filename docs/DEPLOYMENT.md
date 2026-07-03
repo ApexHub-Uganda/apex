@@ -1,5 +1,7 @@
 # Apex Hub Deployment Guide
 
+> **See also:** [Documentation index](README.md) · [Integrations](INTEGRATIONS.md) · [Broadcast integrations](BROADCAST_INTEGRATIONS.md)
+
 ## Prerequisites
 
 - Docker & Docker Compose
@@ -74,6 +76,7 @@ See `.env.example` for all configuration options. Critical production settings:
 - `DATABASE_URL` — PostgreSQL connection string
 - `REDIS_URL` — Redis connection string
 - Payment gateway keys when ready
+- `INTEGRATION_LIVE_DISPATCH` — set `True` only after email/SMS/WhatsApp provider credentials and HTTP dispatch are configured ([BROADCAST_INTEGRATIONS.md](BROADCAST_INTEGRATIONS.md))
 
 ## Celery Workers
 

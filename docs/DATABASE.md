@@ -66,6 +66,32 @@ Checkout and billing ledger. Stores `payment_method` (`card` | `mobile_money`), 
 ### audit_auditlog
 Platform-wide audit trail for all significant actions.
 
+### platform_platformbroadcast
+System-wide super-admin broadcasts.
+
+| Field | Description |
+|-------|-------------|
+| `channels` | JSON array: `email`, `sms`, `whatsapp` |
+| `audience` | `all`, `trial`, `basic`, `premium`, `premium_plus`, `active` |
+| `status` | `draft`, `scheduled`, `sent`, `cancelled`, `expired` |
+| `recipient_count`, `delivered_count`, `failed_count`, `skipped_count` | Delivery aggregates |
+| `starts_at`, `sent_at`, `cancelled_at` | Scheduling lifecycle |
+
+### platform_platformbroadcastdelivery
+Per-recipient, per-channel delivery log. FK to broadcast (CASCADE delete).
+
+### platform_planadvertisement
+Plan upgrade campaigns with `target_plan_slug`, `suggested_plan_slug`, `broadcast_count`.
+
+### platform_whatsappsetting
+WhatsApp Business API credentials (`provider`, `api_key`, `phone_number_id`, …).
+
+### communication_notification
+Tenant-scoped in-app notifications (also created by platform broadcast send).
+
+### communication_emailmessage / communication_smsmessage
+Outbound message audit rows created by integration services.
+
 ## Indexes
 
 - All `tenant_id` columns indexed

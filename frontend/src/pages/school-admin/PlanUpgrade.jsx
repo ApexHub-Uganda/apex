@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import PaymentCheckoutForm from '../../components/PaymentCheckoutForm';
+import PlanFeatureBreakdown from '../../components/PlanFeatureBreakdown';
 import PlanVerifiedBadge from '../../components/PlanVerifiedBadge';
 import { PageSkeleton } from '../../components/LoadingSkeleton';
 import { planUpgradeService } from '../../services/moduleService';
@@ -282,32 +283,11 @@ export function PlanUpgrade() {
             <>
               <h5 className="fw-bold mb-1">What&apos;s included in {selectedPlan.name}</h5>
               <p className="text-muted small mb-4">
-                {selectedPlan.feature_count} features across {(selectedPlan.feature_categories || []).length} categories
+                {selectedPlan.inherited_summary
+                  ? selectedPlan.inherited_summary
+                  : `${selectedPlan.feature_count} features across ${(selectedPlan.feature_categories || []).length} categories`}
               </p>
-              <div className="row g-3">
-                {(selectedPlan.feature_categories || []).map((category) => (
-                  <div className="col-md-6" key={category.name}>
-                    <div className="apex-card p-3 h-100 plan-upgrade-feature-group">
-                      <h6 className="fw-bold mb-2">{category.name}</h6>
-                      <ul className="plan-upgrade-feature-list">
-                        {category.features.map((feature) => (
-                          <li key={feature.feature_key}>
-                            <FiCheck size={13} />
-                            <div>
-                              <span className="fw-medium">{feature.name}</span>
-                              {feature.description && (
-                                <span className="d-block text-muted" style={{ fontSize: '0.75rem' }}>
-                                  {feature.description}
-                                </span>
-                              )}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <PlanFeatureBreakdown plan={selectedPlan} />
             </>
           )}
 

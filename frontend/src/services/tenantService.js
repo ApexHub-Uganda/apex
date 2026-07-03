@@ -145,6 +145,21 @@ export const tenantService = {
     const sub = await tenantService.getCurrentSubscription();
     return sub?.plan?.feature_flags || sub?.feature_flags || {};
   },
+
+  async getRolePermissionMatrix() {
+    const { data } = await api.get('/tenants/role-permissions/');
+    return data?.data || data;
+  },
+
+  async saveRolePermissions(permissions) {
+    const { data } = await api.put('/tenants/role-permissions/', { permissions });
+    return data?.data || data;
+  },
+
+  async resetRolePermissions(role) {
+    const { data } = await api.post('/tenants/role-permissions/', role ? { role } : {});
+    return data?.data || data;
+  },
 };
 
 export default tenantService;

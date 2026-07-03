@@ -29,11 +29,20 @@ class UserRole:
     SUPER_ADMIN = "super_admin"
     SCHOOL_ADMIN = "school_admin"
     HEAD_TEACHER = "head_teacher"
+    DEPUTY_HEAD_TEACHER = "deputy_head_teacher"
+    DIRECTOR_OF_STUDIES = "director_of_studies"
+    HEAD_OF_DEPARTMENT = "head_of_department"
     TEACHER = "teacher"
     PARENT = "parent"
     STUDENT = "student"
-    FINANCE_OFFICER = "finance_officer"
+    BURSAR = "bursar"
     LIBRARIAN = "librarian"
+    HR_MANAGER = "hr_manager"
+    TRANSPORT_MANAGER = "transport_manager"
+    HOSTEL_MANAGER = "hostel_manager"
+    INVENTORY_MANAGER = "inventory_manager"
+    # Legacy aliases (still valid in stored user.role values)
+    FINANCE_OFFICER = "finance_officer"
     HR_OFFICER = "hr_officer"
     TRANSPORT_OFFICER = "transport_officer"
     HOSTEL_WARDEN = "hostel_warden"
@@ -46,31 +55,116 @@ class UserRole:
         (SUPER_ADMIN, "Super Admin"),
         (SCHOOL_ADMIN, "School Admin"),
         (HEAD_TEACHER, "Head Teacher"),
+        (DEPUTY_HEAD_TEACHER, "Deputy Head Teacher"),
+        (DIRECTOR_OF_STUDIES, "Director of Studies"),
+        (HEAD_OF_DEPARTMENT, "Head of Department"),
         (TEACHER, "Teacher"),
         (PARENT, "Parent"),
         (STUDENT, "Student"),
-        (FINANCE_OFFICER, "Finance Officer"),
+        (BURSAR, "Bursar / Accountant"),
         (LIBRARIAN, "Librarian"),
-        (HR_OFFICER, "HR Officer"),
-        (TRANSPORT_OFFICER, "Transport Officer"),
-        (HOSTEL_WARDEN, "Hostel Warden"),
-        (INVENTORY_OFFICER, "Inventory Officer"),
+        (HR_MANAGER, "Human Resource Manager"),
+        (TRANSPORT_MANAGER, "Transport Manager"),
+        (HOSTEL_MANAGER, "Hostel Manager"),
+        (INVENTORY_MANAGER, "Inventory Manager / Store Keeper"),
+        (FINANCE_OFFICER, "Finance Officer (Legacy)"),
+        (HR_OFFICER, "HR Officer (Legacy)"),
+        (TRANSPORT_OFFICER, "Transport Officer (Legacy)"),
+        (HOSTEL_WARDEN, "Hostel Warden (Legacy)"),
+        (INVENTORY_OFFICER, "Inventory Officer (Legacy)"),
         (RECEPTIONIST, "Receptionist"),
         (NURSE, "Nurse"),
         (COUNSELOR, "Counselor"),
     ]
 
-    SCHOOL_ROLES = [
-        SCHOOL_ADMIN, HEAD_TEACHER, TEACHER, PARENT, STUDENT,
-        FINANCE_OFFICER, LIBRARIAN, HR_OFFICER, TRANSPORT_OFFICER,
-        HOSTEL_WARDEN, INVENTORY_OFFICER, RECEPTIONIST, NURSE, COUNSELOR,
+    LEGACY_ROLE_ALIASES: dict[str, str] = {
+        FINANCE_OFFICER: BURSAR,
+        HR_OFFICER: HR_MANAGER,
+        TRANSPORT_OFFICER: TRANSPORT_MANAGER,
+        HOSTEL_WARDEN: HOSTEL_MANAGER,
+        INVENTORY_OFFICER: INVENTORY_MANAGER,
+    }
+
+    CONFIGURABLE_ROLES: list[str] = [
+        HEAD_TEACHER,
+        DEPUTY_HEAD_TEACHER,
+        DIRECTOR_OF_STUDIES,
+        HEAD_OF_DEPARTMENT,
+        TEACHER,
+        PARENT,
+        BURSAR,
+        LIBRARIAN,
+        HR_MANAGER,
+        TRANSPORT_MANAGER,
+        HOSTEL_MANAGER,
+        INVENTORY_MANAGER,
+        FINANCE_OFFICER,
+        HR_OFFICER,
+        TRANSPORT_OFFICER,
+        HOSTEL_WARDEN,
+        INVENTORY_OFFICER,
     ]
 
-    STAFF_ROLES = [
-        SCHOOL_ADMIN, HEAD_TEACHER, TEACHER, FINANCE_OFFICER,
-        LIBRARIAN, HR_OFFICER, TRANSPORT_OFFICER, HOSTEL_WARDEN,
-        INVENTORY_OFFICER, RECEPTIONIST, NURSE, COUNSELOR,
+    SCHOOL_PORTAL_ROLES: list[str] = [SCHOOL_ADMIN, *CONFIGURABLE_ROLES]
+
+    SCHOOL_ROLES: list[str] = [
+        SCHOOL_ADMIN,
+        HEAD_TEACHER,
+        DEPUTY_HEAD_TEACHER,
+        DIRECTOR_OF_STUDIES,
+        HEAD_OF_DEPARTMENT,
+        TEACHER,
+        PARENT,
+        STUDENT,
+        BURSAR,
+        LIBRARIAN,
+        HR_MANAGER,
+        TRANSPORT_MANAGER,
+        HOSTEL_MANAGER,
+        INVENTORY_MANAGER,
+        FINANCE_OFFICER,
+        HR_OFFICER,
+        TRANSPORT_OFFICER,
+        HOSTEL_WARDEN,
+        INVENTORY_OFFICER,
+        RECEPTIONIST,
+        NURSE,
+        COUNSELOR,
     ]
+
+    STAFF_ROLES: list[str] = [
+        SCHOOL_ADMIN,
+        HEAD_TEACHER,
+        DEPUTY_HEAD_TEACHER,
+        DIRECTOR_OF_STUDIES,
+        HEAD_OF_DEPARTMENT,
+        TEACHER,
+        BURSAR,
+        LIBRARIAN,
+        HR_MANAGER,
+        TRANSPORT_MANAGER,
+        HOSTEL_MANAGER,
+        INVENTORY_MANAGER,
+        FINANCE_OFFICER,
+        HR_OFFICER,
+        TRANSPORT_OFFICER,
+        HOSTEL_WARDEN,
+        INVENTORY_OFFICER,
+        RECEPTIONIST,
+        NURSE,
+        COUNSELOR,
+    ]
+
+
+def normalize_role(role: str | None) -> str:
+    """Map legacy role slugs to canonical portal roles."""
+    if not role:
+        return UserRole.TEACHER
+    return UserRole.LEGACY_ROLE_ALIASES.get(role, role)
+
+
+def is_school_portal_role(role: str | None) -> bool:
+    return normalize_role(role or "") in UserRole.SCHOOL_PORTAL_ROLES or role == UserRole.SCHOOL_ADMIN
 
 
 class PaymentMethodType:
@@ -125,5 +219,3 @@ class SubscriptionStatus:
         (SUSPENDED, "Suspended"),
         (CANCELLED, "Cancelled"),
     ]
-
-

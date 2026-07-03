@@ -56,11 +56,12 @@ def assign_tenant_plan(
     if status == SubscriptionStatus.ACTIVE:
         sub.activate(period_days=period_days)
     elif status == SubscriptionStatus.TRIAL:
-        sub.trial_ends_at = timezone.now() + timedelta(days=plan.trial_days or 14)
-        sub.save(update_fields=["trial_ends_at", "updated_at"])
+        trial_end = timezone.now() + timedelta(days=plan.trial_days or 14)
+        sub.trial_ends_at = trial_end
+        sub.grace_period_ends_at = trial_end + timedelta(days=plan.grace_period_days or 7)
+        sub.save(update_fields=["trial_ends_at", "grace_period_ends_at", "updated_at"])
     elif status == SubscriptionStatus.GRACE_PERIOD:
-        sub.grace_period_ends_at = timezone.now() + timedelta(days=plan.grace_period_days or 7)
-        sub.save(update_fields=["grace_period_ends_at", "updated_at"])
+        sub.enter_grace_period()
 
     from apps.subscriptions.services import invalidate_plan_cache
 

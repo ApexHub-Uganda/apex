@@ -1,9 +1,11 @@
 import { useTenantContext } from '../context/TenantContext';
 import { CORE_FEATURE_KEYS } from '../config/navigation';
+import { getModuleKeyForFeature } from '../config/schoolModules';
 import UpgradeRequired from '../pages/shared/UpgradeRequired';
+import AccessDenied from '../pages/shared/AccessDenied';
 
 export function FeatureGate({ featureKey, children }) {
-  const { isFeatureEnabled, loading } = useTenantContext();
+  const { isFeatureEnabled, canAccessModule, isSchoolAdmin, loading } = useTenantContext();
 
   if (loading) {
     return (
@@ -13,7 +15,16 @@ export function FeatureGate({ featureKey, children }) {
     );
   }
 
-  if (!featureKey || CORE_FEATURE_KEYS.includes(featureKey) || isFeatureEnabled(featureKey)) {
+  if (!featureKey || CORE_FEATURE_KEYS.includes(featureKey)) {
+    return children;
+  }
+
+  const moduleKey = getModuleKeyForFeature(featureKey);
+  if (!isSchoolAdmin && moduleKey && !canAccessModule(moduleKey, false)) {
+    return <AccessDenied moduleKey={moduleKey} />;
+  }
+
+  if (isFeatureEnabled(featureKey)) {
     return children;
   }
 

@@ -25,6 +25,7 @@ import Analytics from './pages/super-admin/Analytics';
 import AuditLogs from './pages/super-admin/AuditLogs';
 import Broadcast from './pages/super-admin/Broadcast';
 import SuperAdminSettings from './pages/super-admin/Settings';
+import PlanEditor from './pages/super-admin/PlanEditor';
 import NotificationsTodos from './pages/super-admin/NotificationsTodos';
 import Advertise from './pages/super-admin/Advertise';
 
@@ -40,11 +41,14 @@ import Hostel from './pages/school-admin/Hostel';
 import Transport from './pages/school-admin/Transport';
 import Inventory from './pages/school-admin/Inventory';
 import HR from './pages/school-admin/HR';
+import HRStaffs from './pages/school-admin/HRStaffs';
 import Payroll from './pages/school-admin/Payroll';
 import Reports from './pages/school-admin/Reports';
 import Communication from './pages/school-admin/Communication';
 import SchoolAdminSettings from './pages/school-admin/Settings';
+import PermissionSettings from './pages/school-admin/PermissionSettings';
 import SchoolPlansAndSubscriptions from './pages/school-admin/PlansAndSubscriptions';
+import { SCHOOL_PORTAL_ROLES } from './config/schoolRoles';
 
 import Profile from './pages/shared/Profile';
 import Notifications from './pages/shared/Notifications';
@@ -101,6 +105,8 @@ function AppRoutes() {
         <Route path="notifications/advertise" element={<Advertise />} />
         <Route path="schools" element={<Schools />} />
         <Route path="schools/:schoolId" element={<SchoolDetail />} />
+        <Route path="plans/new" element={<PlanEditor />} />
+        <Route path="plans/:planId/edit" element={<PlanEditor />} />
         <Route path="plans" element={<PlansAndSubscriptions />} />
         <Route path="billing" element={<BillingOperations />} />
         <Route path="subscriptions" element={<Navigate to="/super-admin/plans" replace />} />
@@ -111,11 +117,11 @@ function AppRoutes() {
         <Route path="profile" element={<Profile />} />
       </Route>
 
-      {/* School Admin portal */}
+      {/* School portal (admin, staff, parent — capped at school admin privileges) */}
       <Route
         path="/school-admin"
         element={
-          <ProtectedRoute roles={['school_admin']}>
+          <ProtectedRoute roles={SCHOOL_PORTAL_ROLES} portal={true}>
             <SchoolAdminLayout />
           </ProtectedRoute>
         }
@@ -132,10 +138,12 @@ function AppRoutes() {
         <Route path="transport" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.transport}><Transport /></Gated>} />
         <Route path="inventory" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.inventory}><Inventory /></Gated>} />
         <Route path="hr" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.hr}><HR /></Gated>} />
+        <Route path="hr/staffs" element={<Gated featureKey="staff_management"><HRStaffs /></Gated>} />
         <Route path="payroll" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.payroll}><Payroll /></Gated>} />
         <Route path="reports" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.reports}><Reports /></Gated>} />
         <Route path="communication" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.communication}><Communication /></Gated>} />
         <Route path="settings" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.settings}><SchoolAdminSettings /></Gated>} />
+        <Route path="settings/permissions" element={<Gated featureKey="roles_permissions"><PermissionSettings /></Gated>} />
         <Route path="settings/plans" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES['settings/plans']}><SchoolPlansAndSubscriptions /></Gated>} />
         {renderChildSubRoutes()}
         <Route path="profile" element={<Profile />} />

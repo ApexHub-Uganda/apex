@@ -10,7 +10,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 
 from apps.accounts.models import LoginHistory, User, UserDevice, UserSession
-from apps.core.constants import UserRole
+from apps.core.constants import UserRole, normalize_role
 from apps.core.mixins import get_client_ip
 
 
@@ -108,13 +108,19 @@ class UserSerializer(serializers.ModelSerializer):
         source="tenant.registration_type", read_only=True, allow_null=True,
     )
     tenant_plan_slug = serializers.SerializerMethodField()
+    effective_role = serializers.SerializerMethodField()
+    is_school_admin = serializers.SerializerMethodField()
+    is_school_portal_user = serializers.SerializerMethodField()
+    module_permissions = serializers.SerializerMethodField()
+    permissions = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             "id", "email", "first_name", "last_name", "full_name", "phone",
-            "avatar", "role", "tenant", "tenant_name", "tenant_status",
-            "tenant_plan_slug",
+            "avatar", "role", "effective_role", "tenant", "tenant_name", "tenant_status",
+            "tenant_plan_slug", "is_school_admin", "is_school_portal_user",
+            "module_permissions", "permissions",
             "tenant_is_verified", "tenant_is_suspended", "tenant_registration_type", "is_active",
             "is_email_verified", "is_2fa_enabled", "last_login_at", "created_at",
         ]
@@ -130,6 +136,33 @@ class UserSerializer(serializers.ModelSerializer):
             return None
         sub = tenant.active_subscription
         return sub.plan.slug if sub and sub.plan else None
+
+    def get_effective_role(self, obj: User) -> str:
+        return normalize_role(obj.role)
+
+    def get_is_school_admin(self, obj: User) -> bool:
+        return obj.role in (UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+
+    def get_is_school_portal_user(self, obj: User) -> bool:
+        return obj.role in UserRole.SCHOOL_PORTAL_ROLES or obj.role == UserRole.SUPER_ADMIN
+
+    def _resolve_module_permissions(self, obj: User) -> dict[str, dict[str, bool]]:
+        if not obj.tenant_id:
+            return {}
+        tenant = obj.tenant
+        if tenant is None:
+            return {}
+        from apps.tenants.role_permissions import get_user_module_permissions
+
+        return get_user_module_permissions(tenant, obj)
+
+    def get_module_permissions(self, obj: User) -> dict[str, dict[str, bool]]:
+        return self._resolve_module_permissions(obj)
+
+    def get_permissions(self, obj: User) -> list[str]:
+        from apps.tenants.role_permissions import permissions_to_strings
+
+        return permissions_to_strings(self._resolve_module_permissions(obj))
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -147,6 +180,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
         if request and request.user.role == UserRole.SCHOOL_ADMIN:
             if value == UserRole.SUPER_ADMIN:
                 raise serializers.ValidationError("Cannot assign super_admin role.")
+            if value not in UserRole.SCHOOL_PORTAL_ROLES:
+                raise serializers.ValidationError("Invalid school portal role.")
         return value
 
     def create(self, validated_data: dict) -> User:
@@ -170,6 +205,8 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         if request and request.user.role == UserRole.SCHOOL_ADMIN:
             if value == UserRole.SUPER_ADMIN:
                 raise serializers.ValidationError("Cannot assign super_admin role.")
+            if value not in UserRole.SCHOOL_PORTAL_ROLES:
+                raise serializers.ValidationError("Invalid school portal role.")
         return value
 
 

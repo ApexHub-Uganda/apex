@@ -1,13 +1,15 @@
 from django.contrib import admin
 
 from apps.platform.models import (
-    APIKey, CallSetting, EmailSetting, GlobalSetting, PlatformBroadcast, PlatformMetrics,
-    PlatformNews, PlatformNotification, PlatformNotificationReceipt, SMSSetting, SystemHealthLog,
+    APIKey, CallSetting, EmailSetting, GlobalSetting, PlatformBroadcast,
+    PlatformBroadcastDelivery, PlatformMetrics, PlatformNews, PlatformNotification,
+    PlatformNotificationReceipt, SMSSetting, SystemHealthLog, WhatsAppSetting,
 )
 
 for model in [
-    GlobalSetting, EmailSetting, SMSSetting, CallSetting, APIKey,
-    PlatformNews, PlatformBroadcast, PlatformNotification, PlatformNotificationReceipt,
+    GlobalSetting, EmailSetting, SMSSetting, WhatsAppSetting, CallSetting, APIKey,
+    PlatformNews, PlatformBroadcast, PlatformBroadcastDelivery,
+    PlatformNotification, PlatformNotificationReceipt,
     SystemHealthLog, PlatformMetrics,
 ]:
     admin.site.register(model)

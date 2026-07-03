@@ -1,0 +1,28 @@
+---
+pid: 17140
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_inheritance.py tests/test_subscription_lifecycle.py tests/test_subscriptions.py -q"
+started_at: 2026-07-03T05:45:49.314Z
+running_for_ms: 11855006 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 14 items
+
+tests\test_plan_inheritance.py ....                                      [ 28%]
+tests\test_subscription_lifecycle.py ...                                 [ 50%]
+tests\test_subscriptions.py ...F...                                      [100%]
+
+================================== FAILURES ===================================
+______________ TestSubscriptions.test_subscription_grace_period _______________
+tests\test_subscriptions.py:46: in test_subscription_grace_period
+    assert sub.in_grace_period is True
+E   assert False is True
+E    +  where False = <Subscription: Test School - Test Plan (active)>.in_grace_period
+=========================== short test summary info ===========================
+FAILED tests/test_subscriptions.py::TestSubscriptions::test_subscription_grace_period
+======================== 1 failed, 13 passed in 16.45s ========================

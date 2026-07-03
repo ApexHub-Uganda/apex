@@ -118,6 +118,79 @@ Each module follows REST conventions with pagination, filtering, search, and sor
 - `/audit/` — Audit logs
 - `/platform/` — Super admin platform management
 
+## Platform (Super Admin)
+
+Base: `/api/v1/platform/`
+
+### Broadcasts
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/broadcasts/` | List broadcasts (filter: `status`, `audience`, `severity`) |
+| POST | `/broadcasts/` | Create draft |
+| PATCH | `/broadcasts/{id}/` | Update draft/scheduled |
+| DELETE | `/broadcasts/{id}/` | Delete broadcast + delivery log |
+| POST | `/broadcasts/preview/` | Audience reachability preview |
+| GET | `/broadcasts/channel_status/` | Email/SMS/WhatsApp gateway readiness |
+| POST | `/broadcasts/{id}/send/` | Send now |
+| POST | `/broadcasts/{id}/schedule/` | Schedule (`starts_at` ISO datetime) |
+| POST | `/broadcasts/{id}/cancel/` | Cancel scheduled |
+| POST | `/broadcasts/{id}/duplicate/` | Clone as draft |
+| POST | `/broadcasts/{id}/delete_broadcast/` | Delete (JSON response) |
+| GET | `/broadcasts/{id}/deliveries/` | Per-recipient delivery log |
+
+Create payload example:
+
+```json
+{
+  "title": "System Notice",
+  "message": "Maintenance this weekend.",
+  "channels": ["email", "sms", "whatsapp"],
+  "audience": "all",
+  "severity": "warning",
+  "starts_at": "2026-07-10T09:00:00Z"
+}
+```
+
+See [BROADCAST_INTEGRATIONS.md](BROADCAST_INTEGRATIONS.md) for channel configuration.
+
+### Plan advertisements
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/POST | `/plan-advertisements/` | CRUD |
+| GET | `/plan-advertisements/plan_options/` | Plans that can advertise |
+| POST | `/plan-advertisements/{id}/broadcast/` | Activate and notify schools |
+| POST | `/plan-advertisements/{id}/pause/` | Pause |
+| POST | `/plan-advertisements/{id}/end/` | End campaign |
+
+### Platform notifications
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/notifications/` | Super-admin inbox |
+| POST | `/notifications/{id}/approve/` | Approve registration |
+| POST | `/notifications/{id}/dismiss/` | Dismiss |
+| POST | `/notifications/{id}/delete_notification/` | Remove from inbox |
+| POST | `/notifications/delete_all/` | Bulk remove |
+
+### Integration settings & tests
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| CRUD | `/email-settings/` | SMTP / SendGrid / Mailgun config |
+| CRUD | `/sms-settings/` | SMS gateway config |
+| CRUD | `/whatsapp-settings/` | WhatsApp Business API config |
+| GET | `/integrations/test/` | Channel readiness |
+| POST | `/integrations/test/` | Test email, sms, whatsapp, call, payment |
+
+### Maintenance
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET/PATCH | `/maintenance/` | Read/update maintenance mode |
+| GET | `/settings/public/` | Public banner message (unauthenticated) |
+
 ## Common Query Parameters
 
 | Parameter | Description |

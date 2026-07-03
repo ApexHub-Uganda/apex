@@ -131,7 +131,36 @@ export const auditLogsService = {
     }),
 };
 
-export const broadcastService = createCrudService('/platform/broadcasts/');
+export const broadcastService = {
+  list: (params) => api.get('/platform/broadcasts/', { params }).then((r) => unwrapList(r)),
+  get: (id) => api.get(`/platform/broadcasts/${id}/`).then((r) => unwrapData(r)),
+  create: (payload) => api.post('/platform/broadcasts/', payload).then((r) => unwrapData(r)),
+  update: (id, payload) => api.patch(`/platform/broadcasts/${id}/`, payload).then((r) => unwrapData(r)),
+  delete: (id) => api.delete(`/platform/broadcasts/${id}/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
+  deleteBroadcast: (id) => api.post(`/platform/broadcasts/${id}/delete_broadcast/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
+  preview: (payload) => api.post('/platform/broadcasts/preview/', payload).then((r) => unwrapData(r)),
+  send: (id) => api.post(`/platform/broadcasts/${id}/send/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
+  schedule: (id, payload = {}) => api.post(`/platform/broadcasts/${id}/schedule/`, payload).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
+  cancel: (id) => api.post(`/platform/broadcasts/${id}/cancel/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
+  duplicate: (id) => api.post(`/platform/broadcasts/${id}/duplicate/`).then((r) => unwrapData(r)),
+  deliveries: (id, params) => api.get(`/platform/broadcasts/${id}/deliveries/`, { params }).then((r) => unwrapList(r)),
+  getChannelStatus: () => api.get('/platform/broadcasts/channel_status/').then((r) => unwrapData(r)),
+};
 
 export const settingsService = {
   get: () => api.get('/platform/settings/general/').then((r) => unwrapData(r)),
@@ -142,8 +171,29 @@ export const platformService = {
   getHealth: () => api.get('/platform/health/').then((r) => r?.data ?? r),
 };
 
-export const studentsService = createCrudService('/school-admin/students/');
-export const staffService = createCrudService('/school-admin/staff/');
+export const studentsService = createCrudService('/students/');
+export const staffService = {
+  ...createCrudService('/staff/'),
+  list: (params) => api.get('/staff/', { params }).then((r) => {
+    const body = r?.data ?? r;
+    if (Array.isArray(body?.data)) return body.data;
+    return unwrapList(r);
+  }),
+  create: (payload) => api.post('/staff/', payload).then((r) => {
+    const body = r?.data ?? r;
+    return {
+      ...(body?.data ?? body),
+      temporary_password: body?.temporary_password,
+      message: body?.message,
+    };
+  }),
+  getRoleOptions: () => api.get('/staff/role-options/').then((r) => {
+    const body = r?.data ?? r;
+    return body?.data ?? unwrapData(r) ?? [];
+  }),
+  getRolePreview: (role) => api.get('/staff/role-preview/', { params: { role } }).then((r) => unwrapData(r)),
+};
+export const departmentsService = createCrudService('/academics/departments/');
 export const classesService = createCrudService('/school-admin/classes/');
 export const attendanceService = createCrudService('/school-admin/attendance/');
 export const financeService = createCrudService('/school-admin/finance/');

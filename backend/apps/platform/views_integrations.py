@@ -8,15 +8,25 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.permissions import IsSuperAdmin
-from apps.platform.services.integrations import CallService, EmailService, PaymentService, SMSService
+from apps.platform.services.integrations import (
+    CallService,
+    EmailService,
+    PaymentService,
+    SMSService,
+    WhatsAppService,
+)
+from apps.platform.services.providers import get_integration_channel_status
 from apps.subscriptions.models import Plan
 from apps.tenants.models import Tenant
 
 
 class IntegrationTestView(APIView):
-    """Test email, SMS, call, or payment integrations."""
+    """Test email, SMS, WhatsApp, call, or payment integrations."""
 
     permission_classes = [IsSuperAdmin]
+
+    def get(self, request: Request) -> Response:
+        return Response({"success": True, "data": get_integration_channel_status()})
 
     def post(self, request: Request) -> Response:
         service = request.data.get("service", "")
@@ -32,6 +42,11 @@ class IntegrationTestView(APIView):
             result = SMSService.send(
                 payload.get("to", ""),
                 payload.get("message", "Apex Hub test SMS."),
+            )
+        elif service == "whatsapp":
+            result = WhatsAppService.send(
+                payload.get("to", ""),
+                payload.get("message", "Apex Hub test WhatsApp message."),
             )
         elif service == "call":
             result = CallService.place_call(
@@ -54,7 +69,7 @@ class IntegrationTestView(APIView):
         else:
             return Response({
                 "success": False,
-                "error": {"message": "service must be one of: email, sms, call, payment"},
+                "error": {"message": "service must be one of: email, sms, whatsapp, call, payment"},
             }, status=400)
 
         return Response({

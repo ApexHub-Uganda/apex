@@ -156,7 +156,11 @@ class Subscription(models.Model):
         if not self.id:
             self.id = uuid.uuid4()
         if self.status == SubscriptionStatus.TRIAL and not self.trial_ends_at:
-            self.trial_ends_at = timezone.now() + timedelta(days=self.plan.trial_days)
+            trial_end = timezone.now() + timedelta(days=self.plan.trial_days)
+            self.trial_ends_at = trial_end
+            if not self.grace_period_ends_at:
+                grace_days = self.plan.grace_period_days if self.plan else 7
+                self.grace_period_ends_at = trial_end + timedelta(days=grace_days)
         super().save(*args, **kwargs)
         if not is_new or kwargs.get("update_fields"):
             invalidate_tenant_cache(str(self.tenant_id))
@@ -164,14 +168,20 @@ class Subscription(models.Model):
     @property
     def is_expired(self) -> bool:
         now = timezone.now()
+        if self.status == SubscriptionStatus.EXPIRED:
+            return True
         if self.status == SubscriptionStatus.TRIAL and self.trial_ends_at:
             return now > self.trial_ends_at
-        if self.current_period_end:
+        if self.status == SubscriptionStatus.ACTIVE and self.current_period_end:
             return now > self.current_period_end
-        return self.status in (SubscriptionStatus.EXPIRED, SubscriptionStatus.CANCELLED)
+        if self.status == SubscriptionStatus.GRACE_PERIOD:
+            return True
+        return self.status in (SubscriptionStatus.CANCELLED,)
 
     @property
     def in_grace_period(self) -> bool:
+        if self.status != SubscriptionStatus.GRACE_PERIOD:
+            return False
         if self.grace_period_ends_at:
             return timezone.now() <= self.grace_period_ends_at
         return False
@@ -183,7 +193,18 @@ class Subscription(models.Model):
         self.current_period_end = now + timedelta(days=period_days)
         grace_days = self.plan.grace_period_days if self.plan else 7
         self.grace_period_ends_at = self.current_period_end + timedelta(days=grace_days)
+        self.trial_ends_at = None
         self.save()
+
+    def enter_grace_period(self) -> None:
+        from apps.subscriptions.subscription_lifecycle import enter_grace_period
+
+        enter_grace_period(self)
+
+    def mark_expired(self) -> None:
+        from apps.subscriptions.subscription_lifecycle import mark_subscription_expired
+
+        mark_subscription_expired(self)
 
     def suspend(self) -> None:
         self.status = SubscriptionStatus.SUSPENDED

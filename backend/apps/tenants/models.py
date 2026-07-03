@@ -8,7 +8,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
-from apps.core.constants import COLOR_ACCENT, COLOR_PRIMARY, COLOR_SECONDARY, RegistrationType, TenantStatus
+from apps.core.constants import COLOR_ACCENT, COLOR_PRIMARY, COLOR_SECONDARY, RegistrationType, TenantStatus, UserRole
 
 
 def tenant_upload_path(instance: Any, filename: str) -> str:
@@ -137,3 +137,38 @@ class Tenant(models.Model):
     def get_dashboard_widgets(self) -> list[dict]:
         from apps.subscriptions.services import get_tenant_dashboard_widgets
         return get_tenant_dashboard_widgets(self)
+
+
+class SchoolRoleModulePermission(models.Model):
+    """Per-tenant module read/write permissions configured by school admin."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant = models.ForeignKey(
+        Tenant,
+        on_delete=models.CASCADE,
+        related_name="role_module_permissions",
+        db_index=True,
+    )
+    role = models.CharField(max_length=30, choices=UserRole.CHOICES, db_index=True)
+    module_key = models.CharField(max_length=50, db_index=True)
+    can_read = models.BooleanField(default=False)
+    can_write = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["role", "module_key"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "role", "module_key"],
+                name="uniq_tenant_role_module_permission",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "role"]),
+            models.Index(fields=["tenant", "module_key"]),
+        ]
+
+    def __str__(self) -> str:
+        access = "rw" if self.can_write else ("r" if self.can_read else "—")
+        return f"{self.tenant.code}:{self.role}:{self.module_key} ({access})"

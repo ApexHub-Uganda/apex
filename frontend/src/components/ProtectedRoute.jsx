@@ -2,8 +2,9 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useMaintenance } from '../hooks/useMaintenance';
 import { PageSkeleton } from './LoadingSkeleton';
+import { isSchoolPortalRole } from '../config/schoolRoles';
 
-export function ProtectedRoute({ children, roles = [] }) {
+export function ProtectedRoute({ children, roles = [], portal = false }) {
   const { isAuthenticated, loading, user } = useAuth();
   const { maintenanceMode } = useMaintenance();
   const location = useLocation();
@@ -20,7 +21,11 @@ export function ProtectedRoute({ children, roles = [] }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (roles.length > 0 && !roles.includes(user?.role)) {
+  const roleAllowed = roles.length === 0
+    || roles.includes(user?.role)
+    || (portal && isSchoolPortalRole(user?.role));
+
+  if (!roleAllowed) {
     const redirect = user?.role === 'super_admin' ? '/super-admin' : '/school-admin';
     return <Navigate to={redirect} replace />;
   }

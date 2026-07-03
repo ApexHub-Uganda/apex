@@ -1,7 +1,8 @@
 """External integration service layer.
 
-All providers are wired end-to-end but return failed responses until live API
-credentials are configured.
+Messaging providers validate configuration, build deployment-ready API payloads,
+and dispatch only when INTEGRATION_LIVE_DISPATCH=true. Until then, broadcasts
+complete the full pipeline but mark channel deliveries as failed.
 """
 from __future__ import annotations
 
@@ -12,7 +13,13 @@ from typing import Any, Optional
 
 from django.utils import timezone
 
-from apps.platform.models import CallSetting, EmailSetting, SMSSetting
+from apps.platform.models import CallSetting, EmailSetting, SMSSetting, WhatsAppSetting
+from apps.platform.services.providers.base import ProviderResponse
+from apps.platform.services.providers.registry import (
+    get_email_provider,
+    get_sms_provider,
+    get_whatsapp_provider,
+)
 from apps.subscriptions.models import PaymentProvider, PaymentTransaction, Subscription
 
 
@@ -34,6 +41,42 @@ class IntegrationResult:
         }
 
 
+def _from_provider_response(response: ProviderResponse, *, reference: str) -> IntegrationResult:
+    return IntegrationResult(
+        success=response.success,
+        message=response.message,
+        reference=reference,
+        external_id=response.external_id,
+        metadata=response.metadata,
+    )
+
+
+def _log_email_attempt(*, to: str, subject: str, body: str, result: IntegrationResult, tenant=None):
+    from apps.communication.models import EmailMessage
+
+    EmailMessage.objects.create(
+        tenant=tenant,
+        recipient_email=to,
+        subject=subject,
+        body=body,
+        status="sent" if result.success else "failed",
+        sent_at=timezone.now() if result.success else None,
+    )
+
+
+def _log_sms_attempt(*, to: str, message: str, result: IntegrationResult, tenant=None):
+    from apps.communication.models import SMSMessage
+
+    SMSMessage.objects.create(
+        tenant=tenant,
+        recipient_phone=to,
+        message=message,
+        status="sent" if result.success else "failed",
+        sent_at=timezone.now() if result.success else None,
+        provider_response=result.metadata or {},
+    )
+
+
 class EmailService:
     """SMTP / transactional email gateway."""
 
@@ -50,34 +93,37 @@ class EmailService:
         *,
         html_body: str = "",
         from_email: str = "",
+        tenant=None,
     ) -> IntegrationResult:
-        config = cls._get_config()
         reference = f"email_{uuid.uuid4().hex[:12]}"
         recipients = [to] if isinstance(to, str) else to
+        primary_to = recipients[0] if recipients else ""
 
+        config = cls._get_config()
         if not config:
-            return IntegrationResult(
+            result = IntegrationResult(
                 success=False,
-                message="Email service is not configured. Configure SMTP in platform settings.",
+                message="Email service is not configured. Add an active record in Platform → Email settings.",
                 reference=reference,
                 metadata={"recipients": recipients, "subject": subject, "provider": "none"},
             )
+            if primary_to:
+                _log_email_attempt(to=primary_to, subject=subject, body=body, result=result, tenant=tenant)
+            return result
 
-        return IntegrationResult(
-            success=False,
-            message=(
-                f"Email delivery failed: {config.provider} API not connected. "
-                "Configure live credentials to enable sending."
-            ),
-            reference=reference,
-            metadata={
-                "recipients": recipients,
-                "subject": subject,
-                "provider": config.provider,
-                "from_email": from_email or config.from_email,
-                "attempted_at": timezone.now().isoformat(),
-            },
-        )
+        adapter = get_email_provider(config.provider)
+        response = adapter.dispatch(config, to=primary_to, subject=subject, message=body)
+        result = _from_provider_response(response, reference=reference)
+        result.metadata = {
+            **(result.metadata or {}),
+            "recipients": recipients,
+            "subject": subject,
+            "from_email": from_email or config.from_email,
+            "attempted_at": timezone.now().isoformat(),
+        }
+        if primary_to:
+            _log_email_attempt(to=primary_to, subject=subject, body=body, result=result, tenant=tenant)
+        return result
 
 
 class SMSService:
@@ -88,32 +134,60 @@ class SMSService:
         return SMSSetting.objects.filter(is_active=True).first()
 
     @classmethod
-    def send(cls, to: str, message: str, *, sender_id: str = "") -> IntegrationResult:
-        config = cls._get_config()
+    def send(cls, to: str, message: str, *, sender_id: str = "", tenant=None) -> IntegrationResult:
         reference = f"sms_{uuid.uuid4().hex[:12]}"
+        config = cls._get_config()
+        if not config:
+            result = IntegrationResult(
+                success=False,
+                message="SMS service is not configured. Add an active record in Platform → SMS settings.",
+                reference=reference,
+                metadata={"to": to, "provider": "none"},
+            )
+            _log_sms_attempt(to=to, message=message, result=result, tenant=tenant)
+            return result
 
+        adapter = get_sms_provider(config.provider)
+        response = adapter.dispatch(config, to=to, subject="", message=message)
+        result = _from_provider_response(response, reference=reference)
+        result.metadata = {
+            **(result.metadata or {}),
+            "to": to,
+            "sender_id": sender_id or config.sender_id,
+            "attempted_at": timezone.now().isoformat(),
+        }
+        _log_sms_attempt(to=to, message=message, result=result, tenant=tenant)
+        return result
+
+
+class WhatsAppService:
+    """WhatsApp Business API gateway."""
+
+    @staticmethod
+    def _get_config() -> Optional[WhatsAppSetting]:
+        return WhatsAppSetting.objects.filter(is_active=True).first()
+
+    @classmethod
+    def send(cls, to: str, message: str, *, tenant=None) -> IntegrationResult:
+        reference = f"whatsapp_{uuid.uuid4().hex[:12]}"
+        config = cls._get_config()
         if not config:
             return IntegrationResult(
                 success=False,
-                message="SMS service is not configured.",
+                message="WhatsApp service is not configured. Add an active record in Platform → WhatsApp settings.",
                 reference=reference,
                 metadata={"to": to, "provider": "none"},
             )
 
-        return IntegrationResult(
-            success=False,
-            message=(
-                f"SMS delivery failed: {config.provider} API not connected. "
-                "Configure live API keys to enable sending."
-            ),
-            reference=reference,
-            metadata={
-                "to": to,
-                "provider": config.provider,
-                "sender_id": sender_id or config.sender_id,
-                "attempted_at": timezone.now().isoformat(),
-            },
-        )
+        adapter = get_whatsapp_provider(config.provider)
+        response = adapter.dispatch(config, to=to, subject="", message=message)
+        result = _from_provider_response(response, reference=reference)
+        result.metadata = {
+            **(result.metadata or {}),
+            "to": to,
+            "attempted_at": timezone.now().isoformat(),
+        }
+        return result
 
 
 class CallService:

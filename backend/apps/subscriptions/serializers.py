@@ -14,6 +14,14 @@ from apps.subscriptions.models import (
     Plan,
     Subscription,
 )
+from apps.subscriptions.plan_tiers import (
+    PlanInheritanceError,
+    get_inherited_feature_keys,
+    get_parent_tier_slug,
+    get_plan_feature_breakdown,
+    get_plan_tier_label,
+    validate_plan_feature_inheritance,
+)
 from apps.subscriptions.services import assign_plan_features, invalidate_catalog_cache
 
 
@@ -67,6 +75,11 @@ class PlanSerializer(serializers.ModelSerializer):
     price = serializers.DecimalField(source="price_monthly", max_digits=10, decimal_places=2, read_only=True)
     billing_cycle = serializers.SerializerMethodField()
     subscriber_count = serializers.SerializerMethodField()
+    inherits_from_slug = serializers.SerializerMethodField()
+    inherits_from_label = serializers.SerializerMethodField()
+    inherited_feature_keys = serializers.SerializerMethodField()
+    exclusive_feature_keys = serializers.SerializerMethodField()
+    feature_inheritance_summary = serializers.SerializerMethodField()
 
     class Meta:
         model = Plan
@@ -77,6 +90,8 @@ class PlanSerializer(serializers.ModelSerializer):
             "max_storage_mb", "max_sms_monthly", "max_emails_monthly",
             "trial_days", "grace_period_days", "feature_flags",
             "enabled_feature_keys", "enabled_features_detail", "features",
+            "inherits_from_slug", "inherits_from_label", "inherited_feature_keys",
+            "exclusive_feature_keys", "feature_inheritance_summary",
             "subscriber_count", "sort_order", "created_at", "updated_at",
         ]
 
@@ -113,11 +128,40 @@ class PlanSerializer(serializers.ModelSerializer):
     def get_subscriber_count(self, obj: Plan) -> int:
         return obj.subscriptions.filter(status__in=["trial", "active", "grace_period"]).count()
 
+    def get_inherits_from_slug(self, obj: Plan) -> str | None:
+        return get_parent_tier_slug(obj.slug)
+
+    def get_inherits_from_label(self, obj: Plan) -> str | None:
+        parent = get_parent_tier_slug(obj.slug)
+        return get_plan_tier_label(parent) if parent else None
+
+    def get_inherited_feature_keys(self, obj: Plan) -> list[str]:
+        return sorted(get_inherited_feature_keys(obj.slug))
+
+    def get_exclusive_feature_keys(self, obj: Plan) -> list[str]:
+        inherited = get_inherited_feature_keys(obj.slug)
+        exclusive = set(
+            obj.features.filter(is_active=True).values_list("feature_key", flat=True),
+        ) - inherited
+        return sorted(exclusive)
+
+    def get_feature_inheritance_summary(self, obj: Plan) -> str | None:
+        return get_plan_feature_breakdown(obj).get("inherited_summary")
+
+    def validate_enabled_feature_keys(self, value: list[str]) -> list[str]:
+        slug = self.initial_data.get("slug") or getattr(self.instance, "slug", None)
+        if slug and value is not None:
+            try:
+                validate_plan_feature_inheritance(slug, value)
+            except PlanInheritanceError as exc:
+                raise serializers.ValidationError(str(exc)) from exc
+        return value
+
     @transaction.atomic
     def create(self, validated_data: dict) -> Plan:
         keys = validated_data.pop("enabled_feature_keys", [])
         plan = Plan.objects.create(**validated_data)
-        if keys:
+        if keys is not None:
             assign_plan_features(plan, keys)
         return plan
 

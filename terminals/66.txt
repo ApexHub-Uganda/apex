@@ -1,0 +1,25 @@
+---
+pid: 4548
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_platform_broadcast.py -v 2>&1"
+started_at: 2026-07-03T06:30:32.854Z
+running_for_ms: 9170006  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 7 items
+
+tests/test_platform_broadcast.py::TestPlatformBroadcasts::test_preview_audience_counts_school_admin PASSED [ 14%]
+tests/test_platform_broadcast.py::TestPlatformBroadcasts::test_super_admin_can_create_broadcast PASSED [ 28%]
+tests/test_platform_broadcast.py::TestPlatformBroadcasts::test_send_broadcast_creates_deliveries_and_notifications PASSED [ 42%]
+tests/test_platform_broadcast.py::TestPlatformBroadcasts::test_schedule_and_cancel_broadcast PASSED [ 57%]
+tests/test_platform_broadcast.py::TestPlatformBroadcasts::test_process_scheduled_broadcasts_sends_due_items PASSED [ 71%]
+tests/test_platform_broadcast.py::TestPlatformBroadcasts::test_duplicate_broadcast_resets_delivery_stats PASSED [ 85%]
+tests/test_platform_broadcast.py::TestPlatformBroadcasts::test_send_requires_channels PASSED [100%]
+
+============================= 7 passed in 19.93s ==============================

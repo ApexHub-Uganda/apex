@@ -198,6 +198,9 @@ export function PlansAndSubscriptions() {
                       <div className="text-muted small">
                         {formatMoney(plan.price_monthly, plan.currency)}/mo · {plan.feature_count} features
                       </div>
+                      {plan.inherited_summary && (
+                        <div className="text-muted small mt-1">{plan.inherited_summary}</div>
+                      )}
                     </div>
                     <Link
                       to={buildUpgradePath(plan.slug)}
