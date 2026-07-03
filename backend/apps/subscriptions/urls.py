@@ -9,6 +9,8 @@ from apps.subscriptions.views import (
     PaymentProviderViewSet,
     PaymentTransactionViewSet,
     PlanListView,
+    PlanUpgradeCatalogView,
+    PlanUpgradeCheckoutView,
     PlanViewSet,
     SubscriptionViewSet,
 )
@@ -25,5 +27,7 @@ urlpatterns = [
     path("plans/", PlanListView.as_view(), name="plan-list"),
     path("features/catalog/", FeatureCatalogView.as_view(), name="feature-catalog"),
     path("current/", CurrentSubscriptionView.as_view(), name="subscription-current"),
+    path("upgrade/catalog/", PlanUpgradeCatalogView.as_view(), name="plan-upgrade-catalog"),
+    path("upgrade/checkout/", PlanUpgradeCheckoutView.as_view(), name="plan-upgrade-checkout"),
     path("", include(router.urls)),
 ]

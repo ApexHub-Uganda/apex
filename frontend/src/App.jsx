@@ -26,8 +26,10 @@ import AuditLogs from './pages/super-admin/AuditLogs';
 import Broadcast from './pages/super-admin/Broadcast';
 import SuperAdminSettings from './pages/super-admin/Settings';
 import NotificationsTodos from './pages/super-admin/NotificationsTodos';
+import Advertise from './pages/super-admin/Advertise';
 
 import SchoolAdminDashboard from './pages/school-admin/Dashboard';
+import PlanUpgrade from './pages/school-admin/PlanUpgrade';
 import Students from './pages/school-admin/Students';
 import Staff from './pages/school-admin/Staff';
 import Classes from './pages/school-admin/Classes';
@@ -42,13 +44,17 @@ import Payroll from './pages/school-admin/Payroll';
 import Reports from './pages/school-admin/Reports';
 import Communication from './pages/school-admin/Communication';
 import SchoolAdminSettings from './pages/school-admin/Settings';
+import SchoolPlansAndSubscriptions from './pages/school-admin/PlansAndSubscriptions';
 
 import Profile from './pages/shared/Profile';
 import Notifications from './pages/shared/Notifications';
 import PendingApproval from './pages/shared/PendingApproval';
+import Maintenance from './pages/shared/Maintenance';
+import { MaintenanceProvider } from './context/MaintenanceContext';
 import FeatureGate from './components/FeatureGate';
 import AppToaster from './components/AppToaster';
 import { SCHOOL_ROUTE_FEATURES } from './config/featureRoutes';
+import { renderModuleHubRoutes, renderChildSubRoutes } from './config/schoolAdminRoutes';
 
 const Gated = ({ featureKey, children }) => (
   <FeatureGate featureKey={featureKey}>{children}</FeatureGate>
@@ -79,6 +85,8 @@ function AppRoutes() {
         <Route path="/register/welcome" element={<RegistrationWelcome />} />
       </Route>
 
+      <Route path="/maintenance" element={<Maintenance />} />
+
       {/* Super Admin portal */}
       <Route
         path="/super-admin"
@@ -90,6 +98,7 @@ function AppRoutes() {
       >
         <Route index element={<SuperAdminDashboard />} />
         <Route path="notifications" element={<NotificationsTodos />} />
+        <Route path="notifications/advertise" element={<Advertise />} />
         <Route path="schools" element={<Schools />} />
         <Route path="schools/:schoolId" element={<SchoolDetail />} />
         <Route path="plans" element={<PlansAndSubscriptions />} />
@@ -112,6 +121,7 @@ function AppRoutes() {
         }
       >
         <Route index element={<Gated featureKey={SCHOOL_ROUTE_FEATURES['']}><SchoolAdminDashboard /></Gated>} />
+        {renderModuleHubRoutes()}
         <Route path="students" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.students}><Students /></Gated>} />
         <Route path="staff" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.staff}><Staff /></Gated>} />
         <Route path="classes" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.classes}><Classes /></Gated>} />
@@ -126,8 +136,11 @@ function AppRoutes() {
         <Route path="reports" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.reports}><Reports /></Gated>} />
         <Route path="communication" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.communication}><Communication /></Gated>} />
         <Route path="settings" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.settings}><SchoolAdminSettings /></Gated>} />
+        <Route path="settings/plans" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES['settings/plans']}><SchoolPlansAndSubscriptions /></Gated>} />
+        {renderChildSubRoutes()}
         <Route path="profile" element={<Profile />} />
         <Route path="notifications" element={<Notifications />} />
+        <Route path="upgrade" element={<PlanUpgrade />} />
       </Route>
 
       {/* Redirects */}
@@ -144,9 +157,11 @@ export default function App() {
         <AppToaster />
         <BrowserRouter>
           <AuthProvider>
-            <TenantProvider>
-              <AppRoutes />
-            </TenantProvider>
+            <MaintenanceProvider>
+              <TenantProvider>
+                <AppRoutes />
+              </TenantProvider>
+            </MaintenanceProvider>
           </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>

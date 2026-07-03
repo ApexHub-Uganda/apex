@@ -27,7 +27,10 @@ def plan(db):
         slug=PlanSlug.BASIC,
         max_students=100,
     )
-    assign_plan_features(p, ["student_management", "staff_management", "classes", "dashboard_analytics"])
+    assign_plan_features(p, [
+        "student_management", "staff_management", "classes",
+        "academic_years", "dashboard_analytics",
+    ])
     return p
 
 

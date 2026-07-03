@@ -61,7 +61,7 @@ INSTALLED_APPS = [
     "apps.communication",
     "apps.analytics",
     "apps.audit",
-    "apps.platform",
+    "apps.platform.apps.PlatformConfig",
 ]
 
 MIDDLEWARE = [
@@ -76,6 +76,7 @@ MIDDLEWARE = [
     "apps.audit.middleware.AuditMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.platform.middleware.JWTAuthenticationMiddleware",
     "apps.platform.middleware.MaintenanceModeMiddleware",
 ]
 

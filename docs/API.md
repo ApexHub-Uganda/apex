@@ -56,10 +56,46 @@ Authorization: Bearer <access_token>
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/subscriptions/plans/` | List plans |
+| GET | `/subscriptions/plans/` | List public plans |
 | GET | `/subscriptions/current/` | Current tenant subscription |
-| POST | `/subscriptions/upgrade/` | Upgrade plan |
-| POST | `/subscriptions/downgrade/` | Downgrade plan |
+| GET | `/subscriptions/upgrade/catalog/` | Upgrade plans, features, payment methods (school admin) |
+| POST | `/subscriptions/upgrade/checkout/` | Initiate upgrade checkout (stub — returns 402) |
+| GET | `/subscriptions/payments/transactions/` | Payment transaction ledger |
+| GET | `/subscriptions/payments/providers/` | Configured payment providers |
+
+### Payment checkout payload
+
+School-admin upgrade and onboarding checkout accept the same payment fields. **Card is the default method**; clients may switch to mobile money.
+
+```json
+{
+  "plan_slug": "premium",
+  "billing_cycle": "monthly",
+  "payment_method": "card",
+  "provider_slug": "stripe",
+  "payer_name": "Jane Doe",
+  "card_last_four": "4242",
+  "card_brand": "visa"
+}
+```
+
+Mobile money:
+
+```json
+{
+  "plan_slug": "premium",
+  "billing_cycle": "monthly",
+  "payment_method": "mobile_money",
+  "provider_slug": "mpesa",
+  "phone_number": "+256700000000"
+}
+```
+
+Responses use HTTP `402 Payment Required` with `success: false` while sandbox gateways are disconnected. A failed `subscriptions_paymenttransaction` row is always recorded.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/tenants/onboarding/{tenant_id}/checkout/` | Registration paid-plan checkout (same payment fields) |
 
 ## Module Endpoints
 

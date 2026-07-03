@@ -22,8 +22,10 @@ class TenantSerializer(serializers.ModelSerializer):
     enabled_feature_keys = serializers.SerializerMethodField()
     feature_flags = serializers.SerializerMethodField()
     navigation_menu = serializers.SerializerMethodField()
+    module_menu = serializers.SerializerMethodField()
     dashboard_widgets = serializers.SerializerMethodField()
     subscription = serializers.SerializerMethodField()
+    features_revision = serializers.SerializerMethodField()
 
     class Meta:
         model = Tenant
@@ -34,8 +36,8 @@ class TenantSerializer(serializers.ModelSerializer):
             "tagline", "status", "is_verified", "is_suspended", "website",
             "registration_number", "registration_type", "payment_attempted",
             "enabled_features", "enabled_feature_keys",
-            "feature_flags", "navigation_menu", "dashboard_widgets",
-            "subscription", "created_at",
+            "feature_flags", "navigation_menu", "module_menu", "dashboard_widgets",
+            "subscription", "features_revision", "created_at",
         ]
         read_only_fields = ["id", "slug", "status", "is_verified", "is_suspended", "created_at"]
 
@@ -51,6 +53,20 @@ class TenantSerializer(serializers.ModelSerializer):
 
     def get_navigation_menu(self, obj: Tenant) -> list[dict]:
         return obj.get_navigation_menu()
+
+    def get_module_menu(self, obj: Tenant) -> list[dict]:
+        from apps.subscriptions.services import get_tenant_module_menu
+        return get_tenant_module_menu(obj)
+
+    def get_features_revision(self, obj: Tenant) -> str:
+        from apps.subscriptions.services import get_enabled_feature_keys, get_tenant_module_menu
+
+        sub = obj.active_subscription
+        if not sub or not sub.plan:
+            return "none"
+        keys = get_enabled_feature_keys(obj)
+        modules = get_tenant_module_menu(obj)
+        return f"{sub.plan_id}:{sub.updated_at.isoformat()}:{len(keys)}:{len(modules)}"
 
     def get_dashboard_widgets(self, obj: Tenant) -> list[dict]:
         return obj.get_dashboard_widgets()
@@ -141,6 +157,7 @@ class TenantAdminListSerializer(serializers.ModelSerializer):
     """Enriched tenant row for super-admin school management."""
 
     plan = serializers.SerializerMethodField()
+    plan_slug = serializers.SerializerMethodField()
     students = serializers.SerializerMethodField()
     staff_count = serializers.SerializerMethodField()
     subscription_status = serializers.SerializerMethodField()
@@ -150,13 +167,17 @@ class TenantAdminListSerializer(serializers.ModelSerializer):
         model = Tenant
         fields = [
             "id", "name", "code", "email", "phone", "city", "city_display", "country",
-            "plan", "status", "is_verified", "is_suspended", "registration_type",
+            "plan", "plan_slug", "status", "is_verified", "is_suspended", "registration_type",
             "students", "staff_count", "subscription_status", "created_at",
         ]
 
     def get_plan(self, obj: Tenant) -> str:
         sub = obj.active_subscription
         return sub.plan.name if sub and sub.plan else "—"
+
+    def get_plan_slug(self, obj: Tenant) -> str | None:
+        sub = obj.active_subscription
+        return sub.plan.slug if sub and sub.plan else None
 
     def get_students(self, obj: Tenant) -> int:
         return Student.objects.filter(tenant=obj, is_deleted=False).count()
@@ -202,11 +223,16 @@ class TenantAdminCreateSerializer(serializers.ModelSerializer):
         admin_first_name = validated_data.pop("admin_first_name", "School")
         admin_last_name = validated_data.pop("admin_last_name", "Admin")
         plan_slug = validated_data.pop("plan_slug", "free_trial")
+        validated_data.setdefault("is_verified", True)
+        validated_data.setdefault("status", "active")
 
         tenant = Tenant.objects.create(**validated_data)
+        if tenant.is_verified and not tenant.verified_at:
+            tenant.verify()
 
+        admin_user = None
         if admin_email and admin_password:
-            User.objects.create_user(
+            admin_user = User.objects.create_user(
                 email=admin_email,
                 password=admin_password,
                 first_name=admin_first_name,
@@ -216,11 +242,19 @@ class TenantAdminCreateSerializer(serializers.ModelSerializer):
                 is_email_verified=True,
             )
 
-        plan = Plan.objects.filter(slug=plan_slug).first()
+        plan = Plan.objects.filter(slug=plan_slug, is_active=True).first()
         if plan:
-            sub = Subscription.objects.create(tenant=tenant, plan=plan, status="trial")
-            if plan_slug != "free_trial":
-                sub.activate(period_days=30)
+            from apps.tenants.services import assign_tenant_plan
+
+            request = self.context.get("request")
+            actor = request.user if request and request.user.is_authenticated else admin_user
+            assign_tenant_plan(
+                tenant,
+                plan,
+                subscription_status="active" if plan_slug != "free_trial" else "trial",
+                period_days=30,
+                actor=actor,
+            )
 
         return tenant
 
@@ -236,3 +270,33 @@ class TenantAdminUpdateSerializer(serializers.ModelSerializer):
 
 class TenantSuspendSerializer(serializers.Serializer):
     reason = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class TenantChangePlanSerializer(serializers.Serializer):
+    plan_slug = serializers.SlugField()
+    billing_cycle = serializers.ChoiceField(choices=["monthly", "yearly"], default="monthly")
+    subscription_status = serializers.ChoiceField(
+        choices=["trial", "active", "grace_period"],
+        default="trial",
+    )
+    period_days = serializers.IntegerField(min_value=1, max_value=365, default=30, required=False)
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate_plan_slug(self, value: str) -> str:
+        from apps.subscriptions.models import Plan
+
+        if not Plan.objects.filter(slug=value, is_active=True).exists():
+            raise serializers.ValidationError("Plan not found or inactive.")
+        return value
+
+
+class TenantPermanentDeleteSerializer(serializers.Serializer):
+    confirmation_name = serializers.CharField(max_length=255)
+    acknowledge_permanent = serializers.BooleanField()
+
+    def validate_acknowledge_permanent(self, value: bool) -> bool:
+        if not value:
+            raise serializers.ValidationError(
+                "You must acknowledge that this deletion is permanent and irreversible.",
+            )
+        return value

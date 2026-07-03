@@ -16,14 +16,30 @@ from apps.tenants.serializers import (
     TenantAdminUpdateSerializer,
     TenantMinimalListSerializer,
     TenantBrandingSerializer,
+    TenantChangePlanSerializer,
+    TenantPermanentDeleteSerializer,
     TenantRegistrationSerializer,
     TenantSerializer,
     TenantSuspendSerializer,
 )
 
 
+def _resolve_user_tenant(user) -> Tenant | None:
+    """Resolve school tenant from user FK (JWT may not prefetch tenant)."""
+    tenant = getattr(user, "tenant", None)
+    if tenant is not None:
+        return tenant
+    tenant_id = getattr(user, "tenant_id", None)
+    if not tenant_id:
+        return None
+    return Tenant.objects.filter(pk=tenant_id).first()
+
+
 def build_school_context_payload(tenant: Tenant | None, user) -> dict:
     """Lightweight school context for the school-admin SPA."""
+    if tenant is None:
+        tenant = _resolve_user_tenant(user)
+
     if tenant is None:
         return {
             "id": None,
@@ -32,6 +48,9 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
             "email": user.email,
             "status": getattr(user, "tenant_status", None) or "pending",
             "is_verified": bool(getattr(user, "tenant", None) and user.tenant.is_verified),
+            "is_suspended": False,
+            "access_blocked": False,
+            "suspension_reason": "",
             "enabled_feature_keys": ["dashboard_analytics", "school_settings"],
             "feature_flags": {
                 "dashboard_analytics": True,
@@ -51,17 +70,52 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
         get_subscription_summary,
         get_tenant_dashboard_widgets,
         get_tenant_feature_flags,
+        get_tenant_module_menu,
         get_tenant_navigation,
     )
 
+    if tenant.is_suspended:
+        return {
+            "id": str(tenant.id),
+            "name": tenant.name,
+            "code": tenant.code,
+            "email": tenant.email,
+            "phone": tenant.phone,
+            "status": tenant.status,
+            "is_verified": tenant.is_verified,
+            "is_suspended": True,
+            "access_blocked": True,
+            "suspension_reason": tenant.suspension_reason or "",
+            "suspended_at": tenant.suspended_at.isoformat() if tenant.suspended_at else None,
+            "registration_type": tenant.registration_type,
+            "primary_color": tenant.primary_color,
+            "secondary_color": tenant.secondary_color,
+            "accent_color": tenant.accent_color,
+            "enabled_feature_keys": [],
+            "feature_flags": {},
+            "navigation_menu": [],
+            "module_menu": [],
+            "dashboard_widgets": [],
+            "subscription": get_subscription_summary(tenant),
+            "features_revision": "suspended",
+        }
+
     enabled_keys = list(get_enabled_feature_keys(tenant))
     feature_flags = get_tenant_feature_flags(tenant)
+    module_menu = get_tenant_module_menu(tenant)
+    sub = tenant.active_subscription
 
     # Core modules should always be reachable for authenticated school admins.
     for core_key in ("dashboard_analytics", "school_settings"):
         if core_key not in enabled_keys:
             enabled_keys.append(core_key)
         feature_flags[core_key] = True
+
+    features_revision = "none"
+    if sub and sub.plan:
+        features_revision = (
+            f"{sub.plan_id}:{sub.updated_at.isoformat()}:{len(enabled_keys)}:{len(module_menu)}"
+        )
 
     return {
         "id": str(tenant.id),
@@ -76,7 +130,9 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
         "logo": tenant.logo.url if tenant.logo else None,
         "status": tenant.status,
         "is_verified": tenant.is_verified,
-        "is_suspended": tenant.is_suspended,
+        "is_suspended": False,
+        "access_blocked": False,
+        "suspension_reason": "",
         "tagline": tenant.tagline,
         "website": tenant.website,
         "registration_type": tenant.registration_type,
@@ -86,8 +142,10 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
         "enabled_feature_keys": enabled_keys,
         "feature_flags": feature_flags,
         "navigation_menu": get_tenant_navigation(tenant),
+        "module_menu": module_menu,
         "dashboard_widgets": get_tenant_dashboard_widgets(tenant),
         "subscription": get_subscription_summary(tenant),
+        "features_revision": features_revision,
     }
 
 
@@ -118,7 +176,7 @@ class SchoolContextView(APIView):
     permission_classes = [IsSchoolAdmin]
 
     def get(self, request: Request) -> Response:
-        tenant = getattr(request.user, "tenant", None)
+        tenant = _resolve_user_tenant(request.user)
         return Response({
             "success": True,
             "data": build_school_context_payload(tenant, request.user),
@@ -174,13 +232,107 @@ class TenantViewSet(viewsets.ModelViewSet):
         ser = TenantSuspendSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
         tenant.suspend(reason=ser.validated_data.get("reason", ""))
+        from apps.subscriptions.services import invalidate_tenant_cache
+
+        invalidate_tenant_cache(str(tenant.id))
         return Response({"success": True, "message": "Tenant suspended."})
 
     @action(detail=True, methods=["post"], permission_classes=[IsSuperAdmin])
     def unsuspend(self, request: Request, pk: str = None) -> Response:
         tenant = self.get_object()
         tenant.unsuspend()
+        from apps.subscriptions.services import invalidate_tenant_cache
+
+        invalidate_tenant_cache(str(tenant.id))
         return Response({"success": True, "message": "Tenant unsuspended."})
+
+    @action(detail=True, methods=["get"], permission_classes=[IsSuperAdmin], url_path="deletion-preview")
+    def deletion_preview(self, request: Request, pk: str = None) -> Response:
+        from apps.tenants.services import get_tenant_deletion_preview
+
+        tenant = self.get_object()
+        return Response({
+            "success": True,
+            "data": get_tenant_deletion_preview(tenant),
+        })
+
+    @action(detail=True, methods=["post"], permission_classes=[IsSuperAdmin], url_path="change-plan")
+    def change_plan(self, request: Request, pk: str = None) -> Response:
+        from apps.subscriptions.models import Plan
+        from apps.subscriptions.serializers import SubscriptionSerializer
+        from apps.subscriptions.services import (
+            get_enabled_feature_keys,
+            get_subscription_summary,
+            get_tenant_module_menu,
+        )
+        from apps.tenants.services import assign_tenant_plan
+
+        tenant = self.get_object()
+        ser = TenantChangePlanSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        data = ser.validated_data
+
+        plan = Plan.objects.get(slug=data["plan_slug"], is_active=True)
+        sub = assign_tenant_plan(
+            tenant,
+            plan,
+            billing_cycle=data.get("billing_cycle", "monthly"),
+            subscription_status=data.get("subscription_status", "trial"),
+            period_days=data.get("period_days", 30),
+            notes=data.get("notes", ""),
+            actor=request.user,
+        )
+
+        module_menu = get_tenant_module_menu(tenant)
+        return Response({
+            "success": True,
+            "message": f"Plan updated to {plan.name}. {len(module_menu)} modules now active for this school.",
+            "subscription": SubscriptionSerializer(sub).data,
+            "subscription_summary": get_subscription_summary(tenant),
+            "module_count": len(module_menu),
+            "feature_count": len(get_enabled_feature_keys(tenant)),
+            "school_verified": tenant.is_verified,
+        })
+
+    @action(detail=True, methods=["post"], permission_classes=[IsSuperAdmin], url_path="permanent-delete")
+    def permanent_delete(self, request: Request, pk: str = None) -> Response:
+        from apps.tenants.services import delete_tenant_permanently
+
+        tenant = self.get_object()
+        ser = TenantPermanentDeleteSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+
+        try:
+            result = delete_tenant_permanently(
+                tenant,
+                actor=request.user,
+                confirmation_name=ser.validated_data["confirmation_name"],
+            )
+        except ValueError as exc:
+            return Response(
+                {"success": False, "error": {"message": str(exc)}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({
+            "success": True,
+            "message": f'School "{result["school_name"]}" and all associated data have been permanently removed.',
+            "data": result,
+        })
+
+    def destroy(self, request: Request, *args, **kwargs) -> Response:
+        return Response(
+            {
+                "success": False,
+                "error": {
+                    "message": (
+                        "Direct delete is disabled. Use POST /tenants/{id}/permanent-delete/ "
+                        "with confirmation_name and acknowledge_permanent."
+                    ),
+                },
+            },
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
 
     @action(detail=True, methods=["patch"], permission_classes=[IsSchoolAdmin, TenantActivePermission])
     def branding(self, request: Request, pk: str = None) -> Response:

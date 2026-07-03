@@ -73,6 +73,18 @@ class UserRole:
     ]
 
 
+class PaymentMethodType:
+    """Checkout payment instrument selected by the payer."""
+
+    CARD = "card"
+    MOBILE_MONEY = "mobile_money"
+
+    CHOICES = [
+        (CARD, "Credit or Debit Card"),
+        (MOBILE_MONEY, "Mobile Money"),
+    ]
+
+
 # Subscription plan slugs
 class PlanSlug:
     FREE_TRIAL = "free_trial"

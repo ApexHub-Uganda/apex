@@ -31,6 +31,10 @@ docker compose -f deployment/docker-compose.yml exec backend python manage.py se
 # API Docs: http://localhost:8000/api/docs/
 ```
 
+## Subscription payments
+
+Checkout supports **credit/debit card** (default — card number, expiry, CVC, name on card) and **mobile money** (phone number only). Both paths record a failed transaction while sandbox gateway APIs are disconnected; see [docs/API.md](docs/API.md) for payload fields.
+
 ## Default Credentials (after seed)
 
 | Role | Email | Password |

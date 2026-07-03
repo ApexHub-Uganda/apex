@@ -131,7 +131,14 @@ export function BillingOperations() {
                         <span className="fw-semibold small">{provider.name}</span>
                         <StatusBadge status={provider.is_active ? 'active' : 'inactive'} />
                       </div>
-                      <div className="text-muted small">{provider.slug}</div>
+                      <div className="text-muted small">
+                        {provider.slug}
+                        {provider.method_type && (
+                          <span className="ms-2 text-capitalize">
+                            · {(provider.method_type || 'card').replace('_', ' ')}
+                          </span>
+                        )}
+                      </div>
                       {provider.is_sandbox && (
                         <span className="badge bg-warning-subtle text-warning mt-2">Sandbox</span>
                       )}

@@ -46,10 +46,11 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(PaymentProvider)
 class PaymentProviderAdmin(admin.ModelAdmin):
-    list_display = ["name", "slug", "is_active", "is_sandbox"]
+    list_display = ["name", "slug", "method_type", "is_active", "is_sandbox"]
+    list_filter = ["method_type", "is_active"]
 
 
 @admin.register(PaymentTransaction)
 class PaymentTransactionAdmin(admin.ModelAdmin):
-    list_display = ["reference", "tenant", "amount", "status", "created_at"]
-    list_filter = ["status"]
+    list_display = ["reference", "tenant", "amount", "payment_method", "status", "created_at"]
+    list_filter = ["status", "payment_method"]

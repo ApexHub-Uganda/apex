@@ -134,6 +134,7 @@ class PlanSerializer(serializers.ModelSerializer):
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     plan_name = serializers.CharField(source="plan.name", read_only=True)
+    plan_slug = serializers.CharField(source="plan.slug", read_only=True)
     school = serializers.CharField(source="tenant.name", read_only=True)
     school_id = serializers.UUIDField(source="tenant.id", read_only=True)
     plan = serializers.CharField(source="plan.name", read_only=True)
@@ -145,7 +146,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = [
-            "id", "tenant", "school", "school_id", "plan", "plan_name", "amount",
+            "id", "tenant", "school", "school_id", "plan", "plan_name", "plan_slug", "amount",
             "status", "billing_cycle", "next_billing", "started_at", "trial_ends_at",
             "current_period_start", "current_period_end", "grace_period_ends_at",
             "auto_renew", "is_expired", "in_grace_period", "created_at",
@@ -174,7 +175,7 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
 class PaymentProviderSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentProvider
-        fields = ["id", "name", "slug", "is_active", "is_sandbox"]
+        fields = ["id", "name", "slug", "method_type", "is_active", "is_sandbox"]
 
 
 class PaymentTransactionSerializer(serializers.ModelSerializer):
@@ -185,7 +186,7 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
         model = PaymentTransaction
         fields = [
             "id", "tenant", "school", "subscription", "provider", "provider_name",
-            "amount", "currency", "status", "reference", "external_id",
-            "metadata", "created_at",
+            "amount", "currency", "status", "reference", "payment_method", "payer_phone",
+            "external_id", "metadata", "created_at",
         ]
         read_only_fields = ["id", "reference", "created_at"]

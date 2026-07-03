@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
 
-export function PageHeader({ title, subtitle, actions, breadcrumbs }) {
+export function PageHeader({ title, subtitle, actions, breadcrumbs, centered = false }) {
   return (
     <motion.div
-      className="apex-page-header d-flex flex-wrap justify-content-between align-items-start gap-3"
+      className={`apex-page-header d-flex flex-wrap gap-3 ${centered ? 'apex-page-header--centered' : 'justify-content-between align-items-start'}`}
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div>
+      <div className={centered ? 'apex-page-header-main apex-page-header-main--centered' : 'apex-page-header-main'}>
         {breadcrumbs && (
           <nav className="mb-2">
             <ol className="breadcrumb mb-0 small">

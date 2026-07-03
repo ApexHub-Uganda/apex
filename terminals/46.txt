@@ -1,0 +1,24 @@
+---
+pid: 7260
+cwd: "E:\apex"
+command: "E:; Set-Location E:\\apex\\backend; python -m pytest tests/test_notification_delete.py -v"
+started_at: 2026-07-02T10:18:52.976Z
+running_for_ms: 16970013 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 6 items
+
+tests/test_notification_delete.py::TestSchoolAdminNotificationDelete::test_feed_delete_one_notification PASSED [ 16%]
+tests/test_notification_delete.py::TestSchoolAdminNotificationDelete::test_feed_delete_all_notifications PASSED [ 33%]
+tests/test_notification_delete.py::TestSchoolAdminNotificationDelete::test_feed_delete_synthetic_item PASSED [ 50%]
+tests/test_notification_delete.py::TestSuperAdminNotificationDelete::test_hide_one_platform_notification PASSED [ 66%]
+tests/test_notification_delete.py::TestSuperAdminNotificationDelete::test_hide_all_platform_notifications PASSED [ 83%]
+tests/test_notification_delete.py::TestSuperAdminNotificationDelete::test_feed_delete_one_for_super_admin PASSED [100%]
+
+============================= 6 passed in 19.60s ==============================

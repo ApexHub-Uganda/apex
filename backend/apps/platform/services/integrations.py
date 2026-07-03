@@ -155,9 +155,65 @@ class CallService:
 class PaymentService:
     """Subscription checkout and payment processing."""
 
-    @staticmethod
-    def _get_provider() -> Optional[PaymentProvider]:
-        return PaymentProvider.objects.filter(is_active=True).first()
+    CARD_PROVIDER_SLUGS = ("stripe", "paypal")
+    MOBILE_PROVIDER_SLUGS = ("mpesa", "mtn_momo", "airtel_money")
+
+    @classmethod
+    def _resolve_provider(
+        cls,
+        *,
+        payment_method: str,
+        provider_slug: str = "",
+    ) -> PaymentProvider:
+        from apps.core.constants import PaymentMethodType
+
+        method = payment_method or PaymentMethodType.CARD
+        if provider_slug:
+            provider = PaymentProvider.objects.filter(slug=provider_slug).first()
+            if provider:
+                return provider
+
+        preferred_slugs = (
+            cls.MOBILE_PROVIDER_SLUGS
+            if method == PaymentMethodType.MOBILE_MONEY
+            else cls.CARD_PROVIDER_SLUGS
+        )
+        for slug in preferred_slugs:
+            provider = PaymentProvider.objects.filter(slug=slug).first()
+            if provider:
+                return provider
+
+        provider = (
+            PaymentProvider.objects.filter(method_type=method, is_active=True).first()
+            or PaymentProvider.objects.filter(method_type=method).first()
+            or PaymentProvider.objects.filter(is_active=True).first()
+        )
+        if provider:
+            return provider
+
+        defaults = {
+            PaymentMethodType.MOBILE_MONEY: {
+                "slug": "mpesa",
+                "name": "M-Pesa",
+                "method_type": PaymentMethodType.MOBILE_MONEY,
+            },
+            PaymentMethodType.CARD: {
+                "slug": "stripe",
+                "name": "Stripe",
+                "method_type": PaymentMethodType.CARD,
+            },
+        }
+        cfg = defaults[method]
+        provider, _ = PaymentProvider.objects.get_or_create(
+            slug=cfg["slug"],
+            defaults={
+                "name": cfg["name"],
+                "method_type": cfg["method_type"],
+                "is_active": False,
+                "is_sandbox": True,
+            },
+        )
+        return provider
 
     @classmethod
     def process_checkout(
@@ -168,19 +224,53 @@ class PaymentService:
         amount: Decimal,
         billing_cycle: str = "monthly",
         currency: str = "USD",
+        payment_method: str = "card",
+        provider_slug: str = "",
+        phone_number: str = "",
+        card_last_four: str = "",
+        card_brand: str = "",
+        payer_name: str = "",
     ) -> IntegrationResult:
-        provider = cls._get_provider()
+        from apps.core.constants import PaymentMethodType
+        from apps.subscriptions.payment_utils import (
+            mask_phone,
+            normalize_payment_method,
+            validate_checkout_details,
+        )
+
+        method = normalize_payment_method(payment_method)
+        validate_checkout_details(
+            payment_method=method,
+            phone_number=phone_number,
+            card_last_four=card_last_four,
+            payer_name=payer_name,
+        )
+
+        provider = cls._resolve_provider(payment_method=method, provider_slug=provider_slug)
         reference = f"pay_{uuid.uuid4().hex[:12]}"
+        masked_phone = mask_phone(phone_number) if method == PaymentMethodType.MOBILE_MONEY else ""
 
         subscription = tenant.subscriptions.filter(plan=plan).order_by("-created_at").first()
         if not subscription:
             subscription = Subscription.objects.create(tenant=tenant, plan=plan, status="trial")
 
-        if not provider:
-            provider, _ = PaymentProvider.objects.get_or_create(
-                slug="unconfigured",
-                defaults={"name": "Unconfigured", "is_active": False},
-            )
+        txn_metadata = {
+            "billing_cycle": billing_cycle,
+            "plan_slug": plan.slug,
+            "checkout_attempted_at": timezone.now().isoformat(),
+            "payment_method": method,
+        }
+        if method == PaymentMethodType.CARD:
+            txn_metadata.update({
+                "card_last_four": card_last_four,
+                "card_brand": card_brand or "card",
+                "payer_name": payer_name.strip(),
+            })
+        else:
+            txn_metadata.update({
+                "phone_masked": masked_phone,
+                "phone_submitted": True,
+            })
 
         txn = PaymentTransaction.objects.create(
             tenant=tenant,
@@ -190,36 +280,39 @@ class PaymentService:
             currency=currency,
             status="failed",
             reference=reference,
-            metadata={
-                "billing_cycle": billing_cycle,
-                "plan_slug": plan.slug,
-                "checkout_attempted_at": timezone.now().isoformat(),
-            },
+            payment_method=method,
+            payer_phone=masked_phone,
+            metadata=txn_metadata,
         )
 
         tenant.payment_attempted = True
         tenant.save(update_fields=["payment_attempted", "updated_at"])
 
-        if not provider:
-            return IntegrationResult(
-                success=False,
-                message="Payment provider is not configured.",
-                reference=reference,
-                metadata={"transaction_id": str(txn.id)},
+        if method == PaymentMethodType.MOBILE_MONEY:
+            message = (
+                f"Mobile money payment could not be completed: {provider.name} is not yet available. "
+                f"We recorded your request for {masked_phone or 'the submitted number'}. "
+                "A super admin will follow up once mobile money checkout is enabled."
+            )
+        else:
+            ending = f" ending in {card_last_four}" if card_last_four else ""
+            message = (
+                f"Card payment failed: {provider.name} gateway API not connected{ending}. "
+                "Your request has been recorded — a super admin will activate your account after verification."
             )
 
         return IntegrationResult(
             success=False,
-            message=(
-                f"Payment failed: {provider.name} gateway API not connected. "
-                "Your registration has been recorded — a super admin will activate your account."
-            ),
+            message=message,
             reference=reference,
             external_id=txn.external_id,
             metadata={
                 "transaction_id": str(txn.id),
                 "provider": provider.slug,
+                "payment_method": method,
                 "amount": float(amount),
                 "currency": currency,
+                "payer_phone": masked_phone,
+                "card_last_four": card_last_four,
             },
         )

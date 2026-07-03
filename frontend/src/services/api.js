@@ -1,7 +1,16 @@
 import axios from 'axios';
 import { notify } from '../utils/notify';
+import { confirmMaintenanceAction } from '../utils/maintenanceConfirm';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const resolveApiBaseUrl = () => {
+  const configured = import.meta.env.VITE_API_BASE_URL;
+  if (configured) {
+    return configured.endsWith('/') ? configured.slice(0, -1) : configured;
+  }
+  return import.meta.env.DEV ? '/api/v1' : 'http://localhost:8000/api/v1';
+};
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -55,7 +64,7 @@ const isDemoToken = (token) =>
   !token || token === 'demo-access-token' || token === 'demo-refresh-token';
 
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     if (isAuthSkipRequest(config.url)) {
       delete config.headers.Authorization;
       return config;
@@ -69,9 +78,15 @@ api.interceptors.request.use(
     if (tenantId) {
       config.headers['X-Tenant-ID'] = tenantId;
     }
+
+    const allowed = await confirmMaintenanceAction(config);
+    if (!allowed) {
+      return Promise.reject(new axios.CanceledError('Action cancelled during maintenance mode.'));
+    }
+
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 const dispatchAuthExpired = () => {
@@ -86,6 +101,12 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config || {};
+
+    const maintenanceCode = error.response?.data?.error?.code;
+    if (error.response?.status === 503 && maintenanceCode === 'maintenance_mode') {
+      window.dispatchEvent(new CustomEvent('apex:maintenance-blocked'));
+      return Promise.reject(error);
+    }
 
     if (
       error.response?.status !== 401 ||
@@ -135,7 +156,7 @@ api.interceptors.response.use(
     } finally {
       isRefreshing = false;
     }
-  }
+  },
 );
 
 export { api, API_BASE_URL, setStoredTokens, clearStoredTokens, getStoredTokens, dispatchAuthExpired };

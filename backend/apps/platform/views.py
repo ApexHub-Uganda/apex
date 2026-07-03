@@ -20,6 +20,7 @@ from apps.platform.models import (
     CallSetting,
     EmailSetting,
     GlobalSetting,
+    PlanAdvertisement,
     PlatformBroadcast,
     PlatformNews,
     PlatformNotification,
@@ -31,12 +32,20 @@ from apps.platform.serializers import (
     CallSettingSerializer,
     EmailSettingSerializer,
     GlobalSettingSerializer,
+    PlanAdvertisementSerializer,
     PlatformBroadcastSerializer,
     PlatformNewsSerializer,
     PlatformNotificationSerializer,
     PlatformSettingsSerializer,
     SMSSettingSerializer,
     SystemHealthLogSerializer,
+)
+from apps.platform.services.plan_advertisements import (
+    PLAN_ORDER,
+    build_default_advertisement_payload,
+    broadcast_plan_advertisement,
+    get_plan_label,
+    get_upgrade_options,
 )
 from apps.platform.services.notification_feed import (
     get_platform_notification_summary,
@@ -84,7 +93,9 @@ class PlatformNotificationViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "post", "head", "options"]
 
     def get_queryset(self):
-        return PlatformNotification.objects.select_related("tenant", "action_taken_by").all()
+        from apps.platform.services.notification_feed import platform_notifications_queryset_for_user
+
+        return platform_notifications_queryset_for_user(self.request.user)
 
     @action(detail=False, methods=["get"])
     def summary(self, request: Request) -> Response:
@@ -129,10 +140,25 @@ class PlatformNotificationViewSet(viewsets.ModelViewSet):
         mark_platform_notification_read(notification, request.user)
         return Response({"success": True, "data": PlatformNotificationSerializer(notification).data})
 
+    @action(detail=True, methods=["post"])
+    def delete_notification(self, request: Request, pk: str = None) -> Response:
+        from apps.platform.services.notification_feed import hide_platform_notification
+
+        notification = self.get_object()
+        hide_platform_notification(notification, request.user)
+        return Response({"success": True, "message": "Notification removed from your inbox."})
+
     @action(detail=False, methods=["post"])
     def mark_all_read(self, request: Request) -> Response:
         count = mark_all_platform_notifications_read(request.user)
         return Response({"success": True, "message": f"{count} notifications marked as read."})
+
+    @action(detail=False, methods=["post"])
+    def delete_all(self, request: Request) -> Response:
+        from apps.platform.services.notification_feed import hide_all_platform_notifications
+
+        count = hide_all_platform_notifications(request.user)
+        return Response({"success": True, "message": f"{count} notification(s) removed from your inbox."})
 
 
 class APIKeyViewSet(viewsets.ModelViewSet):
@@ -152,6 +178,84 @@ class PlatformNewsViewSet(viewsets.ModelViewSet):
         if self.action == "list" and self.request.query_params.get("public"):
             return [AllowAny()]
         return [IsSuperAdmin()]
+
+
+class PlanAdvertisementViewSet(viewsets.ModelViewSet):
+    """Super-admin plan upgrade advertisements for school notification feeds."""
+
+    queryset = PlanAdvertisement.objects.select_related("created_by").all()
+    serializer_class = PlanAdvertisementSerializer
+    permission_classes = [IsSuperAdmin]
+    filterset_fields = ["status", "target_plan_slug", "suggested_plan_slug"]
+    search_fields = ["title", "headline", "message"]
+    ordering_fields = ["updated_at", "broadcast_at", "status", "target_plan_slug"]
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=False, methods=["get"])
+    def plan_options(self, request: Request) -> Response:
+        from apps.subscriptions.models import Plan
+
+        plans = list(Plan.objects.filter(is_active=True).order_by("sort_order", "name"))
+        payload = []
+        for plan in plans:
+            upgrades = get_upgrade_options(plan.slug)
+            payload.append({
+                "slug": plan.slug,
+                "name": plan.name,
+                "upgrade_options": [
+                    {"slug": slug, "name": get_plan_label(slug)} for slug in upgrades
+                ],
+                "can_advertise": bool(upgrades),
+            })
+        return Response({"success": True, "data": payload})
+
+    @action(detail=False, methods=["get"])
+    def defaults(self, request: Request) -> Response:
+        target = request.query_params.get("target_plan_slug", PLAN_ORDER[0])
+        suggested = request.query_params.get("suggested_plan_slug")
+        return Response({
+            "success": True,
+            "data": build_default_advertisement_payload(target, suggested),
+        })
+
+    @action(detail=True, methods=["post"])
+    def broadcast(self, request: Request, pk: str = None) -> Response:
+        ad = self.get_object()
+        result = broadcast_plan_advertisement(ad, actor=request.user)
+        ad.refresh_from_db()
+        return Response({
+            "success": True,
+            "message": f"Advertisement broadcast to {result['schools_notified']} school admin(s).",
+            "data": {
+                **PlanAdvertisementSerializer(ad).data,
+                "broadcast_result": result,
+            },
+        })
+
+    @action(detail=True, methods=["post"])
+    def pause(self, request: Request, pk: str = None) -> Response:
+        ad = self.get_object()
+        ad.status = "paused"
+        ad.save(update_fields=["status", "updated_at"])
+        return Response({
+            "success": True,
+            "message": "Advertisement paused.",
+            "data": PlanAdvertisementSerializer(ad).data,
+        })
+
+    @action(detail=True, methods=["post"])
+    def end(self, request: Request, pk: str = None) -> Response:
+        ad = self.get_object()
+        ad.status = "ended"
+        ad.ends_at = timezone.now()
+        ad.save(update_fields=["status", "ends_at", "updated_at"])
+        return Response({
+            "success": True,
+            "message": "Advertisement ended.",
+            "data": PlanAdvertisementSerializer(ad).data,
+        })
 
 
 class PlatformBroadcastViewSet(viewsets.ModelViewSet):
@@ -316,11 +420,9 @@ class PlatformSettingsView(APIView):
             }},
         )
         if "maintenance_mode" in payload:
-            settings.MAINTENANCE_MODE = bool(payload["maintenance_mode"])
-            GlobalSetting.objects.update_or_create(
-                key="maintenance_mode",
-                defaults={"value": {"enabled": bool(payload["maintenance_mode"])}},
-            )
+            from apps.platform.services.maintenance import set_maintenance_mode
+
+            set_maintenance_mode(bool(payload["maintenance_mode"]))
         return Response({"success": True, "data": self._load_settings()})
 
 
@@ -331,10 +433,8 @@ class MaintenanceModeView(APIView):
         return Response({"maintenance_mode": settings.MAINTENANCE_MODE})
 
     def post(self, request: Request) -> Response:
-        enabled = request.data.get("enabled", False)
-        settings.MAINTENANCE_MODE = bool(enabled)
-        GlobalSetting.objects.update_or_create(
-            key="maintenance_mode",
-            defaults={"value": {"enabled": enabled}},
-        )
+        from apps.platform.services.maintenance import set_maintenance_mode
+
+        enabled = bool(request.data.get("enabled", False))
+        set_maintenance_mode(enabled)
         return Response({"success": True, "maintenance_mode": enabled})

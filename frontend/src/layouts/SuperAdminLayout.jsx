@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import { superAdminNav } from '../config/navigation';
+import MaintenanceBanner from '../components/MaintenanceBanner';
 
 export function SuperAdminLayout() {
   const location = useLocation();
@@ -14,7 +15,8 @@ export function SuperAdminLayout() {
     <div className="apex-layout">
       <Sidebar
         items={superAdminNav}
-        collapsed={mobileOpen ? false : sidebarCollapsed}
+        collapsed={sidebarCollapsed}
+        mobileOpen={mobileOpen}
         onCollapsedChange={(val) => {
           if (window.innerWidth < 992) {
             setMobileOpen(!val);
@@ -23,7 +25,8 @@ export function SuperAdminLayout() {
           }
         }}
       />
-      <div className="apex-main" style={{ marginLeft: sidebarCollapsed ? 72 : 280 }}>
+      <div className="apex-main">
+        <MaintenanceBanner />
         <Navbar
           sidebarCollapsed={sidebarCollapsed}
           onMenuClick={() => setMobileOpen(!mobileOpen)}

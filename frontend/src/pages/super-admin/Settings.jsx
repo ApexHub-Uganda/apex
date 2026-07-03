@@ -6,9 +6,11 @@ import { FiSave, FiGlobe, FiMail, FiShield, FiAlertTriangle } from 'react-icons/
 import PageHeader from '../../components/PageHeader';
 import { PageSkeleton } from '../../components/LoadingSkeleton';
 import { settingsService } from '../../services/moduleService';
-import { extractApiError, notify } from '../../utils/notify';
+import { alert, extractApiError, notify } from '../../utils/notify';
+import { useMaintenance } from '../../hooks/useMaintenance';
 
 export function SuperAdminSettings() {
+  const { refreshMaintenanceStatus } = useMaintenance();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['platform-settings'],
     queryFn: () => settingsService.get(),
@@ -35,16 +37,50 @@ export function SuperAdminSettings() {
     mutationFn: (payload) => settingsService.update(payload),
     onSuccess: (saved) => {
       reset(saved);
+      refreshMaintenanceStatus();
       notify.success('Platform settings saved successfully.');
+      if (saved?.maintenance_mode) {
+        alert.warning(
+          'Maintenance mode enabled',
+          'All non–super-admin users are now blocked. Be careful of actions while maintenance is active.',
+        );
+      }
     },
     onError: (err) => notify.error(extractApiError(err, 'Unable to save settings.')),
   });
 
-  const onSubmit = (formData) => {
+  const onSubmit = async (formData) => {
+    const nextMaintenance = !!formData.maintenance_mode;
+    const wasMaintenance = !!data?.maintenance_mode;
+
+    if (nextMaintenance && !wasMaintenance) {
+      const result = await alert.confirm({
+        title: 'Enable maintenance mode?',
+        text: 'School admins and all other users will be blocked and see a maintenance message. Only super admins can access the platform until you turn this off.',
+        confirmText: 'Enable maintenance',
+        cancelText: 'Cancel',
+        icon: 'warning',
+        danger: true,
+      });
+      if (!result.isConfirmed) return;
+    }
+
+    if (wasMaintenance && isDirty && nextMaintenance) {
+      const result = await alert.confirm({
+        title: 'Save changes during maintenance?',
+        text: 'Maintenance mode is active. Saving will apply changes while other users remain blocked.',
+        confirmText: 'Save anyway',
+        cancelText: 'Cancel',
+        icon: 'warning',
+        danger: true,
+      });
+      if (!result.isConfirmed) return;
+    }
+
     saveMutation.mutate({
       ...formData,
       max_upload_size: Number(formData.max_upload_size),
-      maintenance_mode: !!formData.maintenance_mode,
+      maintenance_mode: nextMaintenance,
     });
   };
 
@@ -118,7 +154,10 @@ export function SuperAdminSettings() {
                 <input className="form-check-input" type="checkbox" {...register('maintenance_mode')} id="maintenance" />
                 <label className="form-check-label" htmlFor="maintenance">Maintenance Mode</label>
               </div>
-              <p className="text-muted small mt-2">When enabled, only super admins can access the platform.</p>
+              <p className="text-muted small mt-2">
+                When enabled, school admins and other users are blocked with a maintenance message.
+                Super admins keep full access and see a warning banner.
+              </p>
             </motion.div>
           </div>
         </div>

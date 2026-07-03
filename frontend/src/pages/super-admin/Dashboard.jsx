@@ -12,6 +12,7 @@ import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
 import ProgressBar from '../../components/ProgressBar';
 import ActivityFeed from '../../components/ActivityFeed';
+import SchoolNameWithBadge from '../../components/SchoolNameWithBadge';
 import { PageSkeleton } from '../../components/LoadingSkeleton';
 import { dashboardService } from '../../services/dashboardService';
 
@@ -311,7 +312,19 @@ export function SuperAdminDashboard() {
             <h5 className="fw-bold mb-3">Recently Registered Schools</h5>
             <DataTable
               columns={[
-                { key: 'name', label: 'School', accessor: 'name', sortable: true },
+                {
+                  key: 'name',
+                  label: 'School',
+                  accessor: 'name',
+                  sortable: true,
+                  render: (row) => (
+                    <SchoolNameWithBadge
+                      name={row.name}
+                      planSlug={row.plan_slug}
+                      size="sm"
+                    />
+                  ),
+                },
                 { key: 'plan', label: 'Plan', accessor: 'plan' },
                 { key: 'country', label: 'Country', accessor: 'country' },
                 { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
@@ -352,7 +365,11 @@ export function SuperAdminDashboard() {
                   <div className="d-flex justify-content-between align-items-center mb-2">
                     <span className="fw-semibold small">
                       <span className="text-muted me-2">#{index + 1}</span>
-                      {school.name}
+                      <SchoolNameWithBadge
+                        name={school.name}
+                        planSlug={school.plan_slug}
+                        size="sm"
+                      />
                     </span>
                     <span className="badge rounded-pill" style={{ background: 'var(--apex-primary)', color: '#fff' }}>
                       {school.students}

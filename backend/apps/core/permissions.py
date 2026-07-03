@@ -98,7 +98,7 @@ class TenantActivePermission(BasePermission):
         if tenant is None:
             return False
 
-        if tenant.is_suspended:
+        if tenant.is_suspended or tenant.status == TenantStatus.SUSPENDED:
             raise TenantSuspendedError()
 
         if tenant.status == TenantStatus.PENDING or not tenant.is_verified:

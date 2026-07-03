@@ -1,0 +1,58 @@
+---
+pid: 15768
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_maintenance_mode.py -q"
+started_at: 2026-07-02T16:12:28.883Z
+running_for_ms: 155494   
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 6 items
+
+tests\test_maintenance_mode.py FF..F.                                    [100%]
+
+================================== FAILURES ===================================
+__________ TestMaintenanceMode.test_super_admin_can_access_settings ___________
+tests\test_maintenance_mode.py:25: in test_super_admin_can_access_settings
+    assert response.status_code == status.HTTP_200_OK
+E   assert 503 == 200
+E    +  where 503 = <JsonResponse status_code=503, "application/json">.status_code
+E    +  and   200 = status.HTTP_200_OK
+---------------------------- Captured stderr call -----------------------------
+ERROR 2026-07-02 09:12:45,834 log Service Unavailable: /api/v1/platform/settings/general/
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:253 Service Unavailable: /api/v1/platform/settings/general/
+______ TestMaintenanceMode.test_school_admin_blocked_during_maintenance _______
+tests\test_maintenance_mode.py:31: in test_school_admin_blocked_during_maintenance
+    assert response.data["error"]["code"] == "maintenance_mode"
+           ^^^^^^^^^^^^^
+E   AttributeError: 'JsonResponse' object has no attribute 'data'
+---------------------------- Captured stderr call -----------------------------
+ERROR 2026-07-02 09:12:46,953 log Service Unavailable: /api/v1/tenants/context/
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:253 Service Unavailable: /api/v1/tenants/context/
+________ TestMaintenanceMode.test_super_admin_can_disable_maintenance _________
+tests\test_maintenance_mode.py:56: in test_super_admin_can_disable_maintenance
+    assert response.status_code == status.HTTP_200_OK
+E   assert 503 == 200
+E    +  where 503 = <JsonResponse status_code=503, "application/json">.status_code
+E    +  and   200 = status.HTTP_200_OK
+---------------------------- Captured stderr call -----------------------------
+ERROR 2026-07-02 09:12:51,254 log Service Unavailable: /api/v1/platform/settings/general/
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:253 Service Unavailable: /api/v1/platform/settings/general/
+============================== warnings summary ===============================
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\utils.py:98
+  C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\utils.py:98: RuntimeWarning: Accessing the database during app initialization is discouraged. To fix this warning, avoid executing queries in AppConfig.ready() or when your app modules are imported.
+    warnings.warn(self.APPS_NOT_READY_WARNING_MSG, category=RuntimeWarning)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_maintenance_mode.py::TestMaintenanceMode::test_super_admin_can_access_settings
+FAILED tests/test_maintenance_mode.py::TestMaintenanceMode::test_school_admin_blocked_during_maintenance
+FAILED tests/test_maintenance_mode.py::TestMaintenanceMode::test_super_admin_can_disable_maintenance
+=================== 3 failed, 3 passed, 1 warning in 17.57s ===================

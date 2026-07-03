@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import PendingApproval from '../pages/shared/PendingApproval';
+import SchoolSuspended from '../pages/shared/SchoolSuspended';
 import SchoolContextBanner from '../components/SchoolContextBanner';
 import { buildSchoolAdminNav } from '../config/navigation';
 import { useAuth } from '../hooks/useAuth';
@@ -14,19 +15,35 @@ export function SchoolAdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
-  const { tenant, loading: tenantLoading, navigationMenu } = useTenant();
+  const { tenant, loading: tenantLoading, moduleMenu, isSuspended } = useTenant();
 
-  const isPendingApproval = user
-    && (user.tenant_is_verified === false || user.tenant_status === 'pending'
-      || (tenant && !tenant.is_verified));
+  // Prefer live tenant context from DB over stale JWT user profile.
+  const isPendingApproval = !isSuspended && (tenant
+    ? tenant.is_verified === false && (tenant.status === 'pending' || !tenant.status)
+    : Boolean(user?.tenant_is_verified === false || user?.tenant_status === 'pending'));
 
-  const navItems = useMemo(() => buildSchoolAdminNav(navigationMenu), [navigationMenu]);
+  const isSchoolSuspended = isSuspended
+    || tenant?.is_suspended
+    || tenant?.status === 'suspended'
+    || user?.tenant_is_suspended
+    || user?.tenant_status === 'suspended';
+
+  const navItems = useMemo(() => buildSchoolAdminNav(moduleMenu), [moduleMenu]);
+  const hasModules = (moduleMenu?.length ?? 0) > 0;
+  const planSlug = tenant?.subscription?.plan_slug || user?.tenant_plan_slug;
+  const planName = tenant?.subscription?.plan_name;
+  const planBranding = planSlug || planName
+    ? { planSlug, planName }
+    : null;
 
   return (
-    <div className="apex-layout">
+    <div className={`apex-layout ${isSchoolSuspended ? 'is-school-suspended' : ''}`}>
       <Sidebar
         items={navItems}
-        collapsed={mobileOpen ? false : sidebarCollapsed}
+        collapsed={sidebarCollapsed}
+        mobileOpen={mobileOpen}
+        disabled={isSchoolSuspended}
+        planBranding={planBranding}
         onCollapsedChange={(val) => {
           if (window.innerWidth < 992) {
             setMobileOpen(!val);
@@ -35,12 +52,18 @@ export function SchoolAdminLayout() {
           }
         }}
       />
-      <div className="apex-main" style={{ marginLeft: sidebarCollapsed ? 72 : 280 }}>
+      <div className="apex-main">
         <Navbar
           sidebarCollapsed={sidebarCollapsed}
-          onMenuClick={() => setMobileOpen(!mobileOpen)}
+          onMenuClick={() => setMobileOpen((open) => !open)}
+          suspended={isSchoolSuspended}
         />
-        <main className="apex-content">
+        {isSchoolSuspended && (
+          <div className="school-suspended-banner" role="alert">
+            Your school has been temporarily suspended! Contact admin to verify issue.
+          </div>
+        )}
+        <main className={`apex-content ${isSchoolSuspended ? 'is-school-suspended' : ''}`}>
           <AnimatePresence mode="wait">
             <motion.div
               key={location.pathname}
@@ -53,12 +76,23 @@ export function SchoolAdminLayout() {
                 <div className="py-5 text-center">
                   <div className="spinner-border text-primary" role="status" />
                 </div>
-              ) : isPendingApproval ? (
-                <PendingApproval />
               ) : (
                 <>
-                  <SchoolContextBanner />
-                  <Outlet />
+                  {!isSchoolSuspended && <SchoolContextBanner />}
+                  {isSchoolSuspended ? (
+                    <SchoolSuspended />
+                  ) : isPendingApproval && !hasModules ? (
+                    <PendingApproval />
+                  ) : isPendingApproval ? (
+                    <>
+                      <div className="alert alert-warning small mb-3">
+                        Your school account is awaiting final approval, but your assigned plan modules are available below.
+                      </div>
+                      <Outlet />
+                    </>
+                  ) : (
+                    <Outlet />
+                  )}
                 </>
               )}
             </motion.div>

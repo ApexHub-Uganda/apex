@@ -9,6 +9,7 @@ from apps.platform.views import (
     GlobalSettingViewSet,
     HealthCheckView,
     MaintenanceModeView,
+    PlanAdvertisementViewSet,
     PlatformBroadcastViewSet,
     PlatformNewsViewSet,
     PlatformNotificationViewSet,
@@ -27,6 +28,7 @@ router.register("call-settings", CallSettingViewSet, basename="call-setting")
 router.register("notifications", PlatformNotificationViewSet, basename="platform-notification")
 router.register("api-keys", APIKeyViewSet, basename="api-key")
 router.register("news", PlatformNewsViewSet, basename="platform-news")
+router.register("plan-advertisements", PlanAdvertisementViewSet, basename="plan-advertisement")
 router.register("broadcasts", PlatformBroadcastViewSet, basename="platform-broadcast")
 router.register("health-logs", SystemHealthLogViewSet, basename="health-log")
 

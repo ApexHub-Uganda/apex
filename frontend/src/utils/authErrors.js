@@ -14,9 +14,11 @@ export function getLoginErrorMessage(error) {
   const message =
     data?.error?.message ||
     data?.detail ||
+    data?.non_field_errors?.[0] ||
+    data?.error?.details?.non_field_errors?.[0] ||
     (typeof data === 'string' ? data : null);
 
-  if (message) return message;
+  if (message) return String(message);
 
   if (status === 401 || status === 400) {
     return 'Invalid email or password.';

@@ -7,7 +7,7 @@ from typing import Any
 
 from django.utils import timezone
 from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 
 from apps.accounts.models import LoginHistory, User, UserDevice, UserSession
 from apps.core.constants import UserRole
@@ -26,6 +26,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         if user.tenant_id:
             token["tenant_id"] = str(user.tenant_id)
             token["tenant_name"] = user.tenant.name if user.tenant else ""
+            token["tenant_is_suspended"] = bool(user.tenant and user.tenant.is_suspended)
+            token["tenant_status"] = user.tenant.status if user.tenant else ""
+            sub = user.tenant.active_subscription if user.tenant else None
+            if sub and sub.plan:
+                token["tenant_plan_slug"] = sub.plan.slug
         return token
 
     def validate(self, attrs: dict) -> dict:
@@ -47,6 +52,15 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             raise
 
         user = self.user
+
+        from django.conf import settings as django_settings
+
+        if getattr(django_settings, "MAINTENANCE_MODE", False) and user.role != UserRole.SUPER_ADMIN:
+            raise serializers.ValidationError(
+                "Apex Hub is currently under maintenance. Please try again later.",
+                code="maintenance_mode",
+            )
+
         user.last_login_at = timezone.now()
         if request:
             user.last_login_ip = get_client_ip(request)
@@ -64,26 +78,58 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return data
 
 
+class CustomTokenRefreshSerializer(TokenRefreshSerializer):
+    """Block token refresh for non–super-admins during maintenance."""
+
+    def validate(self, attrs: dict) -> dict:
+        from django.conf import settings as django_settings
+
+        data = super().validate(attrs)
+        if getattr(django_settings, "MAINTENANCE_MODE", False):
+            from rest_framework_simplejwt.tokens import RefreshToken
+
+            refresh = RefreshToken(attrs["refresh"])
+            user = User.objects.filter(pk=refresh.get("user_id")).first()
+            if not user or user.role != UserRole.SUPER_ADMIN:
+                raise serializers.ValidationError(
+                    "Apex Hub is currently under maintenance. Please try again later.",
+                    code="maintenance_mode",
+                )
+        return data
+
+
 class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
     tenant_name = serializers.CharField(source="tenant.name", read_only=True, allow_null=True)
     tenant_status = serializers.CharField(source="tenant.status", read_only=True, allow_null=True)
     tenant_is_verified = serializers.BooleanField(source="tenant.is_verified", read_only=True, allow_null=True)
+    tenant_is_suspended = serializers.BooleanField(source="tenant.is_suspended", read_only=True, allow_null=True)
     tenant_registration_type = serializers.CharField(
         source="tenant.registration_type", read_only=True, allow_null=True,
     )
+    tenant_plan_slug = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             "id", "email", "first_name", "last_name", "full_name", "phone",
             "avatar", "role", "tenant", "tenant_name", "tenant_status",
-            "tenant_is_verified", "tenant_registration_type", "is_active",
+            "tenant_plan_slug",
+            "tenant_is_verified", "tenant_is_suspended", "tenant_registration_type", "is_active",
             "is_email_verified", "is_2fa_enabled", "last_login_at", "created_at",
         ]
         read_only_fields = [
             "id", "is_email_verified", "is_2fa_enabled", "last_login_at", "created_at",
         ]
+
+    def get_tenant_plan_slug(self, obj: User) -> str | None:
+        if not obj.tenant_id:
+            return None
+        tenant = obj.tenant
+        if tenant is None:
+            return None
+        sub = tenant.active_subscription
+        return sub.plan.slug if sub and sub.plan else None
 
 
 class UserCreateSerializer(serializers.ModelSerializer):

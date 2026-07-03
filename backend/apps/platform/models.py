@@ -114,10 +114,15 @@ class PlatformNotificationReceipt(PlatformModel):
     )
     is_read = models.BooleanField(default=False)
     read_at = models.DateTimeField(null=True, blank=True)
+    is_deleted = models.BooleanField(default=False, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = [("notification", "user")]
-        indexes = [models.Index(fields=["user", "is_read"])]
+        indexes = [
+            models.Index(fields=["user", "is_read"]),
+            models.Index(fields=["user", "is_deleted"]),
+        ]
 
 
 class SMSSetting(PlatformModel):
@@ -169,6 +174,45 @@ class PlatformNews(PlatformModel):
     class Meta:
         ordering = ["-published_at"]
         verbose_name_plural = "Platform news"
+
+
+class PlanAdvertisement(PlatformModel):
+    """Super-admin plan upgrade advertisements shown to school admins."""
+
+    STATUS_CHOICES = [
+        ("draft", "Draft"),
+        ("active", "Active"),
+        ("paused", "Paused"),
+        ("ended", "Ended"),
+    ]
+
+    target_plan_slug = models.CharField(max_length=50, db_index=True)
+    suggested_plan_slug = models.CharField(max_length=50)
+    title = models.CharField(max_length=255)
+    headline = models.CharField(max_length=255, blank=True)
+    message = models.TextField()
+    highlights = models.JSONField(default=list, blank=True)
+    cta_label = models.CharField(max_length=80, default="Explore upgrade")
+    cta_url = models.CharField(max_length=255, blank=True, default="/school-admin/notifications")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft", db_index=True)
+    starts_at = models.DateTimeField(null=True, blank=True)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    broadcast_at = models.DateTimeField(null=True, blank=True)
+    broadcast_count = models.PositiveIntegerField(default=0)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="plan_advertisements_created",
+    )
+
+    class Meta:
+        ordering = ["-updated_at"]
+        indexes = [
+            models.Index(fields=["target_plan_slug", "status"]),
+            models.Index(fields=["status", "broadcast_at"]),
+        ]
 
 
 class PlatformBroadcast(PlatformModel):

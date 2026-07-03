@@ -1,0 +1,99 @@
+---
+pid: 21908
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_upgrade.py -v --tb=short 2>&1"
+started_at: 2026-07-02T14:06:38.380Z
+running_for_ms: 3305006  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 2 items
+
+tests/test_plan_upgrade.py::TestPlanUpgrade::test_catalog_lists_upgrade_plans FAILED [ 50%]
+tests/test_plan_upgrade.py::TestPlanUpgrade::test_checkout_fails_with_dummy_gateway PASSED [100%]
+
+================================== FAILURES ===================================
+______________ TestPlanUpgrade.test_catalog_lists_upgrade_plans _______________
+tests\test_plan_upgrade.py:20: in test_catalog_lists_upgrade_plans
+    assert len(data["upgrade_plans"]) >= 1
+E   assert 0 >= 1
+E    +  where 0 = len([])
+---------------------------- Captured stdout setup ----------------------------
+Operations to perform:
+  Synchronize unmigrated apps: corsheaders, django_filters, drf_spectacular, messages, rest_framework, rest_framework_simplejwt, staticfiles
+  Apply all migrations: academics, accounts, admin, analytics, attendance, audit, auth, communication, contenttypes, examinations, finance, hostel, hr, inventory, library, payroll, platform, sessions, staff, students, subscriptions, tenants, token_blacklist, transport
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying tenants.0001_initial... OK
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying accounts.0001_initial... OK
+  Applying academics.0001_initial... OK
+  Applying staff.0001_initial... OK
+  Applying academics.0002_initial... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying analytics.0001_initial... OK
+  Applying students.0001_initial... OK
+  Applying attendance.0001_initial... OK
+  Applying audit.0001_initial... OK
+  Applying communication.0001_initial... OK
+  Applying communication.0002_feed_item_dismissal... OK
+  Applying examinations.0001_initial... OK
+  Applying finance.0001_initial... OK
+  Applying hostel.0001_initial... OK
+  Applying hr.0001_initial... OK
+  Applying inventory.0001_initial... OK
+  Applying library.0001_initial... OK
+  Applying payroll.0001_initial... OK
+  Applying tenants.0002_registration_notifications... OK
+  Applying platform.0001_initial... OK
+  Applying platform.0002_platform_metrics... OK
+  Applying platform.0003_broadcast_and_metrics_fields... OK
+  Applying platform.0004_registration_notifications... OK
+  Applying platform.0005_notification_receipts... OK
+  Applying platform.0006_plan_advertisements... OK
+  Applying platform.0007_notification_receipt_delete... OK
+  Applying sessions.0001_initial... OK
+  Applying subscriptions.0001_initial... OK
+  Applying subscriptions.0002_enterprise_feature_catalog... OK
+  Applying subscriptions.0003_schema_alignment... OK
+  Applying token_blacklist.0001_initial... OK
+  Applying token_blacklist.0002_outstandingtoken_jti_hex... OK
+  Applying token_blacklist.0003_auto_20171017_2007... OK
+  Applying token_blacklist.0004_auto_20171017_2013... OK
+  Applying token_blacklist.0005_remove_outstandingtoken_jti... OK
+  Applying token_blacklist.0006_auto_20171017_2113... OK
+  Applying token_blacklist.0007_auto_20171017_2214... OK
+  Applying token_blacklist.0008_migrate_to_bigautofield... OK
+  Applying token_blacklist.0010_fix_migrate_to_bigautofield... OK
+  Applying token_blacklist.0011_linearizes_history... OK
+  Applying token_blacklist.0012_alter_outstandingtoken_user... OK
+  Applying token_blacklist.0013_alter_blacklistedtoken_options_and_more... OK
+  Applying transport.0001_initial... OK
+---------------------------- Captured stderr setup ----------------------------
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+=========================== short test summary info ===========================
+FAILED tests/test_plan_upgrade.py::TestPlanUpgrade::test_catalog_lists_upgrade_plans - assert 0 >= 1
+ +  where 0 = len([])
+======================== 1 failed, 1 passed in 13.08s =========================

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -7,6 +8,7 @@ import {
 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
+import NotificationItemActions from '../../components/NotificationItemActions';
 import { PageSkeleton } from '../../components/LoadingSkeleton';
 import { platformNotificationsService } from '../../services/moduleService';
 import { extractApiError, notify } from '../../utils/notify';
@@ -60,6 +62,40 @@ export function NotificationsTodos() {
     onError: (err) => notify.error(extractApiError(err, 'Unable to dismiss notification.')),
   });
 
+  const markReadMutation = useMutation({
+    mutationFn: (id) => platformNotificationsService.markRead(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platform-notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-notifications-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-feed'] });
+    },
+    onError: (err) => notify.error(extractApiError(err, 'Unable to mark notification as read.')),
+  });
+
+  const deleteOneMutation = useMutation({
+    mutationFn: (id) => platformNotificationsService.delete(id),
+    onSuccess: (result) => {
+      notify.success(result?.message || 'Notification deleted.');
+      queryClient.invalidateQueries({ queryKey: ['platform-notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-notifications-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-feed'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-page'] });
+    },
+    onError: (err) => notify.error(extractApiError(err, 'Unable to delete notification.')),
+  });
+
+  const deleteAllMutation = useMutation({
+    mutationFn: () => platformNotificationsService.deleteAll(),
+    onSuccess: (result) => {
+      notify.success(result?.message || 'All notifications deleted.');
+      queryClient.invalidateQueries({ queryKey: ['platform-notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-notifications-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-feed'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-page'] });
+    },
+    onError: (err) => notify.error(extractApiError(err, 'Unable to delete notifications.')),
+  });
+
   const notifications = data || [];
   const busyId = approveMutation.isPending
     ? approveMutation.variables
@@ -82,8 +118,25 @@ export function NotificationsTodos() {
   return (
     <div>
       <PageHeader
-        title="Notifications & To-do"
+        title="Inbox"
         subtitle="Review new school registrations and approve accounts"
+        actions={(
+          <div className="d-flex flex-wrap gap-2">
+            {notifications.length > 0 && (
+              <button
+                type="button"
+                className="btn btn-outline-danger btn-sm"
+                onClick={() => deleteAllMutation.mutate()}
+                disabled={deleteAllMutation.isPending}
+              >
+                Delete all
+              </button>
+            )}
+            <Link to="/super-admin/notifications/advertise" className="btn btn-outline-primary btn-sm">
+              Advertise
+            </Link>
+          </div>
+        )}
       />
 
       <div className="d-flex flex-wrap gap-2 mb-4">
@@ -138,10 +191,21 @@ export function NotificationsTodos() {
                       <Icon size={20} />
                     </div>
                     <div className="flex-grow-1">
-                      <div className="d-flex flex-wrap align-items-center gap-2 mb-1">
-                        <h6 className="fw-bold mb-0">{item.title}</h6>
-                        <StatusBadge status={item.status} />
-                        {!item.is_read && <span className="badge bg-primary">New</span>}
+                      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
+                        <div className="d-flex flex-wrap align-items-center gap-2">
+                          <h6 className="fw-bold mb-0">{item.title}</h6>
+                          <StatusBadge status={item.status} />
+                          {!item.is_read && <span className="badge bg-primary">New</span>}
+                        </div>
+                        <NotificationItemActions
+                          itemId={item.id}
+                          isRead={item.is_read}
+                          canMarkRead
+                          onMarkRead={(id) => markReadMutation.mutate(id)}
+                          onDelete={(id) => deleteOneMutation.mutate(id)}
+                          deleting={deleteOneMutation.isPending}
+                          marking={markReadMutation.isPending}
+                        />
                       </div>
                       <p className="text-muted small mb-2">{item.message}</p>
                       <div className="d-flex flex-wrap gap-3 small text-muted">

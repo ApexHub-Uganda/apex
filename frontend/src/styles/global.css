@@ -24,6 +24,8 @@
   --apex-radius: 12px;
   --apex-radius-lg: 16px;
   --apex-sidebar-width: 280px;
+  --apex-sidebar-width-collapsed: 72px;
+  --apex-sidebar-current-width: 280px;
   --apex-navbar-height: 64px;
   --apex-transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   --apex-font: 'Inter', system-ui, -apple-system, sans-serif;
@@ -131,6 +133,28 @@ a:hover {
   margin-bottom: 1.75rem;
 }
 
+.apex-page-header--centered {
+  justify-content: center;
+  text-align: center;
+}
+
+.apex-page-header-main--centered {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.apex-page-header-main--centered .apex-page-title {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.apex-page-header-main--centered .verified-name-inline {
+  justify-content: center;
+}
+
 .apex-page-title {
   font-size: 1.75rem;
   font-weight: 800;
@@ -192,14 +216,381 @@ a:hover {
 }
 
 /* Sidebar */
-.apex-sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #fff !important;
+.apex-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1040;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--apex-primary) 0%, var(--apex-primary-dark) 100%);
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.12);
+}
+
+.apex-sidebar.is-mobile {
+  box-shadow: 8px 0 32px rgba(15, 23, 42, 0.2);
+}
+
+.apex-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 1039;
+}
+
+.apex-sidebar-header {
+  min-height: 64px;
+  padding: 0.85rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.apex-logo-name {
+  color: var(--apex-text);
+}
+
+.apex-logo-tagline {
+  color: var(--apex-text-muted);
+}
+
+.apex-sidebar-header .apex-logo-name,
+.apex-sidebar-header .apex-logo-tagline {
+  color: #fff;
+}
+
+.apex-sidebar.is-collapsed .apex-sidebar-header {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.35rem;
+  min-height: 96px;
+}
+
+.apex-sidebar.is-collapsed .apex-sidebar-header .apex-logo-icon {
+  flex-shrink: 0;
+}
+
+.apex-sidebar-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background var(--apex-transition), transform 0.15s ease;
+}
+
+.apex-sidebar-collapse-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.apex-sidebar-collapse-btn:active {
+  transform: scale(0.96);
+}
+
+.apex-sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.35rem 0.5rem 1rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+}
+
+.apex-sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.apex-sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+}
+
+.apex-sidebar-footer {
+  padding: 0.85rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.55);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.apex-sidebar-divider {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0.65rem 0.85rem 0.35rem;
+  margin-top: 0.25rem;
+}
+
+.apex-sidebar-divider-line {
+  border-color: rgba(255, 255, 255, 0.2);
+  margin: 0.5rem 0.35rem;
+}
+
+.apex-sidebar-item {
+  position: relative;
+  margin-bottom: 0.2rem;
+}
+
+.apex-sidebar-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.85rem;
+  border: 0;
+  border-radius: 10px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.78);
+  background: transparent;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.12s ease;
+}
+
+.apex-sidebar-link:hover,
+.apex-sidebar-link:focus-visible {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  outline: none;
 }
 
 .apex-sidebar-link.active {
-  background: rgba(255, 255, 255, 0.15) !important;
-  color: #fff !important;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-weight: 600;
+}
+
+.apex-sidebar-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 0 4px 4px 0;
+  background: var(--apex-secondary);
+}
+
+.apex-sidebar-parent {
+  padding-right: 0.65rem;
+}
+
+.apex-sidebar-link-icon {
+  font-size: 1.15rem;
+  min-width: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.apex-sidebar-link-label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.apex-sidebar-badge {
+  margin-left: auto;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: var(--apex-secondary);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.apex-sidebar-chevron {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.75);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.apex-sidebar-chevron.is-expanded {
+  transform: rotate(0deg);
+}
+
+.apex-sidebar-chevron:not(.is-expanded) {
+  transform: rotate(-90deg);
+}
+
+.apex-sidebar-submenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.26s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.apex-sidebar-submenu.is-expanded {
+  grid-template-rows: 1fr;
+}
+
+.apex-sidebar-submenu-inner {
+  overflow: hidden;
+  min-height: 0;
+  padding-left: 0.35rem;
+}
+
+.apex-sidebar-sublink {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 38px;
+  margin: 0.1rem 0;
+  padding: 0.45rem 0.85rem 0.45rem 2.35rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.68);
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    padding-left 0.22s ease;
+}
+
+.apex-sidebar-sublink:hover,
+.apex-sidebar-sublink:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  outline: none;
+}
+
+.apex-sidebar-sublink.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-weight: 600;
+  padding-left: 2.5rem;
+}
+
+.apex-sidebar-sublink.active::before {
+  content: '';
+  position: absolute;
+  left: 1.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--apex-secondary);
+}
+
+.apex-sidebar-sublink-icon {
+  font-size: 0.95rem;
+  min-width: 18px;
+  opacity: 0.9;
+  display: inline-flex;
+}
+
+.apex-sidebar.is-collapsed .apex-sidebar-link {
+  justify-content: center;
+  padding-inline: 0.5rem;
+}
+
+.apex-sidebar.is-collapsed .apex-sidebar-link.active::before {
+  left: 4px;
+  height: 44%;
+}
+
+.apex-sidebar-collapsed-trigger {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.apex-sidebar-flyout {
+  position: fixed;
+  left: calc(var(--apex-sidebar-current-width, var(--apex-sidebar-width-collapsed)) - 2px);
+  min-width: 220px;
+  max-width: 280px;
+  padding: 0.5rem;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--apex-border);
+  box-shadow: var(--apex-shadow-lg);
+  z-index: 1050;
+}
+
+.apex-sidebar-flyout::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -14px;
+  width: 14px;
+  height: 100%;
+}
+
+.apex-sidebar-flyout-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--apex-text-muted);
+  padding: 0.35rem 0.65rem 0.5rem;
+}
+
+.apex-sidebar-flyout-link {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 38px;
+  padding: 0.45rem 0.65rem;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--apex-text);
+  font-size: 0.84rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.apex-sidebar-flyout-link:hover,
+.apex-sidebar-flyout-link:focus-visible {
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--apex-primary);
+  outline: none;
+}
+
+.apex-sidebar-flyout-link.active {
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--apex-primary);
+  font-weight: 600;
+}
+
+.apex-sidebar-flyout-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  color: var(--apex-primary);
 }
 
 .apex-stat-card {
@@ -213,12 +604,729 @@ a:hover {
   min-height: 100vh;
 }
 
+.apex-navbar {
+  overflow: visible;
+}
+
+.apex-notifications-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(380px, calc(100vw - 24px));
+  max-height: min(520px, calc(100vh - 88px));
+  overflow-y: auto;
+  display: block;
+  z-index: 1060;
+  background: var(--apex-surface);
+  border: 1px solid var(--apex-border);
+  border-radius: 12px;
+  box-shadow: var(--apex-shadow-lg);
+}
+
+.apex-notifications-panel-header,
+.apex-notifications-panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--apex-surface);
+}
+
+.apex-notifications-panel-header {
+  border-bottom: 1px solid var(--apex-border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.apex-notifications-panel-footer {
+  border-top: 1px solid var(--apex-border);
+  position: sticky;
+  bottom: 0;
+}
+
+.apex-notifications-pinned,
+.apex-notifications-item {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0.85rem 1rem;
+  color: var(--apex-text);
+  transition: background 0.15s ease;
+}
+
+.apex-notifications-pinned {
+  background: rgba(15, 118, 110, 0.06);
+  border-bottom: 1px solid var(--apex-border);
+}
+
+.apex-notifications-pinned:hover,
+.apex-notifications-item:hover {
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.apex-notifications-item.is-unread {
+  background: rgba(15, 118, 110, 0.04);
+}
+
+.apex-notifications-message {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.apex-notifications-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--apex-text-muted);
+  font-size: 0.82rem;
+}
+
+.notification-panel-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.75rem;
+}
+
+.apex-notifications-pinned-wrap,
+.apex-notifications-item-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--apex-border);
+}
+
+.apex-notifications-pinned-wrap:last-of-type,
+.apex-notifications-item-wrap:last-of-type {
+  border-bottom: 0;
+}
+
+.apex-notifications-pinned-wrap .apex-notifications-pinned,
+.apex-notifications-item-wrap .apex-notifications-item {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 0;
+}
+
+.apex-notifications-pinned-wrap .notification-item-actions,
+.apex-notifications-item-wrap .notification-item-actions {
+  flex-shrink: 0;
+  align-self: center;
+  padding-right: 0.65rem;
+}
+
+.notification-item-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.notification-item-actions.is-compact {
+  gap: 0.15rem;
+}
+
+.notification-item-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--apex-border);
+  border-radius: 8px;
+  background: var(--apex-surface);
+  color: var(--apex-text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.notification-item-actions.is-compact .notification-item-action {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+}
+
+.notification-item-action:hover:not(:disabled) {
+  background: rgba(15, 118, 110, 0.08);
+  border-color: rgba(15, 118, 110, 0.25);
+  color: var(--apex-primary);
+}
+
+.notification-item-action--danger:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.08);
+  border-color: rgba(220, 53, 69, 0.3);
+  color: #dc3545;
+}
+
+.notification-item-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notification-page-card .notification-item-actions {
+  flex-shrink: 0;
+}
+
+.apex-sidebar.is-disabled,
+.apex-sidebar-item.is-disabled .apex-sidebar-link,
+.apex-sidebar-link.is-disabled,
+.apex-sidebar-sublink.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.apex-sidebar.is-disabled .apex-sidebar-link:hover,
+.apex-sidebar.is-disabled .apex-sidebar-sublink:hover {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.is-disabled-control,
+.is-disabled-control .btn {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.apex-layout.is-school-suspended .apex-main {
+  position: relative;
+}
+
+.maintenance-mode-banner {
+  position: sticky;
+  top: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1.25rem;
+  background: linear-gradient(90deg, rgba(217, 119, 6, 0.16), rgba(245, 158, 11, 0.12));
+  border-bottom: 1px solid rgba(217, 119, 6, 0.28);
+  color: #92400e;
+}
+
+.maintenance-mode-banner-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.maintenance-mode-banner-text strong {
+  font-size: 0.92rem;
+}
+
+.maintenance-mode-banner-text span {
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+
+.maintenance-page {
+  background: var(--apex-bg, #f8fafc);
+}
+
+.maintenance-card {
+  width: min(480px, 100%);
+}
+
+.maintenance-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+}
+
+.school-suspended-banner {
+  position: sticky;
+  top: 64px;
+  z-index: 1040;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(90deg, rgba(220, 53, 69, 0.12), rgba(255, 127, 80, 0.1));
+  border-bottom: 1px solid rgba(220, 53, 69, 0.25);
+  color: #b42318;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.apex-content.is-school-suspended {
+  filter: grayscale(0.15);
+}
+
+.school-suspended-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 180px);
+  padding: 1.5rem 0;
+}
+
+.school-suspended-card {
+  width: min(560px, 100%);
+  padding: 2.5rem 2rem;
+  text-align: center;
+  border: 1px solid rgba(220, 53, 69, 0.18);
+  box-shadow: var(--apex-shadow-lg);
+}
+
+.school-suspended-icon {
+  width: 84px;
+  height: 84px;
+  margin: 0 auto 1.25rem;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+
+.school-suspended-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-bottom: 0.65rem;
+  color: var(--apex-text);
+}
+
+.school-suspended-lead {
+  font-size: 0.95rem;
+  color: #b42318;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.school-suspended-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  text-align: left;
+  margin-bottom: 1.25rem;
+}
+
+.school-suspended-meta-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 0.84rem;
+  color: var(--apex-text-muted);
+}
+
+.school-suspended-reason {
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: rgba(220, 53, 69, 0.06);
+  border: 1px solid rgba(220, 53, 69, 0.12);
+}
+
+.school-suspended-reason-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b42318;
+  margin-bottom: 0.35rem;
+}
+
+.school-suspended-reason p {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--apex-text);
+}
+
+.school-suspended-footnote {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--apex-text-muted);
+}
+
+.verified-name-inline {
+  --verified-name-gap: 0.375rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: var(--verified-name-gap);
+  min-width: 0;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+.verified-name-inline--sm {
+  --verified-name-gap: 0.3125rem;
+}
+
+.verified-name-inline--md {
+  --verified-name-gap: 0.375rem;
+}
+
+.verified-name-inline--lg {
+  --verified-name-gap: 0.4375rem;
+}
+
+.verified-name-inline-label {
+  min-width: 0;
+  line-height: 1.25;
+  letter-spacing: normal;
+  word-break: break-word;
+}
+
+.verified-name-inline .plan-verified-seal {
+  display: block;
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 0;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.plan-verified-seal {
+  display: block;
+  flex-shrink: 0;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.plan-verified-seal--sm {
+  width: 18px;
+  height: 18px;
+}
+
+.plan-verified-seal--md {
+  width: 22px;
+  height: 22px;
+}
+
+.plan-verified-seal--lg {
+  width: 26px;
+  height: 26px;
+}
+
+.apex-page-title .verified-name-inline--lg {
+  --verified-name-gap: 0.5rem;
+}
+
+.apex-page-title .plan-verified-seal--lg {
+  width: 28px;
+  height: 28px;
+}
+
+.apex-sidebar-plan {
+  display: flex;
+  justify-content: center;
+  padding: 0 0.85rem 0.7rem;
+  margin-top: -0.1rem;
+}
+
+.apex-faint-outline-chip {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.apex-sidebar-plan-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  padding: 0.32rem 0.7rem;
+}
+
+.apex-navbar-user-chip {
+  padding: 0.22rem 0.62rem 0.22rem 0.22rem;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--apex-border) 65%, transparent);
+  border-radius: 999px;
+  box-shadow: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.apex-navbar-user-chip:hover,
+.apex-navbar-user-chip:focus-visible {
+  background: color-mix(in srgb, var(--apex-border) 12%, transparent);
+  border-color: color-mix(in srgb, var(--apex-border) 85%, transparent);
+}
+
+.apex-navbar-user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--apex-primary), var(--apex-secondary));
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.apex-navbar-user-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--apex-text);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.apex-sidebar-plan-chip .verified-name-inline {
+  justify-content: center;
+  width: auto;
+  max-width: 100%;
+  --verified-name-gap: 0.28rem;
+}
+
+.apex-sidebar-plan-chip .verified-name-inline-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.apex-sidebar-plan-chip .plan-verified-seal--sm {
+  width: 14px;
+  height: 14px;
+}
+
+h1 .verified-name-inline,
+h6 .verified-name-inline,
+.apex-page-title .verified-name-inline,
+.apex-navbar .verified-name-inline,
+td .verified-name-inline {
+  align-items: center;
+}
+
+h6 .verified-name-inline {
+  margin: 0;
+}
+
+.apex-sidebar.is-collapsed .apex-sidebar-plan {
+  display: none;
+}
+
+.plan-ad-preview {
+  text-align: left;
+}
+
+.plan-ad-preview--compact .plan-ad-preview-message {
+  font-size: 0.78rem;
+  margin-bottom: 0.35rem;
+}
+
+.plan-ad-preview-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.plan-ad-preview-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--apex-primary);
+}
+
+.plan-ad-preview-headline {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--apex-text);
+  margin-bottom: 0.2rem;
+}
+
+.plan-ad-preview-title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--apex-text);
+  margin-bottom: 0.35rem;
+}
+
+.plan-ad-preview-message {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--apex-text-muted);
+  margin-bottom: 0.55rem;
+}
+
+.plan-ad-preview-plan-badge {
+  display: inline-flex;
+  margin-bottom: 0.55rem;
+}
+
+.plan-ad-preview-highlights {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.plan-ad-preview-highlights li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.76rem;
+  color: var(--apex-text);
+}
+
+.plan-ad-preview-highlights li svg {
+  color: var(--apex-primary);
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.plan-ad-preview-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--apex-primary);
+}
+
+.plan-ad-plan-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.plan-ad-plan-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--apex-border);
+  background: var(--apex-surface);
+  color: var(--apex-text);
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  transition: all 0.18s ease;
+}
+
+.plan-ad-plan-tab:hover,
+.plan-ad-plan-tab.is-active {
+  border-color: rgba(15, 118, 110, 0.35);
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--apex-primary);
+}
+
+.plan-ad-plan-tab-sub {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--apex-text-muted);
+}
+
+.plan-ad-card {
+  padding: 1.15rem;
+}
+
+.plan-ad-active-banner {
+  padding: 1rem 1.15rem;
+  border-left: 4px solid var(--apex-primary);
+}
+
+.plan-ad-highlight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--apex-primary);
+  font-size: 0.75rem;
+}
+
+.plan-ad-highlight-chip button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  display: inline-flex;
+}
+
+.plan-ad-editor-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.plan-ad-editor {
+  width: min(1080px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  background: var(--apex-surface);
+  border: 1px solid var(--apex-border);
+  border-radius: 16px;
+  box-shadow: var(--apex-shadow-lg);
+}
+
+.plan-ad-editor-header,
+.plan-ad-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--apex-border);
+}
+
+.plan-ad-editor-footer {
+  border-bottom: 0;
+  border-top: 1px solid var(--apex-border);
+  justify-content: flex-end;
+}
+
+.plan-ad-editor-body {
+  padding: 1.25rem;
+}
+
+.plan-ad-editor-preview-wrap {
+  position: sticky;
+  top: 0;
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--apex-bg);
+  border: 1px solid var(--apex-border);
+}
+
 .apex-main {
   flex: 1;
-  margin-left: var(--apex-sidebar-width);
+  margin-left: var(--apex-sidebar-current-width, var(--apex-sidebar-width));
   padding-top: var(--apex-navbar-height);
   min-height: 100vh;
-  transition: margin-left var(--apex-transition);
+  transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .apex-content {
@@ -822,4 +1930,419 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Plan upgrade wizard */
+.plan-upgrade-page {
+  max-width: 1100px;
+}
+
+.plan-upgrade-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--apex-surface);
+  border: 1px solid var(--apex-border);
+  border-radius: var(--apex-radius-lg);
+}
+
+.plan-upgrade-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--apex-text-muted);
+  font-size: 0.8rem;
+}
+
+.plan-upgrade-step.is-active {
+  color: var(--apex-primary);
+  font-weight: 600;
+}
+
+.plan-upgrade-step.is-done {
+  color: var(--apex-primary);
+}
+
+.plan-upgrade-step-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--apex-bg);
+  border: 1px solid var(--apex-border);
+}
+
+.plan-upgrade-step.is-active .plan-upgrade-step-dot,
+.plan-upgrade-step.is-done .plan-upgrade-step-dot {
+  background: rgba(15, 118, 110, 0.12);
+  border-color: var(--apex-primary);
+  color: var(--apex-primary);
+}
+
+.plan-upgrade-notice {
+  display: flex;
+  align-items: flex-start;
+  background: rgba(59, 130, 246, 0.06);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: var(--apex-text);
+}
+
+.plan-upgrade-panel {
+  margin-bottom: 1.5rem;
+}
+
+.plan-upgrade-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 1.25rem;
+  border: 2px solid var(--apex-border);
+  border-radius: var(--apex-radius-lg);
+  background: var(--apex-surface);
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.plan-upgrade-card:hover:not(.is-current) {
+  border-color: rgba(15, 118, 110, 0.35);
+  box-shadow: var(--apex-shadow-sm);
+}
+
+.plan-upgrade-card.is-selected {
+  border-color: var(--apex-primary);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.plan-upgrade-card.is-current {
+  opacity: 0.72;
+  cursor: default;
+  border-style: dashed;
+}
+
+.plan-upgrade-card-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--apex-primary);
+}
+
+.plan-upgrade-card-badge.is-muted {
+  background: var(--apex-bg);
+  color: var(--apex-text-muted);
+}
+
+.plan-upgrade-card-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.plan-upgrade-card-amount {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--apex-primary);
+}
+
+.plan-upgrade-card-highlights {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+}
+
+.plan-upgrade-card-highlights li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--apex-text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.plan-upgrade-card-highlights li svg {
+  color: var(--apex-primary);
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.plan-upgrade-card-footer {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--apex-border);
+}
+
+.plan-upgrade-feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.plan-upgrade-feature-list li {
+  display: flex;
+  gap: 0.45rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.82rem;
+}
+
+.plan-upgrade-feature-list li svg {
+  color: var(--apex-primary);
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.plan-upgrade-billing-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+  padding: 1.25rem;
+  border: 2px solid var(--apex-border);
+  border-radius: var(--apex-radius-lg);
+  background: var(--apex-surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.plan-upgrade-billing-option.is-selected {
+  border-color: var(--apex-primary);
+  background: rgba(15, 118, 110, 0.04);
+}
+
+.plan-upgrade-billing-price {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--apex-primary);
+}
+
+.plan-upgrade-save-badge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.plan-upgrade-summary-strip {
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.06), rgba(255, 127, 80, 0.05));
+}
+
+.plan-upgrade-provider {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: 1rem;
+  border: 2px solid var(--apex-border);
+  border-radius: var(--apex-radius);
+  background: var(--apex-surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.plan-upgrade-provider.is-selected {
+  border-color: var(--apex-primary);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+}
+
+.plan-upgrade-provider-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.plan-upgrade-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--apex-border);
+}
+
+.plan-upgrade-result-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.plan-upgrade-result-icon.is-failed {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+}
+
+.plan-upgrade-result-meta {
+  background: var(--apex-bg);
+  border-radius: var(--apex-radius);
+  padding: 0.75rem 1rem;
+}
+
+.plan-ad-preview-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--apex-primary);
+  background: rgba(15, 118, 110, 0.08);
+  transition: background 0.15s ease;
+}
+
+.plan-ad-preview-cta:hover {
+  background: rgba(15, 118, 110, 0.14);
+  color: var(--apex-primary);
+}
+
+/* Payment checkout (card + mobile money) */
+.payment-checkout-form {
+  max-width: 520px;
+}
+
+.payment-method-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  background: var(--apex-bg);
+  border: 1px solid var(--apex-border);
+  border-radius: 12px;
+}
+
+.payment-method-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.85rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--apex-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.payment-method-tab.is-active {
+  background: var(--apex-surface);
+  color: var(--apex-primary);
+  box-shadow: var(--apex-shadow-sm);
+}
+
+.payment-checkout-card-panel,
+.payment-checkout-mobile-panel {
+  animation: paymentPanelIn 0.2s ease;
+}
+
+@keyframes paymentPanelIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* School admin — Plans & Subscriptions (Settings) */
+.school-plans-stat {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--apex-bg);
+  border-radius: var(--apex-radius);
+  border: 1px solid var(--apex-border);
+}
+
+.school-plans-stat svg {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.school-plans-notice {
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  color: var(--apex-text-muted);
+}
+
+.school-plans-upgrade-card {
+  background: linear-gradient(160deg, rgba(15, 118, 110, 0.05), var(--apex-surface));
+}
+
+.school-plans-upgrade-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.school-plans-upgrade-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--apex-border);
+}
+
+.school-plans-upgrade-list li:last-child {
+  border-bottom: 0;
+}
+
+.school-plans-recommended {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--apex-primary);
+  background: rgba(15, 118, 110, 0.1);
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+}
+
+.school-plans-payment-method {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--apex-border);
+  border-radius: var(--apex-radius);
+  background: var(--apex-bg);
+  height: 100%;
+}
+
+.school-plans-payment-method svg {
+  color: var(--apex-primary);
+  font-size: 1.25rem;
+  margin-top: 0.1rem;
+}
+
+.school-plans-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--apex-text-muted);
+  font-weight: 600;
 }

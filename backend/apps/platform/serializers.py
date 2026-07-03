@@ -5,6 +5,7 @@ from apps.platform.models import (
     CallSetting,
     EmailSetting,
     GlobalSetting,
+    PlanAdvertisement,
     PlatformBroadcast,
     PlatformNews,
     PlatformNotification,
@@ -78,6 +79,52 @@ class PlatformNewsSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlatformNews
         fields = "__all__"
+
+
+class PlanAdvertisementSerializer(serializers.ModelSerializer):
+    target_plan_name = serializers.SerializerMethodField()
+    suggested_plan_name = serializers.SerializerMethodField()
+    created_by_name = serializers.SerializerMethodField()
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = PlanAdvertisement
+        fields = [
+            "id", "target_plan_slug", "target_plan_name", "suggested_plan_slug",
+            "suggested_plan_name", "title", "headline", "message", "highlights",
+            "cta_label", "cta_url", "status", "status_display", "starts_at", "ends_at",
+            "broadcast_at", "broadcast_count", "created_by", "created_by_name",
+            "created_at", "updated_at",
+        ]
+        read_only_fields = [
+            "id", "broadcast_at", "broadcast_count", "created_by", "created_at", "updated_at",
+        ]
+
+    def get_target_plan_name(self, obj: PlanAdvertisement) -> str:
+        from apps.platform.services.plan_advertisements import get_plan_label
+        return get_plan_label(obj.target_plan_slug)
+
+    def get_suggested_plan_name(self, obj: PlanAdvertisement) -> str:
+        from apps.platform.services.plan_advertisements import get_plan_label
+        return get_plan_label(obj.suggested_plan_slug)
+
+    def get_created_by_name(self, obj: PlanAdvertisement) -> str:
+        if obj.created_by:
+            return obj.created_by.full_name or obj.created_by.email
+        return ""
+
+    def validate(self, attrs: dict) -> dict:
+        from apps.platform.services.plan_advertisements import get_upgrade_options
+
+        target = attrs.get("target_plan_slug") or getattr(self.instance, "target_plan_slug", None)
+        suggested = attrs.get("suggested_plan_slug") or getattr(self.instance, "suggested_plan_slug", None)
+        if target and suggested:
+            options = get_upgrade_options(target)
+            if suggested not in options:
+                raise serializers.ValidationError({
+                    "suggested_plan_slug": "Suggested plan must be a higher tier than the target plan.",
+                })
+        return attrs
 
 
 class PlatformBroadcastSerializer(serializers.ModelSerializer):

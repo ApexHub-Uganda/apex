@@ -1,14 +1,17 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FiArrowLeft, FiUsers, FiBriefcase, FiBook, FiMapPin, FiMail, FiPhone,
-  FiAlertTriangle, FiLayers, FiGlobe, FiCheckCircle, FiXCircle,
+  FiAlertTriangle, FiLayers, FiGlobe, FiCheckCircle, FiXCircle, FiEdit3, FiTrash2,
 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
+import SchoolNameWithBadge from '../../components/SchoolNameWithBadge';
 import StatCard from '../../components/StatCard';
 import StatusBadge from '../../components/StatusBadge';
-import ProgressBar from '../../components/ProgressBar';
+import ChangeSchoolPlanModal from '../../components/ChangeSchoolPlanModal';
+import SchoolDeleteModal from '../../components/SchoolDeleteModal';
 import { PageSkeleton } from '../../components/LoadingSkeleton';
 import { schoolsService } from '../../services/moduleService';
 import { alert, extractApiError, notify } from '../../utils/notify';
@@ -18,19 +21,24 @@ const formatDate = (value) => {
   return new Date(value).toLocaleDateString();
 };
 
-const usagePercent = (current, limit) => {
-  if (!limit) return 0;
-  return Math.min(Math.round((current / limit) * 100), 100);
-};
-
 export function SchoolDetail() {
   const { schoolId } = useParams();
   const navigate = useNavigate();
+  const [planModalOpen, setPlanModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [planSaving, setPlanSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['school-detail', schoolId],
     queryFn: () => schoolsService.getDetail(schoolId),
     enabled: !!schoolId,
+  });
+
+  const { data: deletionPreview, isLoading: previewLoading, refetch: refetchPreview } = useQuery({
+    queryKey: ['school-deletion-preview', schoolId],
+    queryFn: () => schoolsService.getDeletionPreview(schoolId),
+    enabled: false,
   });
 
   if (isLoading) return <PageSkeleton />;
@@ -104,8 +112,43 @@ export function SchoolDetail() {
     }
   };
 
-  const studentUsage = usagePercent(stats.total_students ?? 0, subscription.max_students);
-  const staffUsage = usagePercent(stats.total_staff ?? 0, subscription.max_staff);
+  const handleChangePlan = async (payload) => {
+    setPlanSaving(true);
+    try {
+      const result = await schoolsService.changePlan(school.id, payload);
+      const modules = result?.module_count ?? result?.data?.module_count;
+      notify.success(
+        modules != null
+          ? `Plan updated for ${school.name}. ${modules} modules are now active in the database.`
+          : `Plan updated for ${school.name}. School admin can sign in to see modules.`,
+      );
+      setPlanModalOpen(false);
+      refetch();
+    } catch (err) {
+      notify.error(extractApiError(err, 'Unable to change plan.'));
+    } finally {
+      setPlanSaving(false);
+    }
+  };
+
+  const openDeleteFlow = async () => {
+    setDeleteModalOpen(true);
+    refetchPreview();
+  };
+
+  const handlePermanentDelete = async (payload) => {
+    setDeleting(true);
+    try {
+      await schoolsService.permanentDelete(school.id, payload);
+      notify.success(`"${school.name}" has been permanently removed.`);
+      setDeleteModalOpen(false);
+      navigate('/super-admin/schools');
+    } catch (err) {
+      notify.error(extractApiError(err, 'Unable to delete school.'));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div>
@@ -119,21 +162,30 @@ export function SchoolDetail() {
       </div>
 
       <PageHeader
-        title={school.name}
+        title={(
+          <SchoolNameWithBadge
+            name={school.name}
+            planSlug={subscription.plan_slug}
+            size="lg"
+            className="fw-bold"
+          />
+        )}
         subtitle={`${school.city ? `${school.city}, ` : ''}${school.country || ''}`}
         actions={
-          <div className="d-flex align-items-center gap-2">
-            <StatusBadge status={school.status} />
-            {school.is_suspended && <StatusBadge status="suspended" />}
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <StatusBadge status={school.is_suspended ? 'suspended' : school.status} />
             {!school.is_verified && (
-              <button
-                type="button"
-                className="btn btn-sm btn-success"
-                onClick={handleApprove}
-              >
+              <button type="button" className="btn btn-sm btn-success" onClick={handleApprove}>
                 Approve School
               </button>
             )}
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+              onClick={() => setPlanModalOpen(true)}
+            >
+              <FiEdit3 size={14} /> Change Plan
+            </button>
             <button
               className={`btn btn-sm ${school.is_suspended ? 'btn-outline-success' : 'btn-outline-warning'}`}
               onClick={handleSuspendToggle}
@@ -197,9 +249,18 @@ export function SchoolDetail() {
 
         <div className="col-lg-4">
           <motion.div className="apex-card p-4 h-100" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-            <div className="d-flex align-items-center gap-2 mb-3">
-              <FiLayers style={{ color: 'var(--apex-primary)' }} />
-              <h5 className="fw-bold mb-0">Subscription</h5>
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <div className="d-flex align-items-center gap-2">
+                <FiLayers style={{ color: 'var(--apex-primary)' }} />
+                <h5 className="fw-bold mb-0">Subscription</h5>
+              </div>
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-primary"
+                onClick={() => setPlanModalOpen(true)}
+              >
+                Change
+              </button>
             </div>
             <div className="d-flex flex-column gap-3">
               <div className="d-flex justify-content-between">
@@ -212,14 +273,18 @@ export function SchoolDetail() {
               </div>
               <div className="d-flex justify-content-between">
                 <span className="text-muted small">Billing</span>
-                <span className="fw-semibold">{subscription.billing_cycle || '—'}</span>
+                <span className="fw-semibold text-capitalize">{subscription.billing_cycle || '—'}</span>
+              </div>
+              <div className="d-flex justify-content-between">
+                <span className="text-muted small">Features</span>
+                <span className="fw-semibold">{subscription.feature_count ?? school.enabled_feature_count ?? 0}</span>
               </div>
               <div className="d-flex justify-content-between">
                 <span className="text-muted small">Monthly Amount</span>
                 <span className="fw-semibold">${Number(subscription.monthly_amount || 0).toFixed(2)}</span>
               </div>
               <div className="d-flex justify-content-between">
-                <span className="text-muted small">Next Billing</span>
+                <span className="text-muted small">Renewal / Trial End</span>
                 <span className="fw-semibold">{formatDate(subscription.current_period_end || subscription.trial_ends_at)}</span>
               </div>
             </div>
@@ -239,7 +304,7 @@ export function SchoolDetail() {
         </div>
       </div>
 
-      <div className="row g-3">
+      <div className="row g-3 mb-4">
         <div className="col-lg-6">
           <motion.div className="apex-card p-4 h-100" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <h5 className="fw-bold mb-3">Account Status</h5>
@@ -272,7 +337,7 @@ export function SchoolDetail() {
               </div>
               <div className="d-flex justify-content-between align-items-center">
                 <span className="text-muted small">Enabled Features</span>
-                <span className="fw-semibold">{school.enabled_feature_count ?? 0}</span>
+                <span className="fw-semibold">{school.enabled_feature_count ?? subscription.feature_count ?? 0}</span>
               </div>
             </div>
           </motion.div>
@@ -280,29 +345,63 @@ export function SchoolDetail() {
 
         <div className="col-lg-6">
           <motion.div className="apex-card p-4 h-100" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h5 className="fw-bold mb-3">Plan Usage</h5>
-            {subscription.plan ? (
-              <div className="d-flex flex-column gap-3 mt-2">
-                <div>
-                  <ProgressBar
-                    label={`Students (${stats.total_students ?? 0} / ${subscription.max_students ?? '—'})`}
-                    value={studentUsage}
-                  />
-                </div>
-                <div>
-                  <ProgressBar
-                    label={`Staff (${stats.total_staff ?? 0} / ${subscription.max_staff ?? '—'})`}
-                    value={staffUsage}
-                    color="var(--apex-secondary)"
-                  />
-                </div>
+            <h5 className="fw-bold mb-3">Capacity</h5>
+            <p className="text-muted small mb-2">
+              User limits are not enforced — schools may add unlimited students, staff, and parents.
+            </p>
+            <div className="d-flex flex-column gap-2">
+              <div className="d-flex justify-content-between small">
+                <span className="text-muted">Students enrolled</span>
+                <span className="fw-semibold">{stats.total_students ?? 0} · Unlimited</span>
               </div>
-            ) : (
-              <p className="text-muted mb-0">No active subscription plan assigned.</p>
-            )}
+              <div className="d-flex justify-content-between small">
+                <span className="text-muted">Staff members</span>
+                <span className="fw-semibold">{stats.total_staff ?? 0} · Unlimited</span>
+              </div>
+            </div>
           </motion.div>
         </div>
       </div>
+
+      <motion.div
+        className="apex-card p-4 border border-danger border-opacity-25"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
+          <div>
+            <h5 className="fw-bold text-danger mb-1 d-flex align-items-center gap-2">
+              <FiTrash2 /> Danger Zone
+            </h5>
+            <p className="text-muted small mb-0">
+              Permanently delete this school and all associated users, records, subscriptions, and files.
+              This requires a three-step confirmation process.
+            </p>
+          </div>
+          <button type="button" className="btn btn-outline-danger btn-sm" onClick={openDeleteFlow}>
+            Delete School…
+          </button>
+        </div>
+      </motion.div>
+
+      <ChangeSchoolPlanModal
+        show={planModalOpen}
+        onHide={() => setPlanModalOpen(false)}
+        school={school}
+        subscription={subscription}
+        onSave={handleChangePlan}
+        saving={planSaving}
+      />
+
+      <SchoolDeleteModal
+        show={deleteModalOpen}
+        onHide={() => !deleting && setDeleteModalOpen(false)}
+        school={school}
+        preview={deletionPreview}
+        previewLoading={previewLoading}
+        onConfirmDelete={handlePermanentDelete}
+        deleting={deleting}
+      />
     </div>
   );
 }

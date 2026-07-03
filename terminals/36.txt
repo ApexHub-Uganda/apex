@@ -1,0 +1,19 @@
+---
+pid: 2340
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_subscriptions.py tests/test_tenant_isolation.py -q --tb=short"
+started_at: 2026-07-02T07:09:29.833Z
+running_for_ms: 28330010 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 11 items
+
+tests\test_subscriptions.py .......                                      [ 63%]
+tests\test_tenant_isolation.py ....                                      [100%]
+
+============================= 11 passed in 16.77s =============================

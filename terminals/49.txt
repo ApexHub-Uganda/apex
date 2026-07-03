@@ -1,0 +1,27 @@
+---
+pid: 756
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_tenant_admin.py tests/test_subscription_notifications.py -v --tb=short 2>&1"
+started_at: 2026-07-02T13:18:13.547Z
+running_for_ms: 6210000  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 9 items
+
+tests/test_tenant_admin.py::TestTenantAdministration::test_deletion_preview PASSED [ 11%]
+tests/test_tenant_admin.py::TestTenantAdministration::test_change_plan PASSED [ 22%]
+tests/test_tenant_admin.py::TestTenantAdministration::test_change_plan_notifies_without_completed_payment PASSED [ 33%]
+tests/test_tenant_admin.py::TestTenantAdministration::test_permanent_delete_requires_confirmation PASSED [ 44%]
+tests/test_tenant_admin.py::TestTenantAdministration::test_permanent_delete_success PASSED [ 55%]
+tests/test_tenant_admin.py::TestTenantAdministration::test_destroy_disabled PASSED [ 66%]
+tests/test_subscription_notifications.py::TestSubscriptionNotifications::test_activate_notifies_school_admin PASSED [ 77%]
+tests/test_subscription_notifications.py::TestSubscriptionNotifications::test_suspend_notifies_school_admin PASSED [ 88%]
+tests/test_subscription_notifications.py::TestSubscriptionNotifications::test_create_subscription_notifies_school_admin PASSED [100%]
+
+============================= 9 passed in 28.21s ==============================

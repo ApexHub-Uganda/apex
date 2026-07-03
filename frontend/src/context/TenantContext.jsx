@@ -2,7 +2,7 @@ import { createContext, useContext, useMemo, useCallback, useEffect } from 'reac
 import { useQuery } from '@tanstack/react-query';
 import { tenantService } from '../services/tenantService';
 import { useAuthContext } from './AuthContext';
-import { CORE_FEATURE_KEYS } from '../config/navigation';
+import { CORE_FEATURE_KEYS, buildFallbackModuleMenu } from '../config/navigation';
 
 const TenantContext = createContext(null);
 
@@ -35,8 +35,10 @@ const normalizeTenant = (raw) => {
     feature_flags: raw.feature_flags || {},
     enabled_feature_keys: raw.enabled_feature_keys || [],
     navigation_menu: raw.navigation_menu || [],
+    module_menu: raw.module_menu || [],
     dashboard_widgets: raw.dashboard_widgets || [],
     subscription: raw.subscription || null,
+    features_revision: raw.features_revision || null,
   };
 };
 
@@ -44,12 +46,19 @@ export function TenantProvider({ children }) {
   const { isSchoolAdmin, isAuthenticated, user } = useAuthContext();
   const shouldLoadTenant = isAuthenticated && isSchoolAdmin;
 
-  const { data, isPending, isFetching, refetch } = useQuery({
-    queryKey: ['tenant', 'context', user?.id],
+  const tenantId = user?.tenant || user?.tenant_id;
+  const planSlug = user?.tenant_plan_slug;
+
+  const { data, isPending, isFetching, isError, refetch } = useQuery({
+    queryKey: ['tenant', 'context', user?.id, tenantId, planSlug],
     queryFn: () => tenantService.getSchoolContext(user),
     enabled: shouldLoadTenant && !!user,
-    retry: 1,
-    staleTime: 5 * 60 * 1000,
+    retry: 2,
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 30 * 1000,
   });
 
   const tenant = useMemo(() => {
@@ -65,14 +74,31 @@ export function TenantProvider({ children }) {
   }, [data, shouldLoadTenant]);
 
   const loading = shouldLoadTenant && !tenant && (isPending || isFetching);
-  const isPartial = Boolean(tenant?._partial);
+  const isSuspended = Boolean(
+    tenant?.is_suspended
+    || tenant?.access_blocked
+    || tenant?.status === 'suspended',
+  );
+  const isPartial = Boolean(tenant?._partial || tenant?._source === 'api_unreachable');
   const isReady = !shouldLoadTenant || !!tenant;
+  const contextError = tenant?._error || (isError ? 'Failed to load school plan from server.' : null);
+
+  const moduleMenu = useMemo(() => {
+    const fromApi = tenant?.module_menu || [];
+    if (fromApi.length > 0) return fromApi;
+    const keys = tenant?.enabled_feature_keys || [];
+    if (keys.length > CORE_FEATURE_KEYS.length) {
+      return buildFallbackModuleMenu(keys);
+    }
+    return [];
+  }, [tenant?.module_menu, tenant?.enabled_feature_keys]);
 
   useEffect(() => () => resetTenantTheme(), []);
 
   const isFeatureEnabled = useCallback(
     (featureKey) => {
       if (!isSchoolAdmin) return true;
+      if (isSuspended) return false;
       if (!featureKey) return true;
       if (CORE_FEATURE_KEYS.includes(featureKey)) return true;
       if (!tenant) return true;
@@ -80,7 +106,7 @@ export function TenantProvider({ children }) {
       if (keys.includes(featureKey)) return true;
       return tenant.feature_flags?.[featureKey] === true;
     },
-    [tenant, isSchoolAdmin],
+    [tenant, isSchoolAdmin, isSuspended],
   );
 
   return (
@@ -88,14 +114,17 @@ export function TenantProvider({ children }) {
       value={{
         tenant,
         loading,
+        isSuspended,
         isReady,
         isPartial,
-        isError: false,
+        isError: isError || Boolean(contextError),
+        contextError,
         refetch,
         isFeatureEnabled,
         featureFlags: tenant?.feature_flags || {},
         enabledFeatureKeys: tenant?.enabled_feature_keys || [],
-        navigationMenu: tenant?.navigation_menu || [],
+        navigationMenu: tenant?.navigation_menu?.length ? tenant.navigation_menu : moduleMenu,
+        moduleMenu,
         dashboardWidgets: tenant?.dashboard_widgets || [],
         subscription: tenant?.subscription || null,
       }}

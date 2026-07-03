@@ -1,0 +1,238 @@
+---
+pid: 3192
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_maintenance_mode.py -q"
+started_at: 2026-07-02T16:18:31.472Z
+running_for_ms: 1290005  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 6 items
+
+tests\test_maintenance_mode.py EEEEEE                                    [100%]
+
+=================================== ERRORS ====================================
+_ ERROR at setup of TestMaintenanceMode.test_super_admin_can_access_settings __
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\commands\migrate.py:380: in handle
+    emit_post_migrate_signal(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\sql.py:52: in emit_post_migrate_signal
+    models.signals.post_migrate.send(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\dispatch\dispatcher.py:189: in send
+    response = receiver(signal=self, sender=sender, **named)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\platform\apps.py:15: in sync_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+apps\platform\services\maintenance.py:24: in is_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+E   RecursionError: maximum recursion depth exceeded
+!!! Recursion detected (same locals & position)
+_ ERROR at setup of TestMaintenanceMode.test_school_admin_blocked_during_maintenance _
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\commands\migrate.py:380: in handle
+    emit_post_migrate_signal(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\sql.py:52: in emit_post_migrate_signal
+    models.signals.post_migrate.send(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\dispatch\dispatcher.py:189: in send
+    response = receiver(signal=self, sender=sender, **named)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\platform\apps.py:15: in sync_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+apps\platform\services\maintenance.py:24: in is_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+E   RecursionError: maximum recursion depth exceeded
+!!! Recursion detected (same locals & position)
+____ ERROR at setup of TestMaintenanceMode.test_school_admin_login_blocked ____
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\commands\migrate.py:380: in handle
+    emit_post_migrate_signal(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\sql.py:52: in emit_post_migrate_signal
+    models.signals.post_migrate.send(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\dispatch\dispatcher.py:189: in send
+    response = receiver(signal=self, sender=sender, **named)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\platform\apps.py:15: in sync_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+apps\platform\services\maintenance.py:24: in is_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+E   RecursionError: maximum recursion depth exceeded
+!!! Recursion detected (same locals & position)
+____ ERROR at setup of TestMaintenanceMode.test_super_admin_login_allowed _____
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\commands\migrate.py:380: in handle
+    emit_post_migrate_signal(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\sql.py:52: in emit_post_migrate_signal
+    models.signals.post_migrate.send(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\dispatch\dispatcher.py:189: in send
+    response = receiver(signal=self, sender=sender, **named)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\platform\apps.py:15: in sync_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+apps\platform\services\maintenance.py:24: in is_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+E   RecursionError: maximum recursion depth exceeded
+!!! Recursion detected (same locals & position)
+_ ERROR at setup of TestMaintenanceMode.test_super_admin_can_disable_maintenance _
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\commands\migrate.py:380: in handle
+    emit_post_migrate_signal(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\sql.py:52: in emit_post_migrate_signal
+    models.signals.post_migrate.send(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\dispatch\dispatcher.py:189: in send
+    response = receiver(signal=self, sender=sender, **named)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\platform\apps.py:15: in sync_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+apps\platform\services\maintenance.py:24: in is_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+E   RecursionError: maximum recursion depth exceeded
+!!! Recursion detected (same locals & position)
+____ ERROR at setup of TestMaintenanceMode.test_health_check_stays_public _____
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\pytest_django\plugin.py:566: in _django_db_marker
+    request.getfixturevalue("_django_db_helper")
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\pytest_django\fixtures.py:186: in django_db_setup
+    db_cfg = setup_databases(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\utils.py:204: in setup_databases
+    connection.creation.create_test_db(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\base\creation.py:78: in create_test_db
+    call_command(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\__init__.py:194: in call_command
+    return command.execute(*args, **defaults)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:464: in execute
+    output = self.handle(*args, **options)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\base.py:111: in wrapper
+    res = handle_func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\commands\migrate.py:380: in handle
+    emit_post_migrate_signal(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\management\sql.py:52: in emit_post_migrate_signal
+    models.signals.post_migrate.send(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\dispatch\dispatcher.py:189: in send
+    response = receiver(signal=self, sender=sender, **named)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\platform\apps.py:15: in sync_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+apps\platform\services\maintenance.py:24: in is_maintenance_mode
+    load_maintenance_mode_from_db()
+apps\platform\services\maintenance.py:48: in load_maintenance_mode_from_db
+    return is_maintenance_mode()
+           ^^^^^^^^^^^^^^^^^^^^^
+E   RecursionError: maximum recursion depth exceeded
+!!! Recursion detected (same locals & position)
+=========================== short test summary info ===========================
+ERROR tests/test_maintenance_mode.py::TestMaintenanceMode::test_super_admin_can_access_settings
+ERROR tests/test_maintenance_mode.py::TestMaintenanceMode::test_school_admin_blocked_during_maintenance
+ERROR tests/test_maintenance_mode.py::TestMaintenanceMode::test_school_admin_login_blocked
+ERROR tests/test_maintenance_mode.py::TestMaintenanceMode::test_super_admin_login_allowed
+ERROR tests/test_maintenance_mode.py::TestMaintenanceMode::test_super_admin_can_disable_maintenance
+ERROR tests/test_maintenance_mode.py::TestMaintenanceMode::test_health_check_stays_public
+============================= 6 errors in 15.59s ==============================

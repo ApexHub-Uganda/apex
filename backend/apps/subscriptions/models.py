@@ -195,6 +195,15 @@ class PaymentProvider(PlatformModel):
 
     name = models.CharField(max_length=50)
     slug = models.SlugField(max_length=30, unique=True)
+    method_type = models.CharField(
+        max_length=20,
+        choices=[
+            ("card", "Credit or Debit Card"),
+            ("mobile_money", "Mobile Money"),
+        ],
+        default="card",
+        db_index=True,
+    )
     is_active = models.BooleanField(default=False)
     is_sandbox = models.BooleanField(default=True)
     config = models.JSONField(default=dict, blank=True)
@@ -217,6 +226,16 @@ class PaymentTransaction(PlatformModel):
         ("failed", "Failed"), ("refunded", "Refunded"),
     ], default="pending")
     reference = models.CharField(max_length=255, unique=True, db_index=True)
+    payment_method = models.CharField(
+        max_length=20,
+        choices=[
+            ("card", "Credit or Debit Card"),
+            ("mobile_money", "Mobile Money"),
+        ],
+        default="card",
+        db_index=True,
+    )
+    payer_phone = models.CharField(max_length=32, blank=True)
     external_id = models.CharField(max_length=255, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
 

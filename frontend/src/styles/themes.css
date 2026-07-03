@@ -35,6 +35,16 @@
   border-color: var(--apex-border);
 }
 
+[data-theme='dark'] .apex-navbar-user-chip {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+[data-theme='dark'] .apex-navbar-user-chip:hover,
+[data-theme='dark'] .apex-navbar-user-chip:focus-visible {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.38);
+}
+
 [data-theme='dark'] .dropdown-item {
   color: var(--apex-text);
 }
@@ -76,4 +86,34 @@
 [data-theme='dark'] .apex-sidebar-link:hover,
 [data-theme='dark'] .apex-sidebar-link.active {
   background: rgba(15, 118, 110, 0.2);
+}
+
+[data-theme='dark'] .apex-sidebar-flyout {
+  background: var(--apex-surface);
+  border-color: var(--apex-border);
+}
+
+[data-theme='dark'] .apex-sidebar-flyout-link {
+  color: var(--apex-text);
+}
+
+[data-theme='dark'] .apex-sidebar-flyout-link:hover,
+[data-theme='dark'] .apex-sidebar-flyout-link:focus-visible,
+[data-theme='dark'] .apex-sidebar-flyout-link.active {
+  background: rgba(20, 184, 166, 0.12);
+  color: var(--apex-primary-light);
+}
+
+[data-theme='dark'] .apex-notifications-panel {
+  background: var(--apex-surface);
+  border-color: var(--apex-border);
+}
+
+[data-theme='dark'] .apex-notifications-pinned {
+  background: rgba(20, 184, 166, 0.08);
+}
+
+[data-theme='dark'] .apex-notifications-pinned:hover,
+[data-theme='dark'] .apex-notifications-item:hover {
+  background: rgba(20, 184, 166, 0.12);
 }

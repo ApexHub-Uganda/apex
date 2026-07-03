@@ -23,12 +23,12 @@ export function Logo({ size = 40, showText = true, className = '' }) {
       {showText && (
         <div className="apex-logo-text">
           <span
-            className="fw-bold d-block lh-1"
-            style={{ fontFamily: 'var(--apex-font-display)', fontSize: size * 0.38, color: 'var(--apex-text)' }}
+            className="apex-logo-name fw-bold d-block lh-1"
+            style={{ fontFamily: 'var(--apex-font-display)', fontSize: size * 0.38 }}
           >
             Apex Hub
           </span>
-          <span className="text-muted" style={{ fontSize: size * 0.22 }}>
+          <span className="apex-logo-tagline" style={{ fontSize: size * 0.22 }}>
             The Easy Way
           </span>
         </div>

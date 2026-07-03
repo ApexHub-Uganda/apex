@@ -109,8 +109,15 @@ export function Login() {
           <Link to="/forgot-password" className="small fw-semibold">Forgot password?</Link>
         </div>
 
-        <button type="submit" className="btn btn-primary w-100 py-2" disabled={loading}>
-          {loading ? 'Signing in...' : 'Sign In'}
+        <button type="submit" className="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2" disabled={loading}>
+          {loading ? (
+            <>
+              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+              <span>Signing in</span>
+            </>
+          ) : (
+            'Sign In'
+          )}
         </button>
       </form>
 

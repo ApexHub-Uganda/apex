@@ -15,6 +15,20 @@ class Announcement(BaseModel):
     class Meta:
         ordering = ["-publish_date"]
 
+class FeedItemDismissal(models.Model):
+    """Per-user dismissal of synthetic navbar feed items (ads, system notices)."""
+
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="feed_item_dismissals",
+    )
+    item_id = models.CharField(max_length=120, db_index=True)
+    dismissed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("user", "item_id")]
+        indexes = [models.Index(fields=["user", "item_id"])]
+
+
 class Notification(BaseModel):
     recipient = models.ForeignKey("accounts.User", on_delete=models.CASCADE, related_name="notifications")
     title = models.CharField(max_length=255)

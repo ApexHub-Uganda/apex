@@ -1,15 +1,22 @@
 import {
-  FiHome, FiGrid, FiUsers, FiBook, FiCalendar, FiDollarSign,
-  FiBookOpen, FiTruck, FiPackage, FiBriefcase, FiCreditCard,
-  FiBarChart2, FiSettings, FiMessageSquare, FiLayers,
-  FiRadio, FiShield, FiBell,
-} from 'react-icons/fi'; // FiHome used in MODULE_NAV_CATALOG via string icon keys
+  FiHome, FiGrid, FiSettings, FiBell, FiLayers, FiCreditCard,
+  FiBarChart2, FiShield, FiRadio, FiInbox, FiTrendingUp,
+} from 'react-icons/fi';
 import { resolveFeatureIcon } from '../utils/featureIcons';
+import { SCHOOL_MODULES } from './schoolModules';
 
 export const superAdminNav = [
   { path: '/super-admin', label: 'Dashboard', icon: <FiHome /> },
   { divider: true, label: 'Management' },
-  { path: '/super-admin/notifications', label: 'Notifications & To-do', icon: <FiBell /> },
+  {
+    path: '/super-admin/notifications',
+    label: 'Notifications',
+    icon: <FiBell />,
+    children: [
+      { path: '/super-admin/notifications', label: 'Inbox', icon: <FiInbox /> },
+      { path: '/super-admin/notifications/advertise', label: 'Advertise', icon: <FiTrendingUp /> },
+    ],
+  },
   { path: '/super-admin/schools', label: 'Schools', icon: <FiGrid /> },
   { path: '/super-admin/plans', label: 'Plans & Subscriptions', icon: <FiLayers /> },
   { path: '/super-admin/billing', label: 'Billing & Payments', icon: <FiCreditCard /> },
@@ -21,57 +28,77 @@ export const superAdminNav = [
   { path: '/super-admin/settings', label: 'Settings', icon: <FiSettings /> },
 ];
 
-/** Fallback nav when API menu is empty but plan features are known */
-export const MODULE_NAV_CATALOG = [
-  { key: 'students', label: 'Students', path: '/school-admin/students', icon: 'FiUsers', feature_key: 'student_management' },
-  { key: 'staff', label: 'Staff', path: '/school-admin/staff', icon: 'FiBriefcase', feature_key: 'staff_management' },
-  { key: 'classes', label: 'Classes', path: '/school-admin/classes', icon: 'FiBook', feature_key: 'classes' },
-  { key: 'attendance', label: 'Attendance', path: '/school-admin/attendance', icon: 'FiCalendar', feature_key: 'student_attendance' },
-  { key: 'finance', label: 'Finance', path: '/school-admin/finance', icon: 'FiDollarSign', feature_key: 'student_billing' },
-  { key: 'library', label: 'Library', path: '/school-admin/library', icon: 'FiBookOpen', feature_key: 'library_management' },
-  { key: 'hostel', label: 'Hostel', path: '/school-admin/hostel', icon: 'FiHome', feature_key: 'hostel_management' },
-  { key: 'transport', label: 'Transport', path: '/school-admin/transport', icon: 'FiTruck', feature_key: 'vehicles' },
-  { key: 'inventory', label: 'Inventory', path: '/school-admin/inventory', icon: 'FiPackage', feature_key: 'inventory_items' },
-  { key: 'hr', label: 'HR', path: '/school-admin/hr', icon: 'FiUsers', feature_key: 'hr_departments' },
-  { key: 'payroll', label: 'Payroll', path: '/school-admin/payroll', icon: 'FiCreditCard', feature_key: 'payroll_runs' },
-  { key: 'communication', label: 'Communication', path: '/school-admin/communication', icon: 'FiMessageSquare', feature_key: 'announcements' },
-  { key: 'reports', label: 'Reports', path: '/school-admin/reports', icon: 'FiBarChart2', feature_key: 'reports' },
-];
-
-export const CORE_FEATURE_KEYS = ['dashboard_analytics', 'school_settings'];
+export const CORE_FEATURE_KEYS = ['dashboard_analytics', 'school_settings', 'notifications'];
 
 export const FREE_TRIAL_FEATURE_KEYS = [
-  'student_management', 'staff_management', 'classes', 'student_attendance',
-  'student_billing', 'admissions', 'announcements', 'dashboard_analytics', 'school_settings',
+  'student_management', 'parent_management', 'staff_management', 'user_accounts',
+  'school_settings', 'academic_years', 'terms', 'classes', 'subjects', 'admissions',
+  'student_attendance', 'fee_structures', 'student_billing', 'payment_recording',
+  'dashboard_analytics', 'announcements',
 ];
 
-export const buildNavigationFromFeatures = (enabledKeys = []) => {
-  const keys = new Set([...enabledKeys, ...CORE_FEATURE_KEYS]);
-  return MODULE_NAV_CATALOG.filter((item) => keys.has(item.feature_key));
-};
-
-export const buildSchoolAdminNav = (navigationMenu = []) => {
+export const buildSchoolAdminNav = (moduleMenu = []) => {
   const items = [
     { path: '/school-admin', label: 'Dashboard', icon: <FiHome />, featureKey: 'dashboard_analytics' },
   ];
 
-  if (navigationMenu.length > 0) {
+  const modules = [...(moduleMenu.length > 0 ? moduleMenu : [])].sort(
+    (a, b) => (a.sort_order ?? 99) - (b.sort_order ?? 99),
+  );
+
+  if (modules.length > 0) {
     items.push({ divider: true, label: 'Modules' });
-    navigationMenu.forEach((item) => {
-      const Icon = resolveFeatureIcon(item.icon);
+    modules.forEach((module) => {
+      const Icon = resolveFeatureIcon(module.icon);
       items.push({
-        path: item.path,
-        label: item.label,
+        path: module.path,
+        label: module.label,
         icon: <Icon />,
-        featureKey: item.feature_key,
+        featureKey: module.feature_key || module.children?.[0]?.feature_key,
+        children: (module.children || []).map((child) => ({
+          ...child,
+          icon: resolveFeatureIcon(child.icon),
+        })),
+        badge: module.enabled_count,
       });
     });
   }
 
-  items.push(
-    { divider: true, label: 'System' },
-    { path: '/school-admin/settings', label: 'Settings', icon: <FiSettings />, featureKey: 'school_settings' },
-  );
+  items.push({
+    divider: true,
+    label: 'System',
+  });
+  items.push({
+    path: '/school-admin/settings',
+    label: 'Settings',
+    icon: <FiSettings />,
+    featureKey: 'school_settings',
+    children: [
+      { path: '/school-admin/settings', label: 'School Settings', icon: <FiSettings />, featureKey: 'school_settings' },
+      { path: '/school-admin/settings/plans', label: 'Plans & Subscriptions', icon: <FiLayers />, featureKey: 'school_settings' },
+    ],
+  });
 
   return items;
+};
+
+export const buildFallbackModuleMenu = (enabledKeys = []) => {
+  const keySet = new Set([...enabledKeys, ...CORE_FEATURE_KEYS]);
+  return SCHOOL_MODULES.filter((mod) => {
+    const modKeys = mod.feature_keys || [];
+    return modKeys.some((k) => keySet.has(k));
+  }).map((mod) => {
+    const children = (mod.children || []).filter((c) => keySet.has(c.feature_key));
+    return {
+      key: mod.key,
+      label: mod.label,
+      path: mod.path,
+      icon: mod.icon,
+      sort_order: mod.sort_order,
+      feature_key: mod.feature_keys?.[0],
+      enabled_count: children.length,
+      total_count: mod.children?.length || 0,
+      children,
+    };
+  });
 };

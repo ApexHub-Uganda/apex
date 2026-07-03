@@ -35,17 +35,14 @@ def _public_settings() -> dict[str, Any]:
 
 
 def _assign_plan(tenant: Tenant, plan: Plan, *, billing_cycle: str = "monthly") -> Subscription:
-    tenant.subscriptions.filter(status__in=["trial", "active", "grace_period"]).update(status="cancelled")
-    sub = Subscription.objects.create(
-        tenant=tenant,
-        plan=plan,
-        status="trial",
+    from apps.tenants.services import assign_tenant_plan
+
+    return assign_tenant_plan(
+        tenant,
+        plan,
         billing_cycle=billing_cycle,
+        subscription_status="trial",
     )
-    if plan.slug != "free_trial" and plan.price_monthly > 0:
-        sub.status = "trial"
-        sub.save(update_fields=["status", "updated_at"])
-    return sub
 
 
 class OnboardingDetailView(APIView):
@@ -220,17 +217,29 @@ class CheckoutPlanView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        _assign_plan(tenant, plan, billing_cycle=billing_cycle)
-        tenant.registration_type = RegistrationType.PAID
-        tenant.save(update_fields=["registration_type", "updated_at"])
-
-        payment_result = PaymentService.process_checkout(
+        try:
+            payment_result = PaymentService.process_checkout(
             tenant=tenant,
             plan=plan,
             amount=Decimal(str(amount)),
             billing_cycle=billing_cycle,
             currency=plan.currency,
-        )
+            payment_method=request.data.get("payment_method", "card"),
+            provider_slug=request.data.get("provider_slug", ""),
+            phone_number=request.data.get("phone_number", ""),
+            card_last_four=request.data.get("card_last_four", ""),
+            card_brand=request.data.get("card_brand", ""),
+            payer_name=request.data.get("payer_name", ""),
+            )
+        except ValueError as exc:
+            return Response(
+                {"success": False, "error": {"message": str(exc)}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        _assign_plan(tenant, plan, billing_cycle=billing_cycle)
+        tenant.registration_type = RegistrationType.PAID
+        tenant.save(update_fields=["registration_type", "updated_at"])
 
         notification = create_registration_notification(
             tenant,

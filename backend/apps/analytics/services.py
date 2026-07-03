@@ -140,10 +140,12 @@ def _get_plan_usage(
     total_students: int,
     total_staff: int,
 ) -> dict[str, Any]:
-    if not subscription:
+    if not subscription or subscription.get("limits_enforced") is False:
         return {}
     max_students = subscription.get("max_students") or 0
     max_staff = subscription.get("max_staff") or 0
+    if not max_students and not max_staff:
+        return {}
     return {
         "students": {
             "used": total_students,
@@ -493,17 +495,22 @@ def get_school_detail(tenant_id: str) -> dict[str, Any]:
             "enabled_feature_count": len(enabled_features),
         },
         "subscription": {
+            "id": str(sub.id) if sub else None,
             "plan": plan.name if plan else None,
             "plan_slug": plan.slug if plan else None,
+            "plan_id": str(plan.id) if plan else None,
             "status": sub.status if sub else None,
             "billing_cycle": sub.billing_cycle if sub else None,
             "monthly_amount": float(plan.price_monthly) if plan else 0.0,
+            "yearly_amount": float(plan.price_yearly) if plan else 0.0,
             "current_period_end": sub.current_period_end.isoformat() if sub and sub.current_period_end else None,
             "trial_ends_at": sub.trial_ends_at.isoformat() if sub and sub.trial_ends_at else None,
-            "max_students": plan.max_students if plan else None,
-            "max_staff": plan.max_staff if plan else None,
-            "max_parents": plan.max_parents if plan else None,
-            "max_branches": plan.max_branches if plan else None,
+            "feature_count": plan.features.filter(is_active=True).count() if plan else 0,
+            "limits_enforced": False,
+            "max_students": None,
+            "max_staff": None,
+            "max_parents": None,
+            "max_branches": None,
         },
         "stats": {
             "total_students": total_students,
@@ -616,6 +623,7 @@ def get_platform_dashboard() -> dict[str, Any]:
             "id": str(tenant.id),
             "name": tenant.name,
             "plan": sub.plan.name if sub and sub.plan else "—",
+            "plan_slug": sub.plan.slug if sub and sub.plan else None,
             "status": tenant.status,
             "students": student_count,
             "country": tenant.country or "",
@@ -625,9 +633,11 @@ def get_platform_dashboard() -> dict[str, Any]:
     top_schools = []
     for tenant in tenants:
         student_count = Student.objects.filter(tenant=tenant, is_deleted=False).count()
+        sub = tenant.active_subscription
         top_schools.append({
             "id": str(tenant.id),
             "name": tenant.name,
+            "plan_slug": sub.plan.slug if sub and sub.plan else None,
             "students": student_count,
             "country": tenant.country or "",
         })
@@ -843,7 +853,9 @@ def get_billing_operations() -> dict[str, Any]:
     revenue_chart = _monthly_sum_series(completed, "created_at", "amount", 6)
     failed_by_month = _monthly_count_series(failed, "created_at", 6)
 
-    providers = list(PaymentProvider.objects.values("id", "name", "slug", "is_active", "is_sandbox"))
+    providers = list(PaymentProvider.objects.values(
+        "id", "name", "slug", "method_type", "is_active", "is_sandbox",
+    ))
 
     failed_queue = []
     for txn in failed.filter(created_at__gte=thirty_days_ago).order_by("-created_at")[:10]:

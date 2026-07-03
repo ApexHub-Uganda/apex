@@ -26,7 +26,7 @@ class NotificationViewSet(BaseModelViewSet):
     filterset_fields = ["is_read", "notification_type"]
 
     def get_queryset(self):
-        return Notification.objects.filter(recipient=self.request.user)
+        return Notification.objects.filter(recipient=self.request.user, is_deleted=False)
 
     @action(detail=True, methods=["post"])
     def mark_read(self, request: Request, pk: str = None) -> Response:
@@ -42,6 +42,22 @@ class NotificationViewSet(BaseModelViewSet):
 
         count = mark_all_user_notifications_read(request.user)
         return Response({"success": True, "message": f"{count} notifications marked as read."})
+
+    @action(detail=True, methods=["post"])
+    def delete_notification(self, request: Request, pk: str = None) -> Response:
+        from apps.communication.services import delete_user_notification
+
+        deleted = delete_user_notification(request.user, pk)
+        if not deleted:
+            return Response({"success": False, "error": {"message": "Notification not found."}}, status=404)
+        return Response({"success": True, "message": "Notification deleted."})
+
+    @action(detail=False, methods=["post"])
+    def delete_all(self, request: Request) -> Response:
+        from apps.communication.services import delete_all_user_notifications
+
+        count = delete_all_user_notifications(request.user)
+        return Response({"success": True, "message": f"{count} notification(s) deleted."})
 
     @action(detail=False, methods=["get"])
     def summary(self, request: Request) -> Response:

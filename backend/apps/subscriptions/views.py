@@ -1,9 +1,10 @@
 """Subscription views."""
-from rest_framework import generics, viewsets
+from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.core.permissions import IsSchoolAdmin, IsSuperAdmin, TenantActivePermission
 from apps.subscriptions.models import FeatureCategory, FeatureFlag, PaymentProvider, PaymentTransaction, Plan, Subscription
@@ -16,7 +17,11 @@ from apps.subscriptions.serializers import (
     SubscriptionCreateSerializer,
     SubscriptionSerializer,
 )
-from apps.subscriptions.services import get_feature_catalog, invalidate_catalog_cache
+from apps.subscriptions.services import (
+    get_feature_catalog,
+    invalidate_catalog_cache,
+    notify_tenant_subscription_update,
+)
 
 
 class PlanListView(generics.ListAPIView):
@@ -107,18 +112,88 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             return [IsSuperAdmin()]
         return super().get_permissions()
 
+    def perform_create(self, serializer):
+        sub = serializer.save()
+        notify_tenant_subscription_update(sub, event="subscription_created")
+
     @action(detail=True, methods=["post"], permission_classes=[IsSuperAdmin])
     def activate(self, request: Request, pk: str = None) -> Response:
         sub = self.get_object()
         days = int(request.data.get("period_days", 30))
         sub.activate(period_days=days)
+        notify_tenant_subscription_update(sub, event="subscription_activated")
         return Response(SubscriptionSerializer(sub).data)
 
     @action(detail=True, methods=["post"], permission_classes=[IsSuperAdmin])
     def suspend(self, request: Request, pk: str = None) -> Response:
         sub = self.get_object()
         sub.suspend()
+        notify_tenant_subscription_update(sub, event="subscription_suspended")
         return Response({"success": True, "message": "Subscription suspended."})
+
+
+class PlanUpgradeCatalogView(APIView):
+    """Upgrade-eligible plans and payment options for school admins."""
+
+    permission_classes = [IsSchoolAdmin, TenantActivePermission]
+
+    def get(self, request: Request) -> Response:
+        from apps.subscriptions.upgrade_services import get_upgrade_catalog
+
+        tenant = getattr(request.user, "tenant", None)
+        if not tenant:
+            return Response(
+                {"success": False, "error": {"message": "No school context."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response({"success": True, "data": get_upgrade_catalog(tenant)})
+
+
+class PlanUpgradeCheckoutView(APIView):
+    """Initiate plan upgrade checkout (stub — payment gateway not connected)."""
+
+    permission_classes = [IsSchoolAdmin, TenantActivePermission]
+
+    def post(self, request: Request) -> Response:
+        from apps.subscriptions.upgrade_services import process_upgrade_checkout
+
+        tenant = getattr(request.user, "tenant", None)
+        if not tenant:
+            return Response(
+                {"success": False, "error": {"message": "No school context."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        plan_slug = request.data.get("plan_slug")
+        if not plan_slug:
+            return Response(
+                {"success": False, "error": {"message": "plan_slug is required."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            result = process_upgrade_checkout(
+                tenant,
+                plan_slug=plan_slug,
+                billing_cycle=request.data.get("billing_cycle", "monthly"),
+                payment_method=request.data.get("payment_method", "card"),
+                provider_slug=request.data.get("provider_slug", ""),
+                phone_number=request.data.get("phone_number", ""),
+                card_last_four=request.data.get("card_last_four", ""),
+                card_brand=request.data.get("card_brand", ""),
+                payer_name=request.data.get("payer_name", ""),
+                actor=request.user,
+            )
+        except ValueError as exc:
+            return Response(
+                {"success": False, "error": {"message": str(exc)}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(
+            {"success": False, "message": result["message"], "data": result},
+            status=status.HTTP_402_PAYMENT_REQUIRED,
+        )
 
 
 class CurrentSubscriptionView(generics.RetrieveAPIView):

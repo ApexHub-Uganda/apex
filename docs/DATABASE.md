@@ -57,6 +57,12 @@ Plan tiers: Basic, Premium, Premium Plus, Free Trial with limits and feature fla
 ### subscriptions_subscription
 Active subscription with trial, expiry, grace period, suspension status.
 
+### subscriptions_paymentprovider
+Payment gateway configuration. `method_type` is either `card` (Stripe, PayPal) or `mobile_money` (M-Pesa, MTN MoMo, Airtel Money).
+
+### subscriptions_paymenttransaction
+Checkout and billing ledger. Stores `payment_method` (`card` | `mobile_money`), masked `payer_phone` for mobile money, and card metadata (last four digits only) in `metadata` JSON — full card numbers are never persisted.
+
 ### audit_auditlog
 Platform-wide audit trail for all significant actions.
 

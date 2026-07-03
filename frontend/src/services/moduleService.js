@@ -28,6 +28,9 @@ export const schoolsService = {
   verify: (id) => api.post(`/tenants/${id}/verify/`).then((r) => unwrapData(r)),
   suspend: (id, reason = '') => api.post(`/tenants/${id}/suspend/`, { reason }).then((r) => unwrapData(r)),
   unsuspend: (id) => api.post(`/tenants/${id}/unsuspend/`).then((r) => unwrapData(r)),
+  getDeletionPreview: (id) => api.get(`/tenants/${id}/deletion-preview/`).then((r) => unwrapData(r)),
+  changePlan: (id, payload) => api.post(`/tenants/${id}/change-plan/`, payload).then((r) => unwrapData(r)),
+  permanentDelete: (id, payload) => api.post(`/tenants/${id}/permanent-delete/`, payload).then((r) => unwrapData(r)),
 };
 
 export const platformNotificationsService = {
@@ -37,6 +40,21 @@ export const platformNotificationsService = {
   dismiss: (id) => api.post(`/platform/notifications/${id}/dismiss/`).then((r) => unwrapData(r)),
   markRead: (id) => api.post(`/platform/notifications/${id}/mark_read/`).then((r) => unwrapData(r)),
   markAllRead: () => api.post('/platform/notifications/mark_all_read/').then((r) => unwrapData(r)),
+  delete: (id) => api.post(`/platform/notifications/${id}/delete_notification/`).then((r) => unwrapData(r)),
+  deleteAll: () => api.post('/platform/notifications/delete_all/').then((r) => unwrapData(r)),
+};
+
+export const planAdvertisementService = {
+  list: (params) => api.get('/platform/plan-advertisements/', { params }).then((r) => unwrapList(r)),
+  get: (id) => api.get(`/platform/plan-advertisements/${id}/`).then((r) => unwrapData(r)),
+  create: (payload) => api.post('/platform/plan-advertisements/', payload).then((r) => unwrapData(r)),
+  update: (id, payload) => api.patch(`/platform/plan-advertisements/${id}/`, payload).then((r) => unwrapData(r)),
+  delete: (id) => api.delete(`/platform/plan-advertisements/${id}/`).then((r) => unwrapData(r)),
+  getPlanOptions: () => api.get('/platform/plan-advertisements/plan_options/').then((r) => unwrapData(r)),
+  getDefaults: (params) => api.get('/platform/plan-advertisements/defaults/', { params }).then((r) => unwrapData(r)),
+  broadcast: (id) => api.post(`/platform/plan-advertisements/${id}/broadcast/`).then((r) => unwrapData(r)),
+  pause: (id) => api.post(`/platform/plan-advertisements/${id}/pause/`).then((r) => unwrapData(r)),
+  end: (id) => api.post(`/platform/plan-advertisements/${id}/end/`).then((r) => unwrapData(r)),
 };
 
 export const plansService = createCrudService('/subscriptions/plans/manage/');
@@ -60,6 +78,21 @@ export const subscriptionsService = {
   activate: (id, periodDays = 30) =>
     api.post(`/subscriptions/${id}/activate/`, { period_days: periodDays }).then((r) => unwrapData(r)),
   suspend: (id) => api.post(`/subscriptions/${id}/suspend/`).then((r) => unwrapData(r)),
+};
+
+export const planUpgradeService = {
+  getCatalog: () => api.get('/subscriptions/upgrade/catalog/').then((r) => unwrapData(r)),
+  checkout: (payload) =>
+    api.post('/subscriptions/upgrade/checkout/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }).catch((err) => {
+      const body = err?.response?.data;
+      if (err?.response?.status === 402 && body?.data) {
+        return { ...body.data, message: body.message };
+      }
+      throw err;
+    }),
 };
 
 export const billingService = {
@@ -105,6 +138,10 @@ export const settingsService = {
   update: (payload) => api.patch('/platform/settings/general/', payload).then((r) => unwrapData(r)),
 };
 
+export const platformService = {
+  getHealth: () => api.get('/platform/health/').then((r) => r?.data ?? r),
+};
+
 export const studentsService = createCrudService('/school-admin/students/');
 export const staffService = createCrudService('/school-admin/staff/');
 export const classesService = createCrudService('/school-admin/classes/');
@@ -124,12 +161,16 @@ export const communicationService = createCrudService('/school-admin/communicati
 export const notificationFeedService = {
   getFeed: () => api.get('/auth/notifications/feed/').then((r) => unwrapData(r)),
   markAllRead: () => api.post('/auth/notifications/feed/', { action: 'mark_all_read' }).then((r) => unwrapData(r)),
+  deleteOne: (itemId) => api.post('/auth/notifications/feed/', { action: 'delete_one', item_id: itemId }).then((r) => unwrapData(r)),
+  deleteAll: () => api.post('/auth/notifications/feed/', { action: 'delete_all' }).then((r) => unwrapData(r)),
 };
 
 export const notificationsService = {
   list: (params) => api.get('/communication/notifications/', { params }).then((r) => unwrapList(r)),
   markRead: (id) => api.post(`/communication/notifications/${id}/mark_read/`).then((r) => unwrapData(r)),
   markAllRead: () => api.post('/communication/notifications/mark_all_read/').then((r) => unwrapData(r)),
+  delete: (id) => api.post(`/communication/notifications/${id}/delete_notification/`).then((r) => unwrapData(r)),
+  deleteAll: () => api.post('/communication/notifications/delete_all/').then((r) => unwrapData(r)),
   getSummary: () => api.get('/communication/notifications/summary/').then((r) => unwrapData(r)),
 };
 

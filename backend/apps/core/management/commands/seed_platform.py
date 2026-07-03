@@ -266,7 +266,12 @@ class Command(BaseCommand):
         for data in plans_data:
             Plan.objects.update_or_create(
                 slug=data["slug"],
-                defaults={**data, "description": f"{data['name']} plan for schools"},
+                defaults={
+                    **data,
+                    "description": f"{data['name']} plan for schools",
+                    "is_active": True,
+                    "is_public": True,
+                },
             )
         seed_plan_defaults()
         self.stdout.write(self.style.SUCCESS(f"  Created {len(plans_data)} subscription plans"))
@@ -292,11 +297,29 @@ class Command(BaseCommand):
     def _seed_payment_provider(self, force: bool) -> PaymentProvider:
         if PaymentProvider.objects.exists() and not force:
             return PaymentProvider.objects.first()
-        provider, _ = PaymentProvider.objects.update_or_create(
-            slug="stripe",
-            defaults={"name": "Stripe", "is_active": True, "is_sandbox": True},
-        )
-        self.stdout.write(self.style.SUCCESS("  Created payment provider"))
+        card_providers = [
+            {"slug": "stripe", "name": "Stripe", "method_type": "card"},
+            {"slug": "paypal", "name": "PayPal", "method_type": "card"},
+        ]
+        mobile_providers = [
+            {"slug": "mpesa", "name": "M-Pesa", "method_type": "mobile_money"},
+            {"slug": "mtn_momo", "name": "MTN MoMo", "method_type": "mobile_money"},
+            {"slug": "airtel_money", "name": "Airtel Money", "method_type": "mobile_money"},
+        ]
+        provider = None
+        for entry in [*card_providers, *mobile_providers]:
+            obj, _ = PaymentProvider.objects.update_or_create(
+                slug=entry["slug"],
+                defaults={
+                    "name": entry["name"],
+                    "method_type": entry["method_type"],
+                    "is_active": entry["method_type"] == "card",
+                    "is_sandbox": True,
+                },
+            )
+            if entry["slug"] == "stripe":
+                provider = obj
+        self.stdout.write(self.style.SUCCESS("  Created payment providers (card + mobile money)"))
         return provider
 
     def _seed_schools(self, force: bool) -> list[Tenant]:

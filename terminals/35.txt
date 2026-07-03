@@ -1,0 +1,37 @@
+---
+pid: 2196
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -q -k \"subscription or tenant or context\" --tb=short 2>&1 | Select-Object -First 40"
+started_at: 2026-07-02T07:06:22.070Z
+running_for_ms: 28520011 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 16 items / 5 deselected / 11 selected
+
+tests\test_subscriptions.py ......F                                      [ 63%]
+tests\test_tenant_isolation.py ...F                                      [100%]
+
+================================== FAILURES ===================================
+_________________ TestSubscriptions.test_feature_catalog_api __________________
+tests\test_subscriptions.py:67: in test_feature_catalog_api
+    assert response.data["data"]["total_features"] >= 80
+E   assert 79 >= 80
+_____ TestTenantIsolation.test_cross_tenant_data_not_visible_in_academics _____
+tests\test_tenant_isolation.py:94: in test_cross_tenant_data_not_visible_in_academics
+    assert response.status_code == status.HTTP_200_OK
+E   assert 403 == 200
+E    +  where 403 = <Response status_code=403, "application/json">.status_code
+E    +  and   200 = status.HTTP_200_OK
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-02 00:06:42,924 log Forbidden: /api/v1/academics/years/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Forbidden: /api/v1/academics/years/
+=========================== short test summary info ===========================
+FAILED tests/test_subscriptions.py::TestSubscriptions::test_feature_catalog_api
+FAILED tests/test_tenant_isolation.py::TestTenantIsolation::test_cross_tenant_data_not_visible_in_academics
+================= 2 failed, 9 passed, 5 deselected in 17.26s ==================

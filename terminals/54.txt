@@ -1,0 +1,34 @@
+---
+pid: 16024
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_upgrade.py tests/test_plan_advertisements.py -q"
+started_at: 2026-07-02T14:48:53.903Z
+running_for_ms: 770009   
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 9 items
+
+tests\test_plan_upgrade.py FF...                                         [ 55%]
+tests\test_plan_advertisements.py ....                                   [100%]
+
+================================== FAILURES ===================================
+__________ TestPlanUpgrade.test_premium_catalog_offers_premium_plus ___________
+tests\test_plan_upgrade.py:43: in test_premium_catalog_offers_premium_plus
+    assert data["current_plan"]["slug"] == PlanSlug.PREMIUM
+E   AssertionError: assert 'basic' == 'premium'
+E     
+E     - premium
+E     + basic
+____________ TestPlanUpgrade.test_premium_plus_catalog_is_top_tier ____________
+tests\test_plan_upgrade.py:65: in test_premium_plus_catalog_is_top_tier
+    assert data["is_top_tier"] is True
+E   assert False is True
+=========================== short test summary info ===========================
+FAILED tests/test_plan_upgrade.py::TestPlanUpgrade::test_premium_catalog_offers_premium_plus
+FAILED tests/test_plan_upgrade.py::TestPlanUpgrade::test_premium_plus_catalog_is_top_tier
+======================== 2 failed, 7 passed in 26.27s =========================

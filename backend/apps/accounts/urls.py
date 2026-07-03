@@ -1,11 +1,10 @@
 """Account URL routes."""
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import TokenRefreshView
-
 from apps.accounts.views import (
     ChangePasswordView,
     CustomTokenObtainPairView,
+    CustomTokenRefreshView,
     LoginHistoryViewSet,
     LogoutView,
     MeView,
@@ -23,7 +22,7 @@ router.register("devices", UserDeviceViewSet, basename="device")
 
 urlpatterns = [
     path("login/", CustomTokenObtainPairView.as_view(), name="token-obtain"),
-    path("refresh/", TokenRefreshView.as_view(), name="token-refresh"),
+    path("refresh/", CustomTokenRefreshView.as_view(), name="token-refresh"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("me/", MeView.as_view(), name="me"),
     path("notifications/feed/", NotificationFeedView.as_view(), name="notification-feed"),

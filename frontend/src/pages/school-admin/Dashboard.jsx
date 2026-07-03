@@ -3,23 +3,21 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FiAlertTriangle, FiArrowRight, FiClock, FiLayers, FiLock, FiTrendingUp,
+  FiAlertTriangle, FiArrowRight, FiLayers, FiLock, FiTrendingUp,
 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
+import SchoolNameWithBadge from '../../components/SchoolNameWithBadge';
 import StatCard from '../../components/StatCard';
 import { LineChart, BarChart, DoughnutChart } from '../../components/Charts';
 import ProgressBar from '../../components/ProgressBar';
-import StatusBadge from '../../components/StatusBadge';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { PageSkeleton } from '../../components/LoadingSkeleton';
 import { dashboardService } from '../../services/dashboardService';
 import { useTenant } from '../../hooks/useTenant';
 import { resolveFeatureIcon } from '../../utils/featureIcons';
 import {
-  MODULE_HIGHLIGHTS,
   WIDGET_STAT_MAP,
   formatStatValue,
-  getPlanMeta,
 } from '../../config/schoolDashboard';
 
 const EMPTY_CHART = { labels: [], datasets: [] };
@@ -31,72 +29,13 @@ const sectionMotion = {
   transition: { duration: 0.3 },
 };
 
-function PlanBanner({ subscription, planUsage, enabledCount, navigationCount }) {
-  if (!subscription) return null;
-
-  const meta = getPlanMeta(subscription.plan_slug);
-  const trialEnd = subscription.trial_ends_at ? new Date(subscription.trial_ends_at) : null;
-  const daysLeft = trialEnd
-    ? Math.max(0, Math.ceil((trialEnd - Date.now()) / (1000 * 60 * 60 * 24)))
-    : null;
-
-  return (
-    <motion.div className="school-plan-banner mb-4" {...sectionMotion}>
-      <div className="d-flex flex-wrap align-items-start justify-content-between gap-3">
-        <div>
-          <div className="d-flex flex-wrap align-items-center gap-2 mb-2">
-            <span className={`school-plan-badge ${meta.badgeClass}`}>
-              <FiLayers size={14} className="me-1" />
-              {subscription.plan_name || meta.label}
-            </span>
-            <StatusBadge status={subscription.status} />
-            {subscription.status === 'trial' && daysLeft !== null && (
-              <span className="school-plan-trial small">
-                <FiClock size={13} className="me-1" />
-                {daysLeft} day{daysLeft === 1 ? '' : 's'} left in trial
-              </span>
-            )}
-          </div>
-          <p className="text-muted small mb-0">{meta.description}</p>
-        </div>
-        <div className="school-plan-summary text-end">
-          <div className="small text-muted">Active modules</div>
-          <div className="fw-bold" style={{ fontSize: '1.25rem' }}>
-            {navigationCount}
-            <span className="text-muted fw-normal small ms-1">/ {enabledCount} features</span>
-          </div>
-        </div>
-      </div>
-
-      {planUsage?.students && (
-        <div className="row g-3 mt-3 pt-3 border-top">
-          <div className="col-md-6">
-            <ProgressBar
-              label={`Students (${planUsage.students.used} / ${planUsage.students.limit})`}
-              value={planUsage.students.percent}
-              color={planUsage.students.percent >= 90 ? '#DC2626' : 'var(--apex-primary)'}
-            />
-          </div>
-          <div className="col-md-6">
-            <ProgressBar
-              label={`Staff (${planUsage.staff.used} / ${planUsage.staff.limit})`}
-              value={planUsage.staff.percent}
-              color={planUsage.staff.percent >= 90 ? '#DC2626' : 'var(--apex-secondary)'}
-            />
-          </div>
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-function ModuleHighlightCard({ module, stats }) {
+function ModuleGridCard({ module }) {
   const Icon = resolveFeatureIcon(module.icon);
-  const moduleStats = stats?.[module.key] || {};
+  const childCount = module.enabled_count ?? module.children?.length ?? 0;
 
   return (
     <motion.div className="school-module-card h-100" whileHover={{ y: -3 }}>
-      <div className="d-flex align-items-center justify-content-between mb-3">
+      <div className="d-flex align-items-center justify-content-between mb-2">
         <div className="d-flex align-items-center gap-2">
           <span className="school-module-icon">
             <Icon size={18} />
@@ -107,18 +46,21 @@ function ModuleHighlightCard({ module, stats }) {
           Open <FiArrowRight size={14} />
         </Link>
       </div>
-      <div className="row g-2">
-        {module.metrics.map((metric) => (
-          <div key={metric.field} className="col-4">
-            <div className="school-module-metric">
-              <div className={`fw-bold ${metric.warn && moduleStats[metric.field] > 0 ? 'text-warning' : ''}`}>
-                {moduleStats[metric.field] ?? 0}{metric.suffix || ''}
-              </div>
-              <div className="text-muted" style={{ fontSize: '0.7rem' }}>{metric.label}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <p className="text-muted small mb-2">
+        {childCount} feature{childCount === 1 ? '' : 's'} enabled
+      </p>
+      {(module.children || []).slice(0, 4).map((child) => (
+        <Link
+          key={child.feature_key}
+          to={child.path}
+          className="d-block small text-decoration-none text-muted mb-1"
+        >
+          · {child.label}
+        </Link>
+      ))}
+      {(module.children || []).length > 4 && (
+        <span className="small text-muted">+{(module.children || []).length - 4} more</span>
+      )}
     </motion.div>
   );
 }
@@ -155,15 +97,15 @@ function UpgradePanel({ suggestions, planSlug }) {
           );
         })}
       </div>
-      <button type="button" className="btn btn-outline-primary btn-sm w-100 mt-3" disabled>
-        <FiTrendingUp className="me-1" /> Request Plan Upgrade
-      </button>
+      <Link to="/school-admin/upgrade" className="btn btn-outline-primary btn-sm w-100 mt-3">
+        <FiTrendingUp className="me-1" /> Upgrade Plan
+      </Link>
     </motion.div>
   );
 }
 
 export function SchoolAdminDashboard() {
-  const { tenant, dashboardWidgets, navigationMenu, enabledFeatureKeys } = useTenant();
+  const { tenant, dashboardWidgets, moduleMenu, enabledFeatureKeys } = useTenant();
 
   const { data, isLoading } = useQuery({
     queryKey: ['school-admin-dashboard', tenant?.id],
@@ -175,19 +117,15 @@ export function SchoolAdminDashboard() {
   const resolvedSections = useMemo(() => {
     const base = data?.sections ?? {};
     if (Object.keys(base).length) return base;
-    const out = {};
-    MODULE_HIGHLIGHTS.forEach((m) => {
-      const enabled = navigationMenu.some((n) => n.path === m.path)
-        || enabledFeatureKeys.some((k) => k.includes(m.key) || k === m.sectionKey);
-      out[m.sectionKey] = enabled;
-    });
-    out.attendance = enabledFeatureKeys.includes('student_attendance');
-    out.finance = enabledFeatureKeys.includes('student_billing');
-    out.enrollment = enabledFeatureKeys.includes('admissions');
-    out.classes = enabledFeatureKeys.includes('classes');
-    out.reports = enabledFeatureKeys.includes('reports');
-    return out;
-  }, [data?.sections, enabledFeatureKeys, navigationMenu]);
+    return {
+      attendance: enabledFeatureKeys.includes('student_attendance'),
+      finance: enabledFeatureKeys.includes('student_billing'),
+      enrollment: enabledFeatureKeys.includes('admissions'),
+      classes: enabledFeatureKeys.includes('classes'),
+      reports: enabledFeatureKeys.includes('reports'),
+      staff_attendance: enabledFeatureKeys.includes('staff_attendance'),
+    };
+  }, [data?.sections, enabledFeatureKeys]);
 
   const stats = data?.stats ?? {};
   const widgets = useMemo(() => {
@@ -195,10 +133,7 @@ export function SchoolAdminDashboard() {
     return apiWidgets?.length ? apiWidgets : [];
   }, [data?.widgets, dashboardWidgets]);
 
-  const activeModules = useMemo(
-    () => MODULE_HIGHLIGHTS.filter((m) => resolvedSections[m.sectionKey]),
-    [resolvedSections],
-  );
+  const activeModules = useMemo(() => moduleMenu || [], [moduleMenu]);
 
   if (isLoading && !data) return <PageSkeleton />;
 
@@ -216,15 +151,15 @@ export function SchoolAdminDashboard() {
   return (
     <div className="school-dashboard">
       <PageHeader
-        title={`${tenant?.name || 'School'} Dashboard`}
-        subtitle="Plan-aware overview — modules and insights match your subscription"
-      />
-
-      <PlanBanner
-        subscription={subscription}
-        planUsage={data?.plan_usage}
-        enabledCount={enabledFeatureKeys.length}
-        navigationCount={navigationMenu.length}
+        centered
+        title={(
+          <SchoolNameWithBadge
+            name={tenant?.name || 'School'}
+            planSlug={planSlug}
+            size="lg"
+          />
+        )}
+        subtitle="Overview of school operations, statistics, and module activity"
       />
 
       <AnimatePresence mode="popLayout">
@@ -405,7 +340,7 @@ export function SchoolAdminDashboard() {
       <AnimatePresence mode="popLayout">
         {activeModules.length > 0 && (
           <motion.div key="module-highlights" {...sectionMotion}>
-            <h5 className="fw-bold mb-3">Module Highlights</h5>
+            <h5 className="fw-bold mb-3">Your Modules</h5>
             <div className="row g-3 mb-4">
               {activeModules.map((module, idx) => (
                 <div className="col-sm-6 col-lg-4 col-xl-3" key={module.key}>
@@ -414,7 +349,7 @@ export function SchoolAdminDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
                   >
-                    <ModuleHighlightCard module={module} stats={data?.module_stats} />
+                    <ModuleGridCard module={module} />
                   </motion.div>
                 </div>
               ))}

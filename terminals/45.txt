@@ -1,0 +1,126 @@
+---
+pid: 15368
+cwd: "E:\apex"
+command: "E:; Set-Location E:\\apex\\backend; python -m pytest tests/test_notification_delete.py -v"
+started_at: 2026-07-02T10:16:52.527Z
+running_for_ms: 17090003 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 6 items
+
+tests/test_notification_delete.py::TestSchoolAdminNotificationDelete::test_feed_delete_one_notification PASSED [ 16%]
+tests/test_notification_delete.py::TestSchoolAdminNotificationDelete::test_feed_delete_all_notifications FAILED [ 33%]
+tests/test_notification_delete.py::TestSchoolAdminNotificationDelete::test_feed_delete_synthetic_item PASSED [ 50%]
+tests/test_notification_delete.py::TestSuperAdminNotificationDelete::test_hide_one_platform_notification PASSED [ 66%]
+tests/test_notification_delete.py::TestSuperAdminNotificationDelete::test_hide_all_platform_notifications PASSED [ 83%]
+tests/test_notification_delete.py::TestSuperAdminNotificationDelete::test_feed_delete_one_for_super_admin PASSED [100%]
+
+================================== FAILURES ===================================
+____ TestSchoolAdminNotificationDelete.test_feed_delete_all_notifications _____
+tests\test_notification_delete.py:50: in test_feed_delete_all_notifications
+    response = api_client.post(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\accounts\views.py:298: in post
+    if tenant.status == TenantStatus.PENDING or not tenant.is_verified:
+                        ^^^^^^^^^^^^
+E   NameError: name 'TenantStatus' is not defined
+---------------------------- Captured stderr call -----------------------------
+ERROR 2026-07-02 03:17:08,832 log Internal Server Error: /api/v1/auth/notifications/feed/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "E:\apex\backend\apps\accounts\views.py", line 298, in post
+    if tenant.status == TenantStatus.PENDING or not tenant.is_verified:
+                        ^^^^^^^^^^^^
+NameError: name 'TenantStatus' is not defined
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/auth/notifications/feed/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "E:\apex\backend\apps\accounts\views.py", line 298, in post
+    if tenant.status == TenantStatus.PENDING or not tenant.is_verified:
+                        ^^^^^^^^^^^^
+NameError: name 'TenantStatus' is not defined
+=========================== short test summary info ===========================
+FAILED tests/test_notification_delete.py::TestSchoolAdminNotificationDelete::test_feed_delete_all_notifications - NameError: name 'TenantStatus' is not defined
+======================== 1 failed, 5 passed in 17.16s =========================

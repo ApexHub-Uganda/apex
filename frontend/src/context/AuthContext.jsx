@@ -58,7 +58,8 @@ export function AuthProvider({ children }) {
     setUser(data.user);
     setIsAuthenticated(true);
     localStorage.setItem('apex_user_email', data.user.email);
-    await queryClient.invalidateQueries({ queryKey: ['tenant', 'context'] });
+    await queryClient.invalidateQueries({ queryKey: ['tenant'] });
+    await queryClient.invalidateQueries({ queryKey: ['school-admin-dashboard'] });
     return data;
   };
 

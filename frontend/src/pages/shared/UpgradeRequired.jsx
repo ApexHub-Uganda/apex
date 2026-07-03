@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { FiLock, FiTrendingUp } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 
@@ -22,9 +23,9 @@ export function UpgradeRequired({ featureKey }) {
           This module is not on your current plan. Upgrade to unlock it, or use the modules
           already included in your subscription from the sidebar.
         </p>
-        <button type="button" className="btn btn-primary d-inline-flex align-items-center gap-2" disabled>
-          <FiTrendingUp /> Request Plan Upgrade
-        </button>
+        <Link to="/school-admin/upgrade" className="btn btn-primary d-inline-flex align-items-center gap-2">
+          <FiTrendingUp /> Upgrade Plan
+        </Link>
       </div>
     </div>
   );

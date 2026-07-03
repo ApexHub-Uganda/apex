@@ -1,84 +1,120 @@
 import api from './api';
-import {
-  CORE_FEATURE_KEYS,
-  FREE_TRIAL_FEATURE_KEYS,
-  buildNavigationFromFeatures,
-} from '../config/navigation';
+import { CORE_FEATURE_KEYS, buildFallbackModuleMenu } from '../config/navigation';
 
 const unwrap = (data) => {
   if (!data) return null;
-  if (data?.data && (data.data.id !== undefined || data.data.enabled_feature_keys)) return data.data;
-  if (data?.enabled_feature_keys || data?.id) return data;
+  if (data?.data && typeof data.data === 'object') {
+    return data.data;
+  }
+  if (data?.enabled_feature_keys || data?.module_menu || data?.id) return data;
   if (data?.tenant) return data.tenant;
   return data;
 };
 
-const buildFallbackFromUser = (user) => ({
-  id: user?.tenant || user?.tenant_id || null,
-  name: user?.tenant_name || 'Your School',
-  code: '',
-  email: user?.email,
-  status: user?.tenant_status || 'active',
-  is_verified: user?.tenant_is_verified ?? true,
-  enabled_feature_keys: [...FREE_TRIAL_FEATURE_KEYS],
-  feature_flags: Object.fromEntries(FREE_TRIAL_FEATURE_KEYS.map((k) => [k, true])),
-  navigation_menu: buildNavigationFromFeatures(FREE_TRIAL_FEATURE_KEYS),
-  dashboard_widgets: [
-    { key: 'students', label: 'Total Students', icon: 'FiUsers', feature_key: 'student_management' },
-    { key: 'staff', label: 'Total Staff', icon: 'FiBriefcase', feature_key: 'staff_management' },
-    { key: 'attendance', label: 'Attendance Today', icon: 'FiCalendar', feature_key: 'student_attendance' },
-    { key: 'finance', label: 'Outstanding Fees', icon: 'FiDollarSign', feature_key: 'student_billing' },
-  ],
-  subscription: { plan_name: 'Free Trial', plan_slug: 'free_trial', status: 'trial' },
-  primary_color: '#0F766E',
-  secondary_color: '#FF7F50',
-  accent_color: '#F5E6CA',
-  _partial: true,
-  _source: 'user_fallback',
-});
+const isNetworkError = (err) => !err?.response && (
+  err?.code === 'ERR_NETWORK'
+  || err?.message?.includes('Network Error')
+  || err?.message?.includes('ECONNREFUSED')
+);
+
+const isUsableContext = (payload) => {
+  if (!payload?.id) return false;
+  const moduleCount = payload.module_menu?.length || 0;
+  const keyCount = payload.enabled_feature_keys?.length || 0;
+  return moduleCount > 0 || keyCount > CORE_FEATURE_KEYS.length;
+};
 
 const enrichContext = (payload) => {
   if (!payload) return null;
-  const keys = [...new Set([...(payload.enabled_feature_keys || []), ...CORE_FEATURE_KEYS])];
-  const flags = { ...(payload.feature_flags || {}) };
-  keys.forEach((k) => { flags[k] = true; });
 
-  let navigationMenu = payload.navigation_menu || [];
-  if (!navigationMenu.length && keys.length) {
-    navigationMenu = buildNavigationFromFeatures(keys);
+  const apiKeys = payload.enabled_feature_keys || [];
+  const keys = [...new Set([...apiKeys, ...CORE_FEATURE_KEYS])];
+  const flags = { ...(payload.feature_flags || {}) };
+  apiKeys.forEach((k) => { flags[k] = true; });
+  CORE_FEATURE_KEYS.forEach((k) => { flags[k] = true; });
+
+  let moduleMenu = payload.module_menu;
+  if (!moduleMenu?.length) {
+    if (payload.navigation_menu?.length) {
+      moduleMenu = payload.navigation_menu;
+    } else if (keys.length > CORE_FEATURE_KEYS.length) {
+      moduleMenu = buildFallbackModuleMenu(keys);
+    } else {
+      moduleMenu = [];
+    }
   }
 
   return {
     ...payload,
     enabled_feature_keys: keys,
     feature_flags: flags,
-    navigation_menu: navigationMenu,
+    module_menu: moduleMenu,
+    navigation_menu: payload.navigation_menu?.length ? payload.navigation_menu : moduleMenu,
   };
 };
 
 export const tenantService = {
   async getSchoolContext(user) {
+    let lastError = null;
+    let backendUnreachable = false;
+
     try {
-      const { data } = await api.get('/tenants/context/');
+      const { data } = await api.get('/tenants/context/', {
+        params: { _ts: Date.now() },
+      });
       const payload = unwrap(data);
-      if (payload?.id || payload?.enabled_feature_keys?.length) {
+      if (isUsableContext(payload)) {
         return { ...enrichContext(payload), _partial: false, _source: 'context_api' };
       }
-    } catch {
-      // fall through
+      lastError = new Error('School context returned no plan modules from database.');
+    } catch (err) {
+      lastError = err;
+      backendUnreachable = isNetworkError(err);
     }
 
-    try {
-      const { data } = await api.get('/tenants/current/');
-      const payload = unwrap(data);
-      if (payload?.id || payload?.enabled_feature_keys?.length) {
-        return { ...enrichContext(payload), _partial: false, _source: 'current_api' };
+    if (!backendUnreachable) {
+      try {
+        const { data } = await api.get('/tenants/current/', {
+          params: { _ts: Date.now() },
+        });
+        const payload = unwrap(data);
+        if (isUsableContext(payload)) {
+          return { ...enrichContext(payload), _partial: false, _source: 'current_api' };
+        }
+        if (payload?.id) {
+          return {
+            ...enrichContext(payload),
+            _partial: true,
+            _source: 'current_api_partial',
+            _error: lastError?.message || 'Partial tenant profile only.',
+          };
+        }
+      } catch (err) {
+        lastError = err;
       }
-    } catch {
-      // fall through
     }
 
-    return buildFallbackFromUser(user);
+    const fallback = {
+      id: user?.tenant || user?.tenant_id || null,
+      name: user?.tenant_name || 'Your School',
+      code: '',
+      email: user?.email,
+      status: user?.tenant_status || 'active',
+      is_verified: user?.tenant_is_verified ?? true,
+      enabled_feature_keys: [...CORE_FEATURE_KEYS],
+      feature_flags: Object.fromEntries(CORE_FEATURE_KEYS.map((k) => [k, true])),
+      navigation_menu: [],
+      module_menu: [],
+      dashboard_widgets: [],
+      subscription: null,
+      primary_color: '#0F766E',
+      secondary_color: '#FF7F50',
+      accent_color: '#F5E6CA',
+      _partial: true,
+      _source: 'api_unreachable',
+      _error: lastError?.message || 'Cannot reach school context API.',
+    };
+    return fallback;
   },
 
   async getCurrentTenant() {

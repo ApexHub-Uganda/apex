@@ -46,10 +46,13 @@ export function extractApiError(error, fallback = 'Something went wrong. Please 
     data?.error?.message ||
     data?.message ||
     data?.detail ||
+    data?.non_field_errors?.[0] ||
+    data?.error?.details?.non_field_errors?.[0] ||
     (typeof data === 'string' ? data : null);
   if (message) return String(message);
   if (data?.error?.details && typeof data.error.details === 'object') {
     const parts = Object.entries(data.error.details).flatMap(([k, v]) => {
+      if (k === 'non_field_errors' && Array.isArray(v)) return v.map(String);
       if (Array.isArray(v)) return v.map((item) => `${k}: ${item}`);
       return [`${k}: ${v}`];
     });

@@ -22,7 +22,7 @@ from apps.core.permissions import IsSchoolAdmin, IsSuperAdmin, RequiresFeature, 
 
 
 class SchoolDashboardView(APIView):
-    permission_classes = [IsSchoolAdmin]
+    permission_classes = [IsSchoolAdmin, TenantActivePermission]
 
     def get(self, request: Request) -> Response:
         tenant_id = getattr(request.user, "tenant_id", None)

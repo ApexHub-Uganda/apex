@@ -6,6 +6,7 @@ import {
   FiGrid, FiGlobe, FiChevronRight, FiAlertTriangle, FiSearch, FiBell, FiCheck,
 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
+import SchoolNameWithBadge from '../../components/SchoolNameWithBadge';
 import StatusBadge from '../../components/StatusBadge';
 import { PageSkeleton } from '../../components/LoadingSkeleton';
 import { platformNotificationsService, schoolsService } from '../../services/moduleService';
@@ -195,7 +196,13 @@ export function Schools() {
                       <FiGrid size={20} />
                     </div>
                     <div>
-                      <h6 className="fw-bold mb-1">{school.name}</h6>
+                      <h6 className="fw-bold mb-1">
+                        <SchoolNameWithBadge
+                          name={school.name}
+                          planSlug={school.plan_slug}
+                          size="sm"
+                        />
+                      </h6>
                       <div className="d-flex align-items-center gap-1 text-muted small mb-1">
                         <FiGlobe size={14} />
                         <span>{school.country || '—'}</span>

@@ -6,6 +6,7 @@ import {
   FiMail, FiCheckCircle, FiAlertTriangle, FiCreditCard, FiArrowRight, FiShield,
 } from 'react-icons/fi';
 import { registrationService } from '../../services/registrationService';
+import RegistrationCheckoutModal from '../../components/RegistrationCheckoutModal';
 import { Skeleton } from '../../components/LoadingSkeleton';
 import { extractApiError, notify } from '../../utils/notify';
 
@@ -57,6 +58,7 @@ export function RegistrationWelcome() {
   const navigate = useNavigate();
   const tenantId = searchParams.get('school');
   const [loading, setLoading] = useState('');
+  const [checkoutPlan, setCheckoutPlan] = useState(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['onboarding', tenantId],
@@ -119,18 +121,25 @@ export function RegistrationWelcome() {
     }
   };
 
-  const handleCheckout = async (planSlug) => {
-    setLoading(`pay-${planSlug}`);
+  const handleCheckoutSubmit = async (paymentPayload) => {
+    if (!checkoutPlan) return;
+    setLoading(`pay-${checkoutPlan.slug}`);
     try {
-      await registrationService.checkout(tenantId, planSlug);
-    } catch (err) {
-      const body = err.response?.data;
+      const body = await registrationService.checkout(
+        tenantId,
+        checkoutPlan.slug,
+        'monthly',
+        paymentPayload,
+      );
       notify.warning(body?.message || 'Payment could not be processed. Your registration is recorded.');
+      setCheckoutPlan(null);
       setTimeout(() => navigate('/login', {
         state: {
           message: 'Payment recorded. Sign in after super admin activates your account.',
         },
       }), 2000);
+    } catch (err) {
+      notify.error(extractApiError(err, 'Payment could not be processed.'));
     } finally {
       setLoading('');
     }
@@ -277,7 +286,7 @@ export function RegistrationWelcome() {
                         type="button"
                         className="btn btn-sm btn-outline-secondary"
                         disabled={!!loading}
-                        onClick={() => handleCheckout(plan.slug)}
+                        onClick={() => setCheckoutPlan(plan)}
                       >
                         {loading === `pay-${plan.slug}` ? 'Processing...' : 'Pay'}
                       </button>
@@ -295,6 +304,14 @@ export function RegistrationWelcome() {
           Skip for now — Sign in <FiArrowRight className="ms-1" />
         </Link>
       </section>
+
+      <RegistrationCheckoutModal
+        open={Boolean(checkoutPlan)}
+        onClose={() => setCheckoutPlan(null)}
+        plan={checkoutPlan}
+        loading={Boolean(checkoutPlan && loading === `pay-${checkoutPlan.slug}`)}
+        onSubmit={handleCheckoutSubmit}
+      />
     </motion.div>
   );
 }

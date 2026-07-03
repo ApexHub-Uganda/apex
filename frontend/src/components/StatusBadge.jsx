@@ -14,6 +14,9 @@ export function StatusBadge({ status, label: customLabel }) {
     overdue: { class: 'apex-badge-danger', label: 'Overdue' },
     healthy: { class: 'apex-badge-success', label: 'Healthy' },
     connected: { class: 'apex-badge-success', label: 'Connected' },
+    completed: { class: 'apex-badge-success', label: 'Completed' },
+    failed: { class: 'apex-badge-danger', label: 'Failed' },
+    refunded: { class: 'apex-badge-warning', label: 'Refunded' },
   };
 
   const { class: badgeClass, label } = config[status?.toLowerCase()] || {

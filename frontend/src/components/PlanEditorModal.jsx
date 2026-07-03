@@ -4,11 +4,14 @@ import { FiChevronDown, FiChevronRight } from 'react-icons/fi';
 import Modal from './Modal';
 import { featuresService } from '../services/moduleService';
 
+const USER_LIMIT_FIELDS = [
+  { name: 'max_students', label: 'Max Students' },
+  { name: 'max_staff', label: 'Max Staff' },
+  { name: 'max_parents', label: 'Max Parents' },
+  { name: 'max_branches', label: 'Max Branches' },
+];
+
 const LIMIT_FIELDS = [
-  { name: 'max_students', label: 'Max Students', type: 'number' },
-  { name: 'max_staff', label: 'Max Staff', type: 'number' },
-  { name: 'max_parents', label: 'Max Parents', type: 'number' },
-  { name: 'max_branches', label: 'Max Branches', type: 'number' },
   { name: 'max_storage_mb', label: 'Storage Limit (MB)', type: 'number' },
   { name: 'max_sms_monthly', label: 'SMS / Month', type: 'number' },
   { name: 'max_emails_monthly', label: 'Emails / Month', type: 'number' },
@@ -140,6 +143,10 @@ export function PlanEditorModal({
       ...form,
       price_monthly: Number(form.price_monthly) || 0,
       price_yearly: Number(form.price_yearly) || Number(form.price_monthly) * 10 || 0,
+      max_students: 0,
+      max_staff: 0,
+      max_parents: 0,
+      max_branches: 0,
       enabled_feature_keys: Array.from(selectedFeatures),
     };
     await onSave(payload);
@@ -214,6 +221,17 @@ export function PlanEditorModal({
       </div>
 
       <h6 className="fw-bold mb-3">Plan Limits</h6>
+      <div className="alert alert-light border small mb-3">
+        <strong>User capacity:</strong> Unlimited for all plans — students, staff, parents, and branches are not restricted by subscription tier.
+      </div>
+      <div className="row g-3 mb-3">
+        {USER_LIMIT_FIELDS.map((field) => (
+          <div className="col-md-3" key={field.name}>
+            <label className="form-label small fw-medium text-muted">{field.label}</label>
+            <div className="form-control form-control-sm bg-light text-muted">Unlimited</div>
+          </div>
+        ))}
+      </div>
       <div className="row g-3 mb-4">
         {LIMIT_FIELDS.map((field) => (
           <div className="col-md-4" key={field.name}>

@@ -60,8 +60,12 @@ class TestSubscriptions:
         assert FeatureFlag.objects.filter(feature_key="student_management").exists()
 
     def test_feature_catalog_api(self, api_client, super_admin):
+        from apps.subscriptions.module_registry import all_module_feature_keys
+
         seed_feature_catalog()
         api_client.force_authenticate(user=super_admin)
         response = api_client.get("/api/v1/subscriptions/features/catalog/")
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["data"]["total_features"] >= 80
+        expected = len(all_module_feature_keys())
+        assert response.data["data"]["total_features"] == expected
+        assert expected >= 75

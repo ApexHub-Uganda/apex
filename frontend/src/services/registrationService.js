@@ -21,11 +21,18 @@ export const registrationService = {
       billing_cycle: billingCycle,
     }).then((r) => r.data),
 
-  checkout: (tenantId, planSlug, billingCycle = 'monthly') =>
+  checkout: (tenantId, planSlug, billingCycle = 'monthly', paymentPayload = {}) =>
     api.post(`/tenants/onboarding/${tenantId}/checkout/`, {
       plan_slug: planSlug,
       billing_cycle: billingCycle,
-    }).then((r) => r.data),
+      ...paymentPayload,
+    }).then((r) => r.data).catch((err) => {
+      const body = err?.response?.data;
+      if (err?.response?.status === 402) {
+        return body;
+      }
+      throw err;
+    }),
 
   getPublicSettings: () =>
     api.get('/platform/settings/public/').then((r) => unwrapData(r)),

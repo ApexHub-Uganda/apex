@@ -73,9 +73,9 @@ def custom_exception_handler(exc: Exception, context: dict) -> Optional[Response
         error_body: dict[str, Any] = {
             "success": False,
             "error": {
-                "code": getattr(exc, "default_code", "error"),
+                "code": _extract_error_code(response.data, exc),
                 "message": _extract_detail(response.data),
-                "details": response.data if isinstance(response.data, dict) else None,
+                "details": _normalize_error_details(response.data),
             },
         }
         response.data = error_body
@@ -83,12 +83,46 @@ def custom_exception_handler(exc: Exception, context: dict) -> Optional[Response
     return response
 
 
+def _format_error_value(value: Any) -> str:
+    if isinstance(value, list):
+        return "; ".join(str(item) for item in value)
+    return str(value)
+
+
 def _extract_detail(data: Any) -> str:
     if isinstance(data, dict):
         if "detail" in data:
-            detail = data["detail"]
-            return str(detail) if not isinstance(detail, list) else "; ".join(str(d) for d in detail)
-        return "; ".join(f"{k}: {v}" for k, v in data.items())
+            return _format_error_value(data["detail"])
+        if "non_field_errors" in data:
+            return _format_error_value(data["non_field_errors"])
+        parts = [
+            f"{key}: {_format_error_value(value)}"
+            for key, value in data.items()
+        ]
+        return "; ".join(parts) if parts else "An error occurred."
     if isinstance(data, list):
-        return "; ".join(str(item) for item in data)
+        return _format_error_value(data)
     return str(data)
+
+
+def _extract_error_code(data: Any, exc: Exception) -> str:
+    if isinstance(data, dict):
+        for key in ("non_field_errors", "detail"):
+            values = data.get(key)
+            if isinstance(values, list) and values:
+                code = getattr(values[0], "code", None)
+                if code:
+                    return str(code)
+    return getattr(exc, "default_code", "error")
+
+
+def _normalize_error_details(data: Any) -> dict[str, Any] | None:
+    if not isinstance(data, dict):
+        return None
+    normalized: dict[str, Any] = {}
+    for key, value in data.items():
+        if isinstance(value, list):
+            normalized[key] = [str(item) for item in value]
+        else:
+            normalized[key] = str(value)
+    return normalized or None

@@ -16,6 +16,7 @@ from apps.accounts.permissions import CanManageUsers, CanViewOwnProfile
 from apps.accounts.serializers import (
     ChangePasswordSerializer,
     CustomTokenObtainPairSerializer,
+    CustomTokenRefreshSerializer,
     LoginHistorySerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
@@ -38,6 +39,10 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
     throttle_classes = [LoginThrottle]
     authentication_classes = ()
+
+
+class CustomTokenRefreshView(TokenRefreshView):
+    serializer_class = CustomTokenRefreshSerializer
 
 
 class LogoutView(generics.GenericAPIView):
@@ -81,7 +86,10 @@ class PasswordResetConfirmView(generics.GenericAPIView):
 
 
 class MeView(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAuthenticated, TenantActivePermission]
+    def get_permissions(self):
+        if self.request.method in ("GET", "HEAD", "OPTIONS"):
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), TenantActivePermission()]
 
     def get_serializer_class(self):
         if self.request.method in ("PUT", "PATCH"):
@@ -192,26 +200,47 @@ class NotificationFeedView(APIView):
                 },
             })
 
-        items = get_navbar_user_notifications(user, limit=5)
+        from apps.communication.services import get_dismissed_feed_item_ids
+
+        dismissed_ids = get_dismissed_feed_item_ids(user)
+        items = [
+            item for item in get_navbar_user_notifications(user, limit=5)
+            if item.get("id") not in dismissed_ids
+        ]
         unread_count = get_unread_user_notifications(user)
 
         tenant = getattr(user, "tenant", None)
+
+        if tenant:
+            from apps.platform.services.plan_advertisements import get_active_plan_advertisements_for_tenant
+
+            ad_items = get_active_plan_advertisements_for_tenant(tenant)
+            if ad_items:
+                existing_ids = {i.get("id") for i in items}
+                pinned = [
+                    ad for ad in ad_items
+                    if ad.get("id") not in existing_ids and ad.get("id") not in dismissed_ids
+                ]
+                items = [*pinned, *items]
+
         if tenant and (tenant.status == TenantStatus.PENDING or not tenant.is_verified):
-            pending_item = {
-                "id": f"pending-{tenant.id}",
-                "title": "Account pending approval",
-                "message": "Your school account is awaiting super admin approval before dashboard access is granted.",
-                "type": "warning",
-                "is_read": False,
-                "priority": "high",
-                "created_at": tenant.created_at.isoformat() if tenant.created_at else "",
-                "action_url": "/school-admin",
-                "metadata": {"synthetic": True},
-            }
-            if not any(i.get("title") == pending_item["title"] for i in items):
-                items = [pending_item, *items]
-            if not any(not i.get("is_read") for i in items):
-                unread_count = max(unread_count, 1)
+            pending_id = f"pending-{tenant.id}"
+            if pending_id not in dismissed_ids:
+                pending_item = {
+                    "id": pending_id,
+                    "title": "Account pending approval",
+                    "message": "Your school account is awaiting super admin approval before dashboard access is granted.",
+                    "type": "warning",
+                    "is_read": False,
+                    "priority": "high",
+                    "created_at": tenant.created_at.isoformat() if tenant.created_at else "",
+                    "action_url": "/school-admin",
+                    "metadata": {"synthetic": True},
+                }
+                if not any(i.get("title") == pending_item["title"] for i in items):
+                    items = [pending_item, *items]
+                if not any(not i.get("is_read") for i in items):
+                    unread_count = max(unread_count, 1)
 
         return Response({
             "success": True,
@@ -224,12 +253,26 @@ class NotificationFeedView(APIView):
         })
 
     def post(self, request: Request) -> Response:
-        from apps.communication.services import mark_all_user_notifications_read
-        from apps.core.constants import UserRole
-        from apps.platform.services.notification_feed import mark_all_platform_notifications_read
+        from apps.communication.services import (
+            delete_all_user_notifications,
+            delete_user_feed_item,
+            dismiss_feed_item,
+            dismiss_feed_items,
+            get_dismissed_feed_item_ids,
+            is_synthetic_feed_item,
+            mark_all_user_notifications_read,
+        )
+        from apps.core.constants import TenantStatus, UserRole
+        from apps.platform.services.notification_feed import (
+            hide_all_platform_notifications,
+            hide_platform_notification_by_id,
+            mark_all_platform_notifications_read,
+        )
+        from apps.platform.services.plan_advertisements import get_active_plan_advertisements_for_tenant
 
         user = request.user
         action = request.data.get("action", "mark_all_read")
+        item_id = request.data.get("item_id")
 
         if action == "mark_all_read":
             if user.role == UserRole.SUPER_ADMIN:
@@ -237,5 +280,33 @@ class NotificationFeedView(APIView):
             else:
                 count = mark_all_user_notifications_read(user)
             return Response({"success": True, "message": f"{count} notifications marked as read."})
+
+        if action == "delete_one":
+            if not item_id:
+                return Response({"success": False, "error": {"message": "item_id is required."}}, status=400)
+            if user.role == UserRole.SUPER_ADMIN:
+                deleted = hide_platform_notification_by_id(user, item_id)
+            else:
+                deleted = delete_user_feed_item(user, item_id)
+            if not deleted:
+                return Response({"success": False, "error": {"message": "Notification not found."}}, status=404)
+            return Response({"success": True, "message": "Notification deleted."})
+
+        if action == "delete_all":
+            if user.role == UserRole.SUPER_ADMIN:
+                count = hide_all_platform_notifications(user)
+            else:
+                count = delete_all_user_notifications(user)
+                synthetic_ids = []
+                tenant = getattr(user, "tenant", None)
+                if tenant:
+                    synthetic_ids.extend(
+                        ad["id"] for ad in get_active_plan_advertisements_for_tenant(tenant)
+                    )
+                    if tenant.status == TenantStatus.PENDING or not tenant.is_verified:
+                        synthetic_ids.append(f"pending-{tenant.id}")
+                dismissed = dismiss_feed_items(user, synthetic_ids)
+                count += dismissed
+            return Response({"success": True, "message": f"{count} notification(s) deleted."})
 
         return Response({"success": False, "error": {"message": "Unsupported action."}}, status=400)

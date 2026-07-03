@@ -1,0 +1,15 @@
+---
+pid: 9188
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_tenant_admin.py -q --tb=line 2>&1 | Select-Object -Last 8"
+started_at: 2026-07-02T08:05:14.356Z
+running_for_ms: 24990005 
+---
+  File "E:\apex\backend\apps\tenants\views.py", line 245, in change_plan
+    module_menu = get_tenant_module_menu(tenant)
+                  ^^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'get_tenant_module_menu' is not defined
+E:\apex\backend\apps\tenants\views.py:245: NameError: name 'get_tenant_module_menu' is not defined
+=========================== short test summary info ===========================
+FAILED tests/test_tenant_admin.py::TestTenantAdministration::test_change_plan
+======================== 1 failed, 4 passed in 15.08s =========================
