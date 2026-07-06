@@ -39,8 +39,6 @@ def _serialize_plan(plan: Plan, *, recommended: bool = False) -> dict[str, Any]:
         "price_monthly": float(plan.price_monthly),
         "price_yearly": float(plan.price_yearly),
         "currency": plan.currency or "USD",
-        "max_students": plan.max_students,
-        "max_staff": plan.max_staff,
         "max_branches": plan.max_branches,
         "trial_days": plan.trial_days,
         "feature_count": features_qs.count(),

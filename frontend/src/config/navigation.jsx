@@ -51,15 +51,16 @@ export const buildSchoolAdminNav = (moduleMenu = [], { isSchoolAdmin = true } = 
     modules.forEach((module) => {
       const Icon = resolveFeatureIcon(module.icon);
       items.push({
+        key: module.key,
         path: module.path,
         label: module.label,
         icon: <Icon />,
-        featureKey: module.feature_key || module.children?.[0]?.feature_key,
+        featureKey: module.children?.[0]?.feature_key || module.feature_key,
         children: (module.children || []).map((child) => ({
           ...child,
           icon: resolveFeatureIcon(child.icon),
         })),
-        badge: module.enabled_count,
+        badge: module.enabled_count ?? module.children?.length ?? 0,
       });
     });
   }

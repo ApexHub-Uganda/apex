@@ -133,12 +133,9 @@ export function Finance() {
         title="Record Fee Payment"
         size="lg"
         footer={(
-          <>
-            <button type="button" className="btn btn-outline-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving…' : 'Record payment'}
-            </button>
-          </>
+          <button type="button" className="btn btn-primary ms-auto" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Record payment'}
+          </button>
         )}
       >
         <div className="row g-3">

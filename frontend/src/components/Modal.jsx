@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiX } from 'react-icons/fi';
 
 export function Modal({ show, onHide, title, children, size = 'md', footer }) {
   const sizeClass = {
@@ -8,6 +7,8 @@ export function Modal({ show, onHide, title, children, size = 'md', footer }) {
     lg: 'modal-lg',
     xl: 'modal-xl',
   }[size];
+
+  const canDismiss = typeof onHide === 'function';
 
   return (
     <AnimatePresence>
@@ -19,7 +20,7 @@ export function Modal({ show, onHide, title, children, size = 'md', footer }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onHide}
+            onClick={canDismiss ? onHide : undefined}
           />
           <div className="modal show d-block" style={{ zIndex: 1055 }} tabIndex={-1}>
             <motion.div
@@ -32,9 +33,9 @@ export function Modal({ show, onHide, title, children, size = 'md', footer }) {
               <div className="modal-content border-0 shadow-lg" style={{ borderRadius: 'var(--apex-radius-lg)' }}>
                 <div className="modal-header border-0 pb-0">
                   <h5 className="modal-title fw-bold">{title}</h5>
-                  <button type="button" className="btn-close" onClick={onHide} aria-label="Close">
-                    <FiX />
-                  </button>
+                  {canDismiss && (
+                    <button type="button" className="btn-close" onClick={onHide} aria-label="Close" />
+                  )}
                 </div>
                 <div className="modal-body pt-3">{children}</div>
                 {footer && <div className="modal-footer border-0 pt-0">{footer}</div>}

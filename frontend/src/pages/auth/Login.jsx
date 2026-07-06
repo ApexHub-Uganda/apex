@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiSun, FiMoon } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
+import { isSchoolPortalRole } from '../../config/schoolRoles';
 import { useTheme } from '../../hooks/useTheme';
 import { getLoginErrorMessage } from '../../utils/authErrors';
 import { notify } from '../../utils/notify';
@@ -34,14 +35,12 @@ export function Login() {
       const result = await login(data);
       notify.success(`Welcome back, ${result.user.first_name || 'there'}!`);
       const from = location.state?.from?.pathname;
-      if (from) {
-        navigate(from, { replace: true });
-      } else if (result.user.role === 'super_admin') {
-        navigate('/super-admin', { replace: true });
-      } else if (result.user.is_school_portal_user || result.user.role !== 'student') {
+      if (result.user.role === 'super_admin') {
+        navigate(from || '/super-admin', { replace: true });
+      } else if (isSchoolPortalRole(result.user.role) || result.user.is_school_portal_user) {
         navigate('/school-admin', { replace: true });
       } else {
-        navigate('/school-admin', { replace: true });
+        navigate(from || '/school-admin', { replace: true });
       }
     } catch (err) {
       notify.error(getLoginErrorMessage(err));

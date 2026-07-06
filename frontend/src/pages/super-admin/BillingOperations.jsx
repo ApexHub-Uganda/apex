@@ -18,6 +18,11 @@ import { billingService } from '../../services/moduleService';
 const EMPTY_CHART = { labels: [], datasets: [] };
 
 const formatDate = (v) => (v ? new Date(v).toLocaleString() : '—');
+const formatTableDate = (v) => {
+  if (!v) return '—';
+  const d = new Date(v);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+};
 const formatMoney = (v, currency = 'USD') => {
   const n = Number(v) || 0;
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(n);
@@ -159,14 +164,13 @@ export function BillingOperations() {
           <DataTable
             compact
             embedded
-            scrollable
             showRowNumbers={false}
             columns={[
-              { key: 'school', label: 'School', accessor: 'school', minWidth: '160px' },
-              { key: 'amount', label: 'Amount', minWidth: '110px', render: (r) => formatMoney(r.amount, r.currency) },
-              { key: 'provider', label: 'Provider', accessor: 'provider', minWidth: '120px' },
-              { key: 'reference', label: 'Reference', accessor: 'reference', minWidth: '180px' },
-              { key: 'created_at', label: 'Failed At', minWidth: '160px', render: (r) => formatDate(r.created_at) },
+              { key: 'school', label: 'School', accessor: 'school', width: '24%' },
+              { key: 'amount', label: 'Amount', width: '14%', render: (r) => formatMoney(r.amount, r.currency) },
+              { key: 'provider', label: 'Provider', accessor: 'provider', width: '16%' },
+              { key: 'reference', label: 'Reference', accessor: 'reference', width: '28%' },
+              { key: 'created_at', label: 'Failed At', width: '18%', render: (r) => formatTableDate(r.created_at) },
             ]}
             data={hub.failed_queue}
             searchable={false}
@@ -180,15 +184,14 @@ export function BillingOperations() {
         <DataTable
           compact
           embedded
-          scrollable
           showRowNumbers={false}
           columns={[
-            { key: 'school', label: 'School', accessor: 'school', sortable: true, minWidth: '160px' },
-            { key: 'amount', label: 'Amount', minWidth: '110px', render: (r) => formatMoney(r.amount, r.currency) },
-            { key: 'status', label: 'Status', minWidth: '110px', truncate: false, render: (r) => <StatusBadge status={r.status} /> },
-            { key: 'provider_name', label: 'Provider', accessor: 'provider_name', minWidth: '120px' },
-            { key: 'reference', label: 'Reference', accessor: 'reference', minWidth: '180px' },
-            { key: 'created_at', label: 'Date', minWidth: '160px', render: (r) => formatDate(r.created_at) },
+            { key: 'school', label: 'School', accessor: 'school', sortable: true, width: '22%' },
+            { key: 'amount', label: 'Amount', width: '12%', render: (r) => formatMoney(r.amount, r.currency) },
+            { key: 'status', label: 'Status', width: '12%', truncate: false, render: (r) => <StatusBadge status={r.status} /> },
+            { key: 'provider_name', label: 'Provider', accessor: 'provider_name', width: '14%' },
+            { key: 'reference', label: 'Reference', accessor: 'reference', width: '22%' },
+            { key: 'created_at', label: 'Date', width: '18%', render: (r) => formatTableDate(r.created_at) },
           ]}
           data={transactions}
           loading={txnLoading}

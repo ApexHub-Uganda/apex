@@ -20,6 +20,7 @@ import {
   WIDGET_STAT_MAP,
   formatStatValue,
 } from '../../config/schoolDashboard';
+import { getModuleEntryPath } from '../../utils/navAccess';
 
 const EMPTY_CHART = { labels: [], datasets: [] };
 
@@ -30,9 +31,11 @@ const sectionMotion = {
   transition: { duration: 0.3 },
 };
 
-function ModuleGridCard({ module }) {
+function ModuleGridCard({ module, entryPath }) {
   const Icon = resolveFeatureIcon(module.icon);
-  const childCount = module.enabled_count ?? module.children?.length ?? 0;
+  const allowedChildren = module.children || [];
+  const childCount = module.enabled_count ?? allowedChildren.length;
+  const openPath = entryPath || getModuleEntryPath(module);
 
   return (
     <motion.div className="school-module-card h-100" whileHover={{ y: -3 }}>
@@ -43,14 +46,16 @@ function ModuleGridCard({ module }) {
           </span>
           <h6 className="fw-bold mb-0">{module.label}</h6>
         </div>
-        <Link to={module.path} className="btn btn-sm btn-link p-0 text-decoration-none">
-          Open <FiArrowRight size={14} />
-        </Link>
+        {openPath && (
+          <Link to={openPath} className="btn btn-sm btn-link p-0 text-decoration-none">
+            Open <FiArrowRight size={14} />
+          </Link>
+        )}
       </div>
       <p className="text-muted small mb-2">
-        {childCount} feature{childCount === 1 ? '' : 's'} enabled
+        {childCount} allowed feature{childCount === 1 ? '' : 's'}
       </p>
-      {(module.children || []).slice(0, 4).map((child) => (
+      {allowedChildren.slice(0, 4).map((child) => (
         <Link
           key={child.feature_key}
           to={child.path}
@@ -137,6 +142,14 @@ export function SchoolAdminDashboard() {
   }, [data?.widgets, dashboardWidgets]);
 
   const activeModules = useMemo(() => moduleMenu || [], [moduleMenu]);
+
+  const moduleEntryPaths = useMemo(() => {
+    const paths = {};
+    activeModules.forEach((module) => {
+      paths[module.key] = getModuleEntryPath(module);
+    });
+    return paths;
+  }, [activeModules]);
 
   const isParent = roleProfile?.role === 'parent';
   const showAdmissionVacancies = isParent && enabledFeatureKeys.includes('admission_vacancies');
@@ -419,7 +432,10 @@ export function SchoolAdminDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
                   >
-                    <ModuleGridCard module={module} />
+                    <ModuleGridCard
+                    module={module}
+                    entryPath={moduleEntryPaths[module.key]}
+                  />
                   </motion.div>
                 </div>
               ))}

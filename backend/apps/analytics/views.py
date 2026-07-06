@@ -18,11 +18,11 @@ from apps.analytics.services import (
 )
 from apps.tenants.models import Tenant
 from apps.core.constants import UserRole
-from apps.core.permissions import IsSchoolAdmin, IsSuperAdmin, RequiresFeature, TenantActivePermission
+from apps.core.permissions import IsSchoolAdmin, IsSchoolPortalUser, IsSuperAdmin, RequiresFeature, TenantActivePermission
 
 
 class SchoolDashboardView(APIView):
-    permission_classes = [IsSchoolAdmin, TenantActivePermission]
+    permission_classes = [IsSchoolPortalUser, TenantActivePermission]
 
     def get(self, request: Request) -> Response:
         tenant_id = getattr(request.user, "tenant_id", None)
@@ -38,7 +38,7 @@ class SchoolDashboardView(APIView):
                     "recent_activities": [],
                 },
             })
-        data = get_school_dashboard(str(tenant_id))
+        data = get_school_dashboard(str(tenant_id), user=request.user)
         return Response({"success": True, "data": data})
 
 

@@ -19,6 +19,7 @@ from apps.tenants.serializers import (
     TenantBrandingSerializer,
     TenantChangePlanSerializer,
     TenantPermanentDeleteSerializer,
+    ResetRolePermissionsSerializer,
     TenantRegistrationSerializer,
     TenantSerializer,
     TenantSuspendSerializer,
@@ -134,7 +135,9 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
     module_menu = get_user_module_menu(tenant, user)
     role_profile = get_role_profile(user)
     plan_widgets = get_tenant_dashboard_widgets(tenant)
-    dashboard_widgets = filter_dashboard_widgets(plan_widgets, module_permissions, role_profile)
+    dashboard_widgets = filter_dashboard_widgets(
+        plan_widgets, module_permissions, role_profile, feature_permissions,
+    )
     role_profile = {
         **role_profile,
         "quick_actions": filter_quick_actions(
@@ -438,16 +441,25 @@ class RolePermissionMatrixView(APIView):
         })
 
     def post(self, request: Request) -> Response:
-        """Reset role permissions to defaults (optional ?role=)."""
+        """Reset role permissions to defaults (requires password confirmation)."""
         tenant = _resolve_user_tenant(request.user)
         if tenant is None:
             return Response(
                 {"success": False, "error": {"message": "No school linked to this account."}},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+        payload = {
+            "role": request.data.get("role") or request.query_params.get("role") or "",
+            "acknowledge_risk": request.data.get("acknowledge_risk"),
+            "password": request.data.get("password", ""),
+        }
+        serializer = ResetRolePermissionsSerializer(data=payload, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+
         from apps.tenants.role_permissions import reset_role_permissions
 
-        role = request.data.get("role") or request.query_params.get("role")
+        role = serializer.validated_data.get("role") or None
         matrix = reset_role_permissions(tenant, role=role)
         return Response({
             "success": True,

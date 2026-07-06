@@ -175,14 +175,11 @@ export function ModulePage({
           show={showModal}
           onHide={() => setShowModal(false)}
           title={editing ? `Edit ${title}` : `Add ${title}`}
-          footer={
-            <>
-              <button className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSubmit(onSubmit)} disabled={saving}>
-                {saving ? 'Saving...' : (editing ? 'Update' : 'Create')}
-              </button>
-            </>
-          }
+          footer={(
+            <button className="btn btn-primary ms-auto" onClick={handleSubmit(onSubmit)} disabled={saving}>
+              {saving ? 'Saving...' : (editing ? 'Update' : 'Create')}
+            </button>
+          )}
         >
           <form onSubmit={handleSubmit(onSubmit)}>
             {editing?.id && (

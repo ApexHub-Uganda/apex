@@ -33,7 +33,7 @@ class PlanFeatureAdmin(admin.ModelAdmin):
 
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
-    list_display = ["name", "slug", "price_monthly", "max_students", "is_active", "sort_order"]
+    list_display = ["name", "slug", "price_monthly", "max_branches", "is_active", "sort_order"]
     list_filter = ["is_active", "is_public"]
     prepopulated_fields = {"slug": ("name",)}
 

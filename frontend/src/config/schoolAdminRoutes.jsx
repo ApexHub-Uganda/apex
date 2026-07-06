@@ -2,6 +2,7 @@ import { Route } from 'react-router-dom';
 import ModuleHub from '../pages/school-admin/ModuleHub';
 import SubModulePage from '../pages/school-admin/SubModulePage';
 import FeatureGate from '../components/FeatureGate';
+import ModuleHubGate from '../components/ModuleHubGate';
 import { SCHOOL_MODULES } from './schoolModules';
 
 const Gated = ({ featureKey, children }) => (
@@ -33,9 +34,9 @@ export function renderModuleHubRoutes() {
           key={`hub-${mod.key}`}
           path={segment}
           element={(
-            <Gated featureKey={mod.feature_keys[0]}>
+            <ModuleHubGate moduleKey={mod.key}>
               <ModuleHub moduleKey={mod.key} />
-            </Gated>
+            </ModuleHubGate>
           )}
         />
       );

@@ -122,6 +122,7 @@ const swalBase = Swal.mixin({
   buttonsStyling: false,
   heightAuto: false,
   backdrop: 'rgba(15, 23, 42, 0.45)',
+  showCloseButton: false,
 });
 
 export const alert = {
@@ -205,6 +206,65 @@ export const alert = {
       cancelText: 'Keep it',
       icon: 'warning',
       danger: true,
+    });
+  },
+
+  deletePlan({
+    planName,
+    subscriptionCount = 0,
+    reassignOptions = [],
+    suggestedReassignPlanId = null,
+  } = {}) {
+    if (!subscriptionCount) {
+      return alert.delete(`plan "${planName}"`);
+    }
+
+    if (!reassignOptions.length) {
+      return swalBase.fire({
+        icon: 'error',
+        iconColor: COLORS.error,
+        title: 'Cannot delete plan',
+        text: `"${planName}" is used by ${subscriptionCount} subscription(s). Create another active plan first, then try again.`,
+        confirmButtonText: 'OK',
+        confirmButtonColor: COLORS.error,
+      });
+    }
+
+    const inputOptions = Object.fromEntries(
+      reassignOptions.map((opt) => [opt.id, `${opt.name} (${opt.subscriber_count} schools)`]),
+    );
+
+    return swalBase.fire({
+      title: 'Delete plan & move schools',
+      html: `
+        <p class="mb-2 text-start">
+          <strong>${planName}</strong> is used by
+          <strong>${subscriptionCount}</strong> subscription(s).
+          Those schools must be moved to another plan before deletion.
+        </p>
+        <p class="mb-0 text-start small text-muted">
+          Schools keep their subscription status. School admins are notified of the plan change.
+        </p>
+      `,
+      icon: 'warning',
+      iconColor: COLORS.warning,
+      input: 'select',
+      inputOptions,
+      inputValue: suggestedReassignPlanId || reassignOptions[0]?.id || '',
+      inputPlaceholder: 'Select replacement plan',
+      inputValidator: (value) => (value ? undefined : 'Choose a replacement plan'),
+      showCancelButton: true,
+      confirmButtonText: 'Delete & move schools',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      focusCancel: true,
+      customClass: {
+        popup: 'apex-swal-popup',
+        title: 'apex-swal-title',
+        htmlContainer: 'apex-swal-text',
+        confirmButton: 'apex-swal-btn apex-swal-deny',
+        cancelButton: 'apex-swal-btn apex-swal-cancel',
+      },
     });
   },
 };

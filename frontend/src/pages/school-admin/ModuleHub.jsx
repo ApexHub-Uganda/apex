@@ -32,7 +32,7 @@ export function ModuleHub({ moduleKey: propKey }) {
     <div>
       <PageHeader
         title={module.label}
-        subtitle={`${children.length} feature${children.length === 1 ? '' : 's'} enabled on your plan`}
+        subtitle={`${children.length} allowed feature${children.length === 1 ? '' : 's'} for your role`}
       />
 
       <div className="row g-3">

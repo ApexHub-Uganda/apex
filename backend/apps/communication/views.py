@@ -102,13 +102,15 @@ class NotificationViewSet(BaseModelViewSet):
         from apps.communication.services import (
             get_navbar_user_notifications,
             get_unread_user_notifications,
+            get_user_notification_inbox_stats,
         )
 
         return Response({
             "success": True,
             "data": {
                 "unread_count": get_unread_user_notifications(request.user),
-                "items": get_navbar_user_notifications(request.user, limit=5),
+                "items": get_navbar_user_notifications(request.user),
+                "inbox": get_user_notification_inbox_stats(request.user),
             },
         })
 

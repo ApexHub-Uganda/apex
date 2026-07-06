@@ -17,6 +17,7 @@ from apps.subscriptions.serializers import (
     SubscriptionCreateSerializer,
     SubscriptionSerializer,
 )
+from apps.subscriptions.plan_deletion import PlanDeletionError, delete_plan_safely, get_plan_deletion_preview
 from apps.subscriptions.services import (
     get_feature_catalog,
     invalidate_catalog_cache,
@@ -63,6 +64,65 @@ class PlanViewSet(viewsets.ModelViewSet):
     permission_classes = [IsSuperAdmin]
     filterset_fields = ["is_active", "is_public"]
     search_fields = ["name", "slug"]
+
+    @action(detail=True, methods=["get"], url_path="deletion-preview")
+    def deletion_preview(self, request: Request, pk: str = None) -> Response:
+        plan = self.get_object()
+        return Response({"success": True, "data": get_plan_deletion_preview(plan)})
+
+    def destroy(self, request: Request, *args, **kwargs) -> Response:
+        plan = self.get_object()
+        reassign_to_id = request.query_params.get("reassign_to") or request.data.get("reassign_to")
+        reassign_to = None
+
+        if reassign_to_id:
+            try:
+                reassign_to = Plan.objects.get(pk=reassign_to_id)
+            except Plan.DoesNotExist:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Replacement plan not found.",
+                        "error": {
+                            "code": "reassign_plan_not_found",
+                            "message": "Replacement plan not found.",
+                            "details": {"reassign_to": str(reassign_to_id)},
+                        },
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        try:
+            result = delete_plan_safely(plan, reassign_to=reassign_to, actor=request.user)
+        except PlanDeletionError as exc:
+            status_code = (
+                status.HTTP_409_CONFLICT
+                if exc.code == "reassign_required"
+                else status.HTTP_400_BAD_REQUEST
+            )
+            return Response(
+                {
+                    "success": False,
+                    "message": exc.message,
+                    "error": {
+                        "code": exc.code,
+                        "message": exc.message,
+                        "details": exc.details,
+                    },
+                },
+                status=status_code,
+            )
+
+        if result["subscriptions_reassigned"]:
+            message = (
+                f'Plan "{result["deleted_plan_name"]}" deleted. '
+                f'{result["subscriptions_reassigned"]} subscription(s) moved to '
+                f'"{result["reassigned_to_plan_name"]}".'
+            )
+        else:
+            message = f'Plan "{result["deleted_plan_name"]}" deleted successfully.'
+
+        return Response({"success": True, "message": message, "data": result})
 
 
 class FeatureCatalogView(generics.ListAPIView):

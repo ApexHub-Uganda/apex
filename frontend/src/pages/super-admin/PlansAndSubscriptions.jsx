@@ -78,11 +78,26 @@ export function PlansAndSubscriptions() {
   };
 
   const deletePlan = async (plan) => {
-    const result = await alert.delete(`plan "${plan.name}"`);
-    if (!result.isConfirmed) return;
+    let preview;
     try {
-      await plansService.delete(plan.id);
-      notify.success('Plan deleted successfully.');
+      preview = await plansService.getDeletionPreview(plan.id);
+    } catch (err) {
+      notify.error(extractApiError(err, 'Unable to check plan usage.'));
+      return;
+    }
+
+    const result = await alert.deletePlan({
+      planName: plan.name,
+      subscriptionCount: preview?.subscription_count ?? 0,
+      reassignOptions: preview?.reassign_options ?? [],
+      suggestedReassignPlanId: preview?.suggested_reassign_plan_id,
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+      const params = result.value ? { reassign_to: result.value } : {};
+      const response = await plansService.delete(plan.id, params);
+      notify.success(response?.message || 'Plan deleted successfully.');
       invalidateAll();
     } catch (err) {
       notify.error(extractApiError(err, 'Unable to delete plan.'));
@@ -239,9 +254,6 @@ export function PlansAndSubscriptions() {
                     </div>
                     <p className="text-muted small mb-2">{plan.subscriber_count} subscribers · {plan.feature_count ?? plan.features?.length ?? 0} features</p>
                     <p className="fw-bold mb-1">${plan.price_monthly}/mo · ${plan.price_yearly}/yr</p>
-                    <p className="text-muted small mb-1">
-                      {plan.max_students} students · {plan.max_staff} staff · {plan.max_parents ?? '—'} parents
-                    </p>
                     <p className="text-muted small mb-2">
                       {plan.max_branches ?? 1} branches · {plan.trial_days}d trial · {plan.grace_period_days ?? 7}d grace
                     </p>
@@ -266,21 +278,17 @@ export function PlansAndSubscriptions() {
       {tab === 'plans' && (
         <DataTable
           compact
-          scrollable
           showRowNumbers={false}
           columns={[
-            { key: 'name', label: 'Plan', accessor: 'name', sortable: true, minWidth: '140px' },
-            { key: 'slug', label: 'Slug', accessor: 'slug', minWidth: '100px' },
-            { key: 'price_monthly', label: 'Monthly', minWidth: '90px', render: (r) => `$${Number(r.price_monthly).toFixed(2)}` },
-            { key: 'price_yearly', label: 'Yearly', minWidth: '90px', render: (r) => `$${Number(r.price_yearly).toFixed(2)}` },
-            { key: 'max_students', label: 'Students', accessor: 'max_students', minWidth: '80px' },
-            { key: 'max_staff', label: 'Staff', accessor: 'max_staff', minWidth: '70px' },
-            { key: 'max_parents', label: 'Parents', accessor: 'max_parents', minWidth: '80px' },
-            { key: 'trial_days', label: 'Trial', accessor: 'trial_days', minWidth: '70px' },
-            { key: 'is_active', label: 'Status', minWidth: '100px', truncate: false, render: (r) => <StatusBadge status={r.is_active ? 'active' : 'inactive'} /> },
-            { key: 'features', label: 'Features', minWidth: '110px', render: (r) => `${r.features?.length || 0} enabled` },
+            { key: 'name', label: 'Plan', accessor: 'name', sortable: true, width: '22%' },
+            { key: 'slug', label: 'Slug', accessor: 'slug', width: '12%' },
+            { key: 'price_monthly', label: 'Monthly', width: '11%', render: (r) => `$${Number(r.price_monthly).toFixed(2)}` },
+            { key: 'price_yearly', label: 'Yearly', width: '11%', render: (r) => `$${Number(r.price_yearly).toFixed(2)}` },
+            { key: 'trial_days', label: 'Trial', accessor: 'trial_days', width: '7%' },
+            { key: 'is_active', label: 'Status', width: '12%', truncate: false, render: (r) => <StatusBadge status={r.is_active ? 'active' : 'inactive'} /> },
+            { key: 'features', label: 'Features', width: '14%', render: (r) => `${r.features?.length || 0} enabled` },
             {
-              key: 'actions', label: '', minWidth: '100px', truncate: false,
+              key: 'actions', label: '', width: '11%', truncate: false,
               render: (row) => (
                 <div className="apex-table-row-actions">
                   <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => openEditPlan(row)} title="Edit plan"><FiEdit2 size={14} /></button>
@@ -312,17 +320,17 @@ export function PlansAndSubscriptions() {
           </div>
           <DataTable
             compact
-            scrollable
+            showRowNumbers={false}
             columns={[
-              { key: 'school', label: 'School', accessor: 'school', sortable: true, minWidth: '160px' },
-              { key: 'plan', label: 'Plan', accessor: 'plan', minWidth: '120px' },
-              { key: 'amount', label: 'Amount', minWidth: '100px', render: (r) => `$${Number(r.amount || 0).toFixed(2)}/mo` },
-              { key: 'billing_cycle', label: 'Billing', accessor: 'billing_cycle', minWidth: '90px' },
-              { key: 'status', label: 'Status', minWidth: '110px', truncate: false, render: (r) => <StatusBadge status={r.status} /> },
-              { key: 'next_billing', label: 'Next Billing', minWidth: '120px', render: (r) => formatDate(r.next_billing) },
-              { key: 'auto_renew', label: 'Renew', minWidth: '80px', render: (r) => (r.auto_renew ? 'Yes' : 'No') },
+              { key: 'school', label: 'School', accessor: 'school', sortable: true, width: '20%' },
+              { key: 'plan', label: 'Plan', accessor: 'plan', width: '12%' },
+              { key: 'amount', label: 'Amount', width: '10%', render: (r) => `$${Number(r.amount || 0).toFixed(2)}/mo` },
+              { key: 'billing_cycle', label: 'Billing', accessor: 'billing_cycle', width: '9%' },
+              { key: 'status', label: 'Status', width: '11%', truncate: false, render: (r) => <StatusBadge status={r.status} /> },
+              { key: 'next_billing', label: 'Next Billing', width: '12%', render: (r) => formatDate(r.next_billing) },
+              { key: 'auto_renew', label: 'Renew', width: '6%', render: (r) => (r.auto_renew ? 'Yes' : 'No') },
               {
-                key: 'actions', label: 'Actions', minWidth: '130px', truncate: false,
+                key: 'actions', label: 'Actions', width: '10%', truncate: false,
                 render: (row) => (
                   <div className="apex-table-row-actions">
                     {row.status !== 'active' && (

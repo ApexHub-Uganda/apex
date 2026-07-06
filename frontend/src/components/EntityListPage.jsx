@@ -488,12 +488,9 @@ export function EntityListPage({
         title={editing ? `Edit ${title}` : config.createLabel}
         size="lg"
         footer={(
-          <>
-            <button type="button" className="btn btn-outline-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving…' : 'Save'}
-            </button>
-          </>
+          <button type="button" className="btn btn-primary ms-auto" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Save'}
+          </button>
         )}
       >
         <div className="row g-3">

@@ -6,6 +6,7 @@ from typing import Any
 from django.db.models import Exists, OuterRef
 from django.utils import timezone
 
+from apps.communication.services import NOTIFICATION_INBOX_LIMIT, NOTIFICATION_INBOX_WARNING_AT
 from apps.platform.models import PlatformNotification, PlatformNotificationReceipt
 
 
@@ -40,7 +41,43 @@ def get_unread_platform_notifications(user) -> int:
     )
 
 
-def get_navbar_platform_notifications(user, *, limit: int = 5) -> list[dict[str, Any]]:
+def get_platform_inbox_stats(user) -> dict[str, Any]:
+    count = (
+        platform_notifications_queryset_for_user(user)
+        .filter(status="pending")
+        .count()
+    )
+    return {
+        "count": count,
+        "limit": NOTIFICATION_INBOX_LIMIT,
+        "warning_at": NOTIFICATION_INBOX_WARNING_AT,
+        "show_warning": count >= NOTIFICATION_INBOX_WARNING_AT,
+        "slots_remaining": max(0, NOTIFICATION_INBOX_LIMIT - count),
+    }
+
+
+def enforce_platform_inbox_limit_for_user(
+    user,
+    *,
+    limit: int = NOTIFICATION_INBOX_LIMIT,
+) -> int:
+    """Hide oldest visible platform notifications beyond the per-user inbox cap."""
+    visible = (
+        platform_notifications_queryset_for_user(user)
+        .filter(status="pending")
+        .order_by("-created_at")
+    )
+    ids = list(visible.values_list("id", flat=True))
+    if len(ids) <= limit:
+        return 0
+    hidden = 0
+    for notification_id in ids[limit:]:
+        if hide_platform_notification_by_id(user, str(notification_id)):
+            hidden += 1
+    return hidden
+
+
+def get_navbar_platform_notifications(user, *, limit: int = NOTIFICATION_INBOX_LIMIT) -> list[dict[str, Any]]:
     """Recent pending platform notifications for navbar dropdown."""
     qs = (
         PlatformNotification.objects.filter(status="pending")
@@ -134,11 +171,14 @@ def mark_all_platform_notifications_read(user) -> int:
 
 
 def get_platform_notification_summary(user) -> dict[str, Any]:
+    enforce_platform_inbox_limit_for_user(user)
     unread = get_unread_platform_notifications(user)
+    inbox = get_platform_inbox_stats(user)
     return {
         "unread_count": unread,
         "pending_count": PlatformNotification.objects.filter(status="pending").count(),
-        "recent": get_navbar_platform_notifications(user, limit=5),
+        "recent": get_navbar_platform_notifications(user),
+        "inbox": inbox,
     }
 
 

@@ -302,19 +302,16 @@ export function AuditLogs() {
         onHide={() => setSelectedLog(null)}
         title="Audit Log Details"
         size="lg"
-        footer={
-          <>
-            <button className="btn btn-secondary" onClick={() => setSelectedLog(null)}>Close</button>
-            <button
-              className="btn btn-primary d-flex align-items-center gap-2"
-              onClick={() => handleExportDetail(selectedLog.id)}
-              disabled={exportingId === selectedLog?.id}
-            >
-              <FiDownload size={14} />
-              {exportingId === selectedLog?.id ? 'Exporting...' : 'Download PDF'}
-            </button>
-          </>
-        }
+        footer={(
+          <button
+            className="btn btn-primary d-flex align-items-center gap-2 ms-auto"
+            onClick={() => handleExportDetail(selectedLog.id)}
+            disabled={exportingId === selectedLog?.id}
+          >
+            <FiDownload size={14} />
+            {exportingId === selectedLog?.id ? 'Exporting...' : 'Download PDF'}
+          </button>
+        )}
       >
         {detailLoading && !detail ? (
           <p className="text-muted mb-0">Loading details...</p>

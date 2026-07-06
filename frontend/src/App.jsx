@@ -135,7 +135,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Gated featureKey={SCHOOL_ROUTE_FEATURES['']}><SchoolAdminDashboard /></Gated>} />
+        <Route index element={<SchoolAdminDashboard />} />
         {renderModuleHubRoutes()}
         <Route path="students" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.students}><Students /></Gated>} />
         <Route path="students/new" element={<Gated featureKey="student_management"><StudentWorkspace /></Gated>} />

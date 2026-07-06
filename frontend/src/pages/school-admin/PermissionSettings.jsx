@@ -5,8 +5,9 @@ import {
   FiChevronDown, FiChevronRight, FiLayers, FiRefreshCw, FiSave, FiShield, FiSliders,
 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
+import ResetPermissionsModal from '../../components/ResetPermissionsModal';
 import { tenantService } from '../../services/tenantService';
-import { notify } from '../../utils/notify';
+import { extractApiError, notify } from '../../utils/notify';
 import { resolveFeatureIcon } from '../../utils/featureIcons';
 
 function PermissionToggle({ checked, onChange, disabled, label, variant = 'read' }) {
@@ -36,6 +37,7 @@ export function PermissionSettings() {
   const [draft, setDraft] = useState(null);
   const [activeRole, setActiveRole] = useState(null);
   const [expandedModules, setExpandedModules] = useState({});
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['tenant', 'role-permissions'],
@@ -62,15 +64,21 @@ export function PermissionSettings() {
   });
 
   const { mutate: resetRole, isPending: resetting } = useMutation({
-    mutationFn: (role) => tenantService.resetRolePermissions(role),
+    mutationFn: (payload) => tenantService.resetRolePermissions({
+      role: selectedRole,
+      ...payload,
+    }),
     onSuccess: (result) => {
       setDraft(null);
       setExpandedModules({});
+      setShowResetModal(false);
       queryClient.setQueryData(['tenant', 'role-permissions'], result);
       queryClient.invalidateQueries({ queryKey: ['tenant', 'context'] });
       notify.success('Role permissions reset to defaults.');
     },
-    onError: () => notify.error('Failed to reset permissions.'),
+    onError: (err) => {
+      notify.error(extractApiError(err, 'Failed to reset permissions.'));
+    },
   });
 
   const updateModuleCell = useCallback((role, moduleKey, field, value) => {
@@ -270,6 +278,11 @@ export function PermissionSettings() {
   }
 
   const roleModules = modules.filter((mod) => matrix[selectedRole]?.[mod.key]);
+  const selectedRoleLabel = roles.find((role) => role.key === selectedRole)?.label || selectedRole;
+
+  const handleConfirmReset = (payload) => {
+    resetRole(payload);
+  };
 
   return (
     <div>
@@ -280,9 +293,9 @@ export function PermissionSettings() {
           <div className="d-flex gap-2">
             <button
               type="button"
-              className="btn btn-outline-secondary btn-sm"
+              className="btn btn-outline-danger btn-sm"
               disabled={resetting || !selectedRole}
-              onClick={() => resetRole(selectedRole)}
+              onClick={() => setShowResetModal(true)}
             >
               <FiRefreshCw className="me-1" /> Reset role
             </button>
@@ -495,6 +508,14 @@ export function PermissionSettings() {
           </p>
         )}
       </motion.div>
+
+      <ResetPermissionsModal
+        show={showResetModal}
+        onHide={() => !resetting && setShowResetModal(false)}
+        roleLabel={selectedRoleLabel}
+        onConfirm={handleConfirmReset}
+        resetting={resetting}
+      />
     </div>
   );
 }

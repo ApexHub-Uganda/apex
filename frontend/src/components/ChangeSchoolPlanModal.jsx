@@ -62,19 +62,14 @@ export function ChangeSchoolPlanModal({
       title="Change School Plan"
       size="lg"
       footer={(
-        <>
-          <button type="button" className="btn btn-secondary" onClick={onHide} disabled={saving}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleSubmit}
-            disabled={saving || !planSlug || isLoading}
-          >
-            {saving ? 'Applying…' : 'Apply Plan Change'}
-          </button>
-        </>
+        <button
+          type="button"
+          className="btn btn-primary ms-auto"
+          onClick={handleSubmit}
+          disabled={saving || !planSlug || isLoading}
+        >
+          {saving ? 'Applying…' : 'Apply Plan Change'}
+        </button>
       )}
     >
       <div className="d-flex align-items-center gap-2 mb-3 p-3 rounded-3" style={{ background: 'var(--apex-bg)' }}>

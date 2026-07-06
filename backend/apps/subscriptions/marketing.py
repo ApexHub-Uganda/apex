@@ -19,7 +19,7 @@ def _format_storage(mb: int) -> str:
 
 
 def _format_limit(value: int, *, unlimited_threshold: int = 999_999) -> str:
-    if value >= unlimited_threshold:
+    if value <= 0 or value >= unlimited_threshold:
         return "Unlimited"
     return f"{value:,}"
 
@@ -106,7 +106,7 @@ def _plan_highlights(plan: Plan, serialized: dict) -> list[str]:
     inherited = serialized.get("feature_inheritance_summary")
     if inherited and inherited not in highlights:
         highlights.insert(0, inherited)
-    return highlights[:8] or [f"Up to {_format_limit(plan.max_students)} students"]
+    return highlights[:8] or ["Unlimited students, staff, and parents"]
 
 
 def _comparison_matrix(plans: list[Plan], serialized_plans: list[dict]) -> list[dict[str, Any]]:
@@ -162,8 +162,8 @@ def get_marketing_catalog() -> dict[str, Any]:
             "monthly": float(plan.price_monthly),
             "yearly": float(plan.price_yearly),
             "currency": plan.currency,
-            "students": _format_limit(plan.max_students),
-            "users": _format_limit(plan.max_staff),
+            "students": "Unlimited",
+            "users": "Unlimited",
             "storage": _format_storage(plan.max_storage_mb),
             "sms": _format_limit(plan.max_sms_monthly) + " / mo",
             "email": _format_limit(plan.max_emails_monthly) + " / mo",

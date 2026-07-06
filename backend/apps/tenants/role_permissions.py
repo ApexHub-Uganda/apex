@@ -299,6 +299,7 @@ def filter_module_menu_by_role(
             **module,
             "can_read": True,
             "can_write": can_write,
+            "feature_key": children[0]["feature_key"],
             "children": children,
             "enabled_count": len(children),
         })

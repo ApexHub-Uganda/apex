@@ -15,8 +15,9 @@ export function Plans() {
         description: data.description,
         price_monthly: data.price_monthly,
         price_yearly: data.price_yearly || Number(data.price_monthly) * 10,
-        max_students: data.max_students,
-        max_staff: data.max_staff,
+        max_students: 0,
+        max_staff: 0,
+        max_parents: 0,
         is_active: true,
         is_public: true,
       })}
@@ -25,8 +26,9 @@ export function Plans() {
         description: data.description,
         price_monthly: data.price_monthly,
         price_yearly: data.price_yearly,
-        max_students: data.max_students,
-        max_staff: data.max_staff,
+        max_students: 0,
+        max_staff: 0,
+        max_parents: 0,
         is_active: data.is_active !== 'false',
         is_public: data.is_public !== 'false',
       })}
@@ -37,8 +39,6 @@ export function Plans() {
         { key: 'slug', label: 'Slug', accessor: 'slug' },
         { key: 'price_monthly', label: 'Monthly', render: (row) => `$${Number(row.price_monthly).toFixed(2)}` },
         { key: 'price_yearly', label: 'Yearly', render: (row) => `$${Number(row.price_yearly).toFixed(2)}` },
-        { key: 'max_students', label: 'Max Students', accessor: 'max_students', sortable: true },
-        { key: 'max_staff', label: 'Max Staff', accessor: 'max_staff', sortable: true },
         { key: 'is_active', label: 'Status', render: (row) => <StatusBadge status={row.is_active ? 'active' : 'inactive'} /> },
         { key: 'features', label: 'Features', render: (row) => (row.features?.length ? row.features.slice(0, 3).join(', ') + (row.features.length > 3 ? '…' : '') : '—') },
       ]}
@@ -48,8 +48,6 @@ export function Plans() {
         { name: 'description', label: 'Description', type: 'textarea' },
         { name: 'price_monthly', label: 'Monthly Price ($)', type: 'number', required: true },
         { name: 'price_yearly', label: 'Yearly Price ($)', type: 'number' },
-        { name: 'max_students', label: 'Max Students', type: 'number', required: true },
-        { name: 'max_staff', label: 'Max Staff', type: 'number', required: true },
       ]}
     />
   );

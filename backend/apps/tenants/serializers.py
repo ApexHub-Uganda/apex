@@ -305,3 +305,25 @@ class TenantPermanentDeleteSerializer(serializers.Serializer):
                 "You must acknowledge that this deletion is permanent and irreversible.",
             )
         return value
+
+
+class ResetRolePermissionsSerializer(serializers.Serializer):
+    role = serializers.CharField(required=False, allow_blank=True, default="")
+    acknowledge_risk = serializers.BooleanField()
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate_acknowledge_risk(self, value: bool) -> bool:
+        if not value:
+            raise serializers.ValidationError(
+                "You must acknowledge that resetting permissions can expose risky operations.",
+            )
+        return value
+
+    def validate_password(self, value: str) -> str:
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is None or not user.is_authenticated:
+            raise serializers.ValidationError("Authentication required.")
+        if not user.check_password(value):
+            raise serializers.ValidationError("Password is incorrect.")
+        return value

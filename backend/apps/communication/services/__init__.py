@@ -7,6 +7,40 @@ from django.utils import timezone
 
 from apps.communication.models import FeedItemDismissal, Notification
 
+NOTIFICATION_INBOX_LIMIT = 20
+NOTIFICATION_INBOX_WARNING_AT = 16
+
+
+def get_user_notification_inbox_stats(user) -> dict[str, Any]:
+    count = Notification.objects.filter(recipient=user, is_deleted=False).count()
+    return {
+        "count": count,
+        "limit": NOTIFICATION_INBOX_LIMIT,
+        "warning_at": NOTIFICATION_INBOX_WARNING_AT,
+        "show_warning": count >= NOTIFICATION_INBOX_WARNING_AT,
+        "slots_remaining": max(0, NOTIFICATION_INBOX_LIMIT - count),
+    }
+
+
+def enforce_user_notification_inbox_limit(
+    user,
+    *,
+    limit: int = NOTIFICATION_INBOX_LIMIT,
+) -> int:
+    """Soft-delete oldest notifications beyond the per-user inbox cap."""
+    active_ids = list(
+        Notification.objects.filter(recipient=user, is_deleted=False)
+        .order_by("-created_at")
+        .values_list("id", flat=True),
+    )
+    if len(active_ids) <= limit:
+        return 0
+    overflow_ids = active_ids[limit:]
+    return Notification.objects.filter(id__in=overflow_ids).update(
+        is_deleted=True,
+        updated_at=timezone.now(),
+    )
+
 
 def create_user_notification(
     *,
@@ -18,7 +52,7 @@ def create_user_notification(
     metadata: Optional[dict] = None,
     tenant=None,
 ) -> Notification:
-    return Notification.objects.create(
+    notification = Notification.objects.create(
         recipient=user,
         tenant=tenant or getattr(user, "tenant", None),
         title=title,
@@ -27,13 +61,15 @@ def create_user_notification(
         action_url=action_url,
         metadata=metadata or {},
     )
+    enforce_user_notification_inbox_limit(user)
+    return notification
 
 
 def get_unread_user_notifications(user) -> int:
     return Notification.objects.filter(recipient=user, is_read=False, is_deleted=False).count()
 
 
-def get_navbar_user_notifications(user, *, limit: int = 5) -> list[dict[str, Any]]:
+def get_navbar_user_notifications(user, *, limit: int = NOTIFICATION_INBOX_LIMIT) -> list[dict[str, Any]]:
     qs = Notification.objects.filter(
         recipient=user, is_deleted=False,
     ).order_by("-created_at")[:limit]

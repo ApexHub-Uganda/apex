@@ -1,57 +1,50 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import {
-  FiMenu, FiBell, FiSun, FiMoon, FiUser, FiSettings, FiLogOut,
-  FiUserPlus, FiMail, FiCreditCard, FiInfo, FiAlertCircle, FiCheck, FiLayers,
-} from 'react-icons/fi';
+import { FiMenu, FiBell, FiSun, FiMoon, FiUser, FiSettings, FiLogOut } from 'react-icons/fi';
 import GlobalSearch from './GlobalSearch';
 import UserAvatar from './UserAvatar';
+import NotificationBatchActions from './NotificationBatchActions';
+import NotificationCapacityWarning from './NotificationCapacityWarning';
+import NotificationDetailModal from './NotificationDetailModal';
+import NotificationMessageList from './NotificationMessageList';
 import { useAuth } from '../hooks/useAuth';
+import { useNotificationBatchSelection } from '../hooks/useNotificationBatchSelection';
 import { useTheme } from '../hooks/useTheme';
 import { useTenant } from '../hooks/useTenant';
-import { notificationFeedService, platformNotificationsService } from '../services/moduleService';
+import {
+  notificationFeedService,
+  notificationsService,
+  platformNotificationsService,
+} from '../services/moduleService';
+import {
+  canMarkReadNotification,
+  deleteNotifications,
+  markNotificationsRead,
+} from '../utils/notificationInbox';
 import { alert, extractApiError, notify } from '../utils/notify';
-import PlanAdvertisementPreview from './PlanAdvertisementPreview';
-import NotificationItemActions from './NotificationItemActions';
 import SchoolNameWithBadge from './SchoolNameWithBadge';
-
-const TYPE_ICONS = {
-  school_registration: FiUserPlus,
-  trial_request: FiMail,
-  payment_attempt: FiCreditCard,
-  account_activation: FiCheck,
-  info: FiInfo,
-  warning: FiAlertCircle,
-  success: FiCheck,
-  error: FiAlertCircle,
-  subscription: FiLayers,
-};
-
-const formatRelativeTime = (value) => {
-  if (!value) return '';
-  const date = new Date(value);
-  const diffMs = Date.now() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-};
 
 export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
   const { user, logout, isSchoolAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { tenant } = useTenant();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
+  const {
+    selectedCount,
+    selectionMode,
+    isSelected,
+    toggleSelection,
+    enterSelection,
+    clearSelection,
+    selectedIdList,
+  } = useNotificationBatchSelection();
   const notificationsRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   const profilePath = user?.role === 'super_admin' ? '/super-admin/profile' : '/school-admin/profile';
   const settingsPath = user?.role === 'super_admin' ? '/super-admin/settings' : '/school-admin/settings';
@@ -74,6 +67,11 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
 
   const markReadMutation = useMutation({
     mutationFn: (id) => platformNotificationsService.markRead(id),
+    onSuccess: invalidateNotifications,
+  });
+
+  const markReadSchoolMutation = useMutation({
+    mutationFn: (id) => notificationsService.markRead(id),
     onSuccess: invalidateNotifications,
   });
 
@@ -104,10 +102,28 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
     onError: (err) => notify.error(extractApiError(err, 'Unable to mark notifications as read.')),
   });
 
-  const confirmDeleteOne = async (itemId) => {
-    const result = await alert.delete('this notification');
-    if (result.isConfirmed) deleteOneMutation.mutate(itemId);
-  };
+  const batchMarkReadMutation = useMutation({
+    mutationFn: () => markNotificationsRead(selectedItems, { isSuperAdmin }),
+    onSuccess: (count) => {
+      if (count > 0) {
+        notify.success(`${count} message${count === 1 ? '' : 's'} marked as read.`);
+      }
+      clearSelection();
+      invalidateNotifications();
+    },
+    onError: (err) => notify.error(extractApiError(err, 'Unable to mark selected messages as read.')),
+  });
+
+  const batchDeleteMutation = useMutation({
+    mutationFn: () => deleteNotifications(selectedItems, { viaFeed: true }),
+    onSuccess: (count) => {
+      notify.success(`${count} message${count === 1 ? '' : 's'} deleted.`);
+      clearSelection();
+      setSelectedNotification(null);
+      invalidateNotifications();
+    },
+    onError: (err) => notify.error(extractApiError(err, 'Unable to delete selected messages.')),
+  });
 
   const confirmDeleteAll = async () => {
     const result = await alert.confirm({
@@ -122,50 +138,100 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
   };
 
   const unreadCount = feed?.unread_count ?? 0;
+  const inbox = feed?.inbox;
   const feedItems = feed?.items ?? [];
 
   const items = feedItems;
   const pinnedItems = items.filter((item) => item.metadata?.pinned || item.metadata?.advertisement);
   const regularItems = items.filter((item) => !item.metadata?.pinned && !item.metadata?.advertisement);
   const hasItems = pinnedItems.length > 0 || regularItems.length > 0;
+  const isSuperAdmin = user?.role === 'super_admin';
+  const selectedItems = items.filter((item) => selectedIdList.includes(item.id));
+  const canBatchMarkRead = selectedItems.some(
+    (item) => canMarkReadNotification(item, { isSuperAdmin }) && !item.is_read,
+  );
 
   const viewAllPath = feed?.view_all_url
     || (user?.role === 'super_admin' ? '/super-admin/notifications' : '/school-admin/notifications');
 
   useEffect(() => {
-    if (!showNotifications) return undefined;
+    if (!showNotifications) clearSelection();
+  }, [showNotifications, clearSelection]);
 
-    const handleClickOutside = (event) => {
-      if (notificationsRef.current?.contains(event.target)) return;
-      setShowNotifications(false);
+  const handleBatchDelete = async () => {
+    if (!selectedCount) return;
+    const result = await alert.confirm({
+      title: `Delete ${selectedCount} message${selectedCount === 1 ? '' : 's'}?`,
+      text: 'Selected messages will be permanently removed from your inbox.',
+      confirmText: 'Yes, delete',
+      cancelText: 'Cancel',
+      icon: 'warning',
+      danger: true,
+    });
+    if (result.isConfirmed) batchDeleteMutation.mutate();
+  };
+
+  useEffect(() => {
+    if (!showNotifications && !showDropdown) return undefined;
+
+    const handlePointerOutside = (event) => {
+      const inNotifications = notificationsRef.current?.contains(event.target);
+      const inUserMenu = userMenuRef.current?.contains(event.target);
+      if (!inNotifications && !inUserMenu) {
+        setShowNotifications(false);
+        setShowDropdown(false);
+      }
     };
 
-    const timer = window.setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
-    }, 0);
+    document.addEventListener('mousedown', handlePointerOutside);
+    document.addEventListener('touchstart', handlePointerOutside);
 
     return () => {
-      window.clearTimeout(timer);
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('mousedown', handlePointerOutside);
+      document.removeEventListener('touchstart', handlePointerOutside);
     };
-  }, [showNotifications]);
+  }, [showNotifications, showDropdown]);
 
-  const handleNotificationClick = (item) => {
-    if (user?.role === 'super_admin' && item.id && !item.metadata?.synthetic) {
+  const canMarkReadItem = (item) => canMarkReadNotification(item, { isSuperAdmin });
+
+  const handleMarkReadItem = (item) => {
+    if (!canMarkReadItem(item)) return;
+    if (user?.role === 'super_admin') {
       markReadMutation.mutate(item.id);
+    } else {
+      markReadSchoolMutation.mutate(item.id);
     }
-    setShowNotifications(false);
-    if (item.action_url) {
-      navigate(item.action_url);
-      return;
-    }
-    navigate(viewAllPath);
+    setSelectedNotification((current) => (
+      current?.id === item.id ? { ...current, is_read: true } : current
+    ));
+  };
+
+  const handleSelectNotification = (item) => {
+    if (selectionMode) return;
+    setSelectedNotification(item);
+  };
+
+  const handleDeleteNotification = async (item) => {
+    const result = await alert.delete('this message');
+    if (!result.isConfirmed) return;
+    deleteOneMutation.mutate(item.id, {
+      onSuccess: () => {
+        setSelectedNotification(null);
+        clearSelection();
+      },
+    });
   };
 
   const toggleNotifications = (event) => {
     event.stopPropagation();
     setShowDropdown(false);
     setShowNotifications((open) => !open);
+  };
+
+  const toggleUserMenu = (event) => {
+    event.stopPropagation();
+    setShowNotifications(false);
+    setShowDropdown((open) => !open);
   };
 
   return (
@@ -241,12 +307,23 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
             <div className="apex-notifications-panel" role="menu">
               <div className="apex-notifications-panel-header">
                 <div className="d-flex align-items-center gap-2">
-                  <span className="fw-semibold small">Notifications</span>
+                  <span className="fw-semibold small">Messages</span>
                   {unreadCount > 0 && (
                     <span className="badge bg-primary">{unreadCount} unread</span>
                   )}
                 </div>
-                {hasItems && (
+                {hasItems && selectedCount > 0 ? (
+                  <NotificationBatchActions
+                    count={selectedCount}
+                    onMarkRead={() => batchMarkReadMutation.mutate()}
+                    onDelete={handleBatchDelete}
+                    onClear={clearSelection}
+                    canMarkRead={canBatchMarkRead}
+                    marking={batchMarkReadMutation.isPending}
+                    deleting={batchDeleteMutation.isPending}
+                    compact
+                  />
+                ) : hasItems && (
                   <div className="notification-panel-bulk-actions">
                     {unreadCount > 0 && (
                       <button
@@ -270,83 +347,32 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
                 )}
               </div>
 
-              {pinnedItems.map((item) => (
-                <div key={item.id} className="apex-notifications-pinned-wrap">
-                  <button
-                    type="button"
-                    className="apex-notifications-pinned"
-                    onClick={() => handleNotificationClick(item)}
-                  >
-                    <PlanAdvertisementPreview item={item} compact />
-                  </button>
-                  <NotificationItemActions
-                    itemId={item.id}
-                    isRead={item.is_read}
-                    onDelete={confirmDeleteOne}
-                    deleting={deleteOneMutation.isPending}
-                    compact
-                  />
-                </div>
-              ))}
+              <NotificationCapacityWarning inbox={inbox} compact />
 
-              {!hasItems ? (
-                <div className="apex-notifications-empty">No notifications yet</div>
-              ) : (
-                regularItems.map((item) => {
-                  const Icon = TYPE_ICONS[item.type] || FiInfo;
-                  const isSuperAdminItem = user?.role === 'super_admin' && !item.metadata?.synthetic;
-                  return (
-                    <div
-                      key={item.id}
-                      className={`apex-notifications-item-wrap ${!item.is_read ? 'is-unread' : ''}`}
-                    >
-                      <button
-                        type="button"
-                        className="apex-notifications-item"
-                        onClick={() => handleNotificationClick(item)}
-                      >
-                        <div className="d-flex gap-2 align-items-start">
-                          <Icon size={14} className="mt-1 flex-shrink-0" style={{ color: 'var(--apex-primary)' }} />
-                          <div className="flex-grow-1 min-w-0 text-start">
-                            <div className="d-flex justify-content-between gap-2">
-                              <span className="fw-semibold small">{item.title}</span>
-                              <span className="text-muted flex-shrink-0" style={{ fontSize: '0.65rem' }}>
-                                {formatRelativeTime(item.created_at)}
-                              </span>
-                            </div>
-                            <div className="apex-notifications-message text-muted">{item.message}</div>
-                          </div>
-                        </div>
-                      </button>
-                      <NotificationItemActions
-                        itemId={item.id}
-                        isRead={item.is_read}
-                        canMarkRead={isSuperAdminItem}
-                        onMarkRead={(id) => markReadMutation.mutate(id)}
-                        onDelete={confirmDeleteOne}
-                        deleting={deleteOneMutation.isPending}
-                        marking={markReadMutation.isPending}
-                        compact
-                      />
-                    </div>
-                  );
-                })
-              )}
+              <NotificationMessageList
+                pinnedItems={pinnedItems}
+                regularItems={regularItems}
+                onSelect={handleSelectNotification}
+                selectionMode={selectionMode}
+                isSelected={isSelected}
+                onToggleSelect={toggleSelection}
+                onEnterSelection={enterSelection}
+              />
 
               <div className="apex-notifications-panel-footer">
                 <Link to={viewAllPath} className="small" onClick={() => setShowNotifications(false)}>
-                  View all notifications
+                  View all messages
                 </Link>
               </div>
             </div>
           )}
         </div>
 
-        <div className="position-relative">
+        <div className="position-relative" ref={userMenuRef}>
           <button
             type="button"
             className="apex-navbar-user-chip btn d-flex align-items-center gap-2"
-            onClick={() => setShowDropdown(!showDropdown)}
+            onClick={toggleUserMenu}
             aria-expanded={showDropdown}
             aria-haspopup="true"
           >
@@ -374,6 +400,16 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
           )}
         </div>
       </div>
+      <NotificationDetailModal
+        item={selectedNotification}
+        show={!!selectedNotification}
+        onHide={() => setSelectedNotification(null)}
+        onMarkRead={handleMarkReadItem}
+        onDelete={handleDeleteNotification}
+        canMarkRead={canMarkReadItem(selectedNotification)}
+        marking={markReadMutation.isPending || markReadSchoolMutation.isPending}
+        deleting={deleteOneMutation.isPending}
+      />
     </header>
   );
 }

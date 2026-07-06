@@ -269,6 +269,7 @@ class NotificationFeedView(APIView):
         from apps.communication.services import (
             get_navbar_user_notifications,
             get_unread_user_notifications,
+            get_user_notification_inbox_stats,
         )
         from apps.core.constants import TenantStatus, UserRole
         from apps.platform.services.notification_feed import get_platform_notification_summary
@@ -284,6 +285,7 @@ class NotificationFeedView(APIView):
                     "items": data["recent"],
                     "feed_type": "platform",
                     "view_all_url": "/super-admin/notifications",
+                    "inbox": data.get("inbox"),
                 },
             })
 
@@ -291,10 +293,11 @@ class NotificationFeedView(APIView):
 
         dismissed_ids = get_dismissed_feed_item_ids(user)
         items = [
-            item for item in get_navbar_user_notifications(user, limit=5)
+            item for item in get_navbar_user_notifications(user)
             if item.get("id") not in dismissed_ids
         ]
         unread_count = get_unread_user_notifications(user)
+        inbox = get_user_notification_inbox_stats(user)
 
         tenant = getattr(user, "tenant", None)
 
@@ -336,6 +339,7 @@ class NotificationFeedView(APIView):
                 "items": items,
                 "feed_type": "user",
                 "view_all_url": "/school-admin/notifications",
+                "inbox": inbox,
             },
         })
 

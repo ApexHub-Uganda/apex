@@ -93,11 +93,7 @@ export function BulkImportWizard({
       title={title}
       size="lg"
       footer={(
-        <div className="d-flex w-100 justify-content-between align-items-center">
-          <button type="button" className="btn btn-link text-muted" onClick={handleClose}>
-            Cancel
-          </button>
-          <div className="d-flex gap-2">
+        <div className="d-flex w-100 justify-content-end align-items-center gap-2">
             {step === 0 && (
               <button type="button" className="btn btn-primary" onClick={handleDownload} disabled={loading}>
                 <FiDownload className="me-1" /> Download template
@@ -118,7 +114,6 @@ export function BulkImportWizard({
                 <FiCheck className="me-1" /> Import {validCount} record{validCount !== 1 ? 's' : ''}
               </button>
             )}
-          </div>
         </div>
       )}
     >

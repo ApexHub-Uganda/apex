@@ -218,8 +218,7 @@ function AdvertiseEditor({
           </div>
         </div>
 
-        <div className="plan-ad-editor-footer">
-          <button type="button" className="btn btn-light" onClick={onClose}>Cancel</button>
+        <div className="plan-ad-editor-footer justify-content-end">
           <button type="button" className="btn btn-primary" onClick={onSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save draft'}
           </button>

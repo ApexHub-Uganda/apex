@@ -168,7 +168,7 @@ def _collect_navigation_results(user, query: str) -> list[dict[str, Any]]:
 
     role = normalize_role(user.role)
     profile = get_role_profile(user)
-    actions = filter_quick_actions(profile, module_permissions)
+    actions = filter_quick_actions(profile, module_permissions, feature_permissions)
     for idx, action in enumerate(actions):
         action_entry = {
             "title": action.get("label", ""),

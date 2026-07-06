@@ -292,8 +292,42 @@ def _get_upgrade_suggestions(tenant: Tenant) -> list[dict[str, Any]]:
     return suggestions
 
 
-def get_school_dashboard(tenant_id: str) -> dict[str, Any]:
-    """School admin dashboard statistics — plan-aware sections and module stats."""
+def _filter_dashboard_sections_for_user(
+    sections: dict[str, bool],
+    tenant,
+    user,
+) -> dict[str, bool]:
+    from apps.tenants.role_permissions import get_user_feature_permissions, user_is_school_admin
+
+    if not user or user_is_school_admin(user):
+        return sections
+
+    feature_permissions = get_user_feature_permissions(tenant, user)
+    section_features = {
+        "attendance": "student_attendance",
+        "finance": "student_billing",
+        "enrollment": "admissions",
+        "reports": "reports",
+        "staff_attendance": "staff_attendance",
+        "examinations": "marks_entry",
+        "library": "library_management",
+        "hostel": "hostel_management",
+        "transport": "vehicles",
+        "inventory": "inventory_items",
+        "hr": "hr_departments",
+        "payroll": "payroll_runs",
+        "communication": "announcements",
+        "classes": "classes",
+    }
+    filtered = dict(sections)
+    for section_key, feature_key in section_features.items():
+        if section_key in filtered and not feature_permissions.get(feature_key, {}).get("can_read"):
+            filtered[section_key] = False
+    return filtered
+
+
+def get_school_dashboard(tenant_id: str, user=None) -> dict[str, Any]:
+    """School portal dashboard statistics — plan- and role-aware sections."""
     from apps.academics.models import Class
     from apps.audit.models import AuditLog
     from apps.staff.models import Staff
@@ -303,7 +337,21 @@ def get_school_dashboard(tenant_id: str) -> dict[str, Any]:
 
     tenant = Tenant.objects.select_related().get(pk=tenant_id)
     subscription = get_subscription_summary(tenant)
-    sections = _get_dashboard_sections(tenant)
+    sections = _filter_dashboard_sections_for_user(_get_dashboard_sections(tenant), tenant, user)
+
+    from apps.tenants.role_permissions import get_user_feature_permissions, get_user_module_permissions, user_is_school_admin
+    from apps.tenants.role_dashboards import filter_dashboard_widgets, get_role_profile
+
+    plan_widgets = get_tenant_dashboard_widgets(tenant)
+    if user and not user_is_school_admin(user):
+        feature_permissions = get_user_feature_permissions(tenant, user)
+        module_permissions = get_user_module_permissions(tenant, user)
+        role_profile = get_role_profile(user)
+        dashboard_widgets = filter_dashboard_widgets(
+            plan_widgets, module_permissions, role_profile, feature_permissions,
+        )
+    else:
+        dashboard_widgets = plan_widgets
 
     today = timezone.now().date()
     month_start = today.replace(day=1)
@@ -411,9 +459,9 @@ def get_school_dashboard(tenant_id: str) -> dict[str, Any]:
         "subscription": subscription,
         "plan_usage": _get_plan_usage(subscription, total_students, total_staff),
         "sections": sections,
-        "widgets": get_tenant_dashboard_widgets(tenant),
+        "widgets": dashboard_widgets,
         "module_stats": _get_module_stats(tenant_id, sections),
-        "upgrade_suggestions": _get_upgrade_suggestions(tenant),
+        "upgrade_suggestions": _get_upgrade_suggestions(tenant) if not user or user_is_school_admin(user) else [],
         "stats": {
             "total_students": total_students,
             "total_staff": total_staff,
@@ -785,9 +833,6 @@ def get_plans_subscriptions_hub() -> dict[str, Any]:
             "slug": plan.slug,
             "price_monthly": float(plan.price_monthly),
             "price_yearly": float(plan.price_yearly),
-            "max_students": plan.max_students,
-            "max_staff": plan.max_staff,
-            "max_parents": plan.max_parents,
             "max_branches": plan.max_branches,
             "trial_days": plan.trial_days,
             "grace_period_days": plan.grace_period_days,

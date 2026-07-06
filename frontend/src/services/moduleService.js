@@ -61,7 +61,16 @@ export const planAdvertisementService = {
   end: (id) => api.post(`/platform/plan-advertisements/${id}/end/`).then((r) => unwrapData(r)),
 };
 
-export const plansService = createCrudService('/subscriptions/plans/manage/');
+export const plansService = {
+  ...createCrudService('/subscriptions/plans/manage/'),
+  getDeletionPreview: (id) =>
+    api.get(`/subscriptions/plans/manage/${id}/deletion-preview/`).then((r) => unwrapData(r)),
+  delete: (id, params = {}) =>
+    api.delete(`/subscriptions/plans/manage/${id}/`, { params }).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+};
 
 export const featuresService = {
   getCatalog: () =>

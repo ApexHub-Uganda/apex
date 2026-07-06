@@ -221,6 +221,127 @@ class TestRolePermissions:
         assert feature_perms["classes"]["can_read"] is True
         assert feature_perms.get("terms", {}).get("can_read") in (None, False)
 
+    def test_reset_role_permissions_requires_password(self, premium_tenant, librarian):
+        from django.contrib.auth import get_user_model
+
+        school_admin = get_user_model().objects.create_user(
+            email="prem-admin@test.edu",
+            password="TestPass@2026",
+            first_name="Prem",
+            last_name="Admin",
+            role=UserRole.SCHOOL_ADMIN,
+            tenant=premium_tenant,
+            is_email_verified=True,
+        )
+        save_role_permissions(premium_tenant, [{
+            "role": UserRole.LIBRARIAN,
+            "module_key": "library",
+            "can_read": True,
+            "can_write": False,
+        }])
+        client = APIClient()
+        client.force_authenticate(user=school_admin)
+
+        missing_password = client.post(
+            "/api/v1/tenants/role-permissions/",
+            {"role": UserRole.LIBRARIAN, "acknowledge_risk": True},
+            format="json",
+        )
+        assert missing_password.status_code == 400
+
+        wrong_password = client.post(
+            "/api/v1/tenants/role-permissions/",
+            {
+                "role": UserRole.LIBRARIAN,
+                "acknowledge_risk": True,
+                "password": "WrongPass@2026",
+            },
+            format="json",
+        )
+        assert wrong_password.status_code == 400
+
+        without_ack = client.post(
+            "/api/v1/tenants/role-permissions/",
+            {
+                "role": UserRole.LIBRARIAN,
+                "acknowledge_risk": False,
+                "password": "TestPass@2026",
+            },
+            format="json",
+        )
+        assert without_ack.status_code == 400
+
+        response = client.post(
+            "/api/v1/tenants/role-permissions/",
+            {
+                "role": UserRole.LIBRARIAN,
+                "acknowledge_risk": True,
+                "password": "TestPass@2026",
+            },
+            format="json",
+        )
+        assert response.status_code == 200
+        perms = get_user_module_permissions(premium_tenant, librarian)
+        assert perms["library"]["can_write"] is True
+
+    def test_granular_teacher_read_only_submodule_keeps_parent_module(self, premium_tenant, premium_teacher):
+        save_role_permissions(premium_tenant, [
+            {
+                "role": UserRole.TEACHER,
+                "module_key": "academics",
+                "can_read": True,
+                "can_write": False,
+            },
+            {
+                "role": UserRole.TEACHER,
+                "feature_key": "classes",
+                "can_read": True,
+                "can_write": False,
+            },
+        ])
+        menu = get_user_module_menu(premium_tenant, premium_teacher)
+        academics = next((m for m in menu if m["key"] == "academics"), None)
+        assert academics is not None
+        classes = next((c for c in academics["children"] if c["feature_key"] == "classes"), None)
+        assert classes is not None
+        assert classes["can_read"] is True
+        assert classes["can_write"] is False
+
+    def test_granular_teacher_quick_actions_use_readable_hub_child(self, premium_tenant, premium_teacher):
+        from apps.tenants.role_dashboards import filter_quick_actions, get_role_profile
+
+        save_role_permissions(premium_tenant, [
+            {
+                "role": UserRole.TEACHER,
+                "module_key": "academics",
+                "can_read": True,
+                "can_write": True,
+            },
+            {
+                "role": UserRole.TEACHER,
+                "feature_key": "classes",
+                "can_read": True,
+                "can_write": True,
+            },
+        ])
+        from apps.tenants.role_permissions import get_user_feature_permissions, get_user_module_permissions
+
+        feature_permissions = get_user_feature_permissions(premium_tenant, premium_teacher)
+        module_permissions = get_user_module_permissions(premium_tenant, premium_teacher)
+        profile = get_role_profile(premium_teacher)
+        actions = filter_quick_actions(profile, module_permissions, feature_permissions)
+        academics_actions = [a for a in actions if a.get("path") == "/school-admin/academics"]
+        assert academics_actions == []
+
+        menu = get_user_module_menu(premium_tenant, premium_teacher)
+        academics = next((m for m in menu if m["key"] == "academics"), None)
+        assert academics is not None
+        child_keys = {c["feature_key"] for c in academics.get("children", [])}
+        assert child_keys == {"classes"}
+        assert "academic_years" not in child_keys
+        assert academics["feature_key"] == "classes"
+        assert academics["enabled_count"] == 1
+
     def test_plan_gating_blocks_unpaid_module_even_with_permission(self, premium_tenant, librarian):
         """Support module is not on premium_plan — permission alone must not grant access."""
         save_role_permissions(premium_tenant, [{

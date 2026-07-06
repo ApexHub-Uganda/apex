@@ -139,12 +139,9 @@ export function Hostel() {
         title={editing ? 'Edit Hostel' : 'Add Hostel'}
         size="lg"
         footer={(
-          <>
-            <button type="button" className="btn btn-outline-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? 'Saving…' : 'Save hostel'}
-            </button>
-          </>
+          <button type="button" className="btn btn-primary ms-auto" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving…' : 'Save hostel'}
+          </button>
         )}
       >
         <div className="row g-3">

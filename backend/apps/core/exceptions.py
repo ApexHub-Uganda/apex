@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db.models import ProtectedError
 from django.http import Http404
 from rest_framework import status
 from rest_framework.exceptions import APIException
@@ -66,6 +67,20 @@ def custom_exception_handler(exc: Exception, context: dict) -> Optional[Response
     elif isinstance(exc, Http404):
         exc = ApexHubException(detail="Resource not found.")
         exc.status_code = status.HTTP_404_NOT_FOUND
+    elif isinstance(exc, ProtectedError):
+        message = "This record cannot be deleted because other records still depend on it."
+        return Response(
+            {
+                "success": False,
+                "message": message,
+                "error": {
+                    "code": "protected_delete",
+                    "message": message,
+                    "details": None,
+                },
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
 
     response = exception_handler(exc, context)
 

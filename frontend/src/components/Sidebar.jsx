@@ -25,20 +25,10 @@ function useIsMobile() {
   return isMobile;
 }
 
-function buildSubLinks(item) {
-  const children = item.children || [];
-  const hasOverview = children.some((child) => child.path === item.path);
-  if (hasOverview || !item.path) return children;
-  return [
-    { label: 'Overview', path: item.path, feature_key: `${item.path}-overview`, icon: item.icon },
-    ...children,
-  ];
-}
-
-function findActiveParentPath(pathname, items) {
+function findActiveParentPath(pathname, items, getSubLinks) {
   for (const item of items) {
     if (item.divider || !item.path) continue;
-    const subLinks = buildSubLinks(item);
+    const subLinks = getSubLinks(item);
     if (subLinks.length === 0) continue;
     if (pathname === item.path || pathname.startsWith(`${item.path}/`)) {
       return item.path;
@@ -107,20 +97,20 @@ function CollapsedFlyout({
             || location.pathname.startsWith(`${child.path}/`);
           const ChildIcon = child.icon;
           return (
-            <NavLink
-              key={`${item.path}-${child.feature_key}`}
-              to={child.path}
-              role="menuitem"
-              className={`apex-sidebar-flyout-link ${childActive ? 'active' : ''}`}
-              onClick={onClose}
-            >
-              {ChildIcon && (
-                <span className="apex-sidebar-flyout-link-icon">
-                  {typeof ChildIcon === 'function' ? <ChildIcon size={14} /> : ChildIcon}
-                </span>
-              )}
-              <span>{child.label}</span>
-            </NavLink>
+              <NavLink
+                key={`${item.path}-${child.feature_key}`}
+                to={child.path}
+                role="menuitem"
+                className={`apex-sidebar-flyout-link ${childActive ? 'active' : ''}`}
+                onClick={onClose}
+              >
+                {ChildIcon && (
+                  <span className="apex-sidebar-flyout-link-icon">
+                    {typeof ChildIcon === 'function' ? <ChildIcon size={14} /> : ChildIcon}
+                  </span>
+                )}
+                <span>{child.label}</span>
+              </NavLink>
           );
         })}
       </div>
@@ -150,6 +140,7 @@ function NavItem({
   onFlyoutHoverEnd,
   onLeafNavigate,
   disabled = false,
+  getSubLinks,
 }) {
   const itemRef = useRef(null);
   const submenuId = useId();
@@ -160,7 +151,7 @@ function NavItem({
     ) : <hr className="apex-sidebar-divider-line" />;
   }
 
-  const subLinks = buildSubLinks(item);
+  const subLinks = getSubLinks(item);
   const hasChildren = subLinks.length > 0;
   const isParentActive = location.pathname === item.path
     || location.pathname.startsWith(`${item.path}/`);
@@ -289,6 +280,7 @@ function NavItem({
                 key={`${item.path}-${child.feature_key}`}
                 to={childPath}
                 className={`apex-sidebar-sublink ${childActive ? 'active' : ''}`}
+                onClick={onLeafNavigate}
               >
                 {ChildIcon && (
                   <span className="apex-sidebar-sublink-icon">
@@ -326,6 +318,7 @@ export function Sidebar({
   mobileOpen = false,
   disabled = false,
   planBranding = null,
+  getSubLinks: getSubLinksProp,
 }) {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const collapsed = controlledCollapsed ?? internalCollapsed;
@@ -337,7 +330,15 @@ export function Sidebar({
   const sidebarRef = useRef(null);
   const flyoutCloseTimerRef = useRef(null);
   const lastPathnameRef = useRef(location.pathname);
-  const lastActiveParentRef = useRef(findActiveParentPath(location.pathname, items));
+  const resolveSubLinks = useCallback(
+    (item) => {
+      if (getSubLinksProp) return getSubLinksProp(item);
+      return item.children || [];
+    },
+    [getSubLinksProp],
+  );
+
+  const lastActiveParentRef = useRef(findActiveParentPath(location.pathname, items, resolveSubLinks));
 
   const showCollapsed = isMobile ? false : collapsed;
   const sidebarWidth = isMobile
@@ -352,7 +353,7 @@ export function Sidebar({
   }, [collapsed, isMobile]);
 
   useEffect(() => {
-    const activeParent = findActiveParentPath(location.pathname, items);
+    const activeParent = findActiveParentPath(location.pathname, items, resolveSubLinks);
     const pathChanged = lastPathnameRef.current !== location.pathname;
     const prevActiveParent = lastActiveParentRef.current;
 
@@ -364,6 +365,11 @@ export function Sidebar({
       return;
     }
 
+    if (isMobile) {
+      setCollapsed(true);
+      setFlyoutPath(null);
+    }
+
     if (!activeParent) {
       setExpandedKeys(new Set());
     } else if (prevActiveParent !== activeParent) {
@@ -372,7 +378,7 @@ export function Sidebar({
 
     lastPathnameRef.current = location.pathname;
     lastActiveParentRef.current = activeParent;
-  }, [location.pathname, items]);
+  }, [location.pathname, items, resolveSubLinks, isMobile, setCollapsed]);
 
   useEffect(() => {
     setFlyoutPath(null);
@@ -506,6 +512,7 @@ export function Sidebar({
               onFlyoutHoverEnd={scheduleFlyoutClose}
               onLeafNavigate={onLeafNavigate}
               disabled={disabled}
+              getSubLinks={resolveSubLinks}
             />
           ))}
         </nav>

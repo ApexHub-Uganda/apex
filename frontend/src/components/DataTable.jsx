@@ -4,6 +4,9 @@ import { FiSearch, FiChevronLeft, FiChevronRight, FiFilter } from 'react-icons/f
 import { TableSkeleton } from './LoadingSkeleton';
 import { ROW_NUMBER_COLUMN } from '../utils/tableDisplay';
 
+/** Tables at or above this column count scroll horizontally on small viewports. */
+const WIDE_TABLE_COLUMN_THRESHOLD = 5;
+
 export function DataTable({
   columns,
   data = [],
@@ -65,10 +68,12 @@ export function DataTable({
     return [{ ...ROW_NUMBER_COLUMN }, ...base];
   }, [columns, showRowNumbers]);
 
-  const isScrollable = scrollable || displayColumns.length > 8;
+  const isAlwaysScrollable = scrollable;
+  const isWideTable = displayColumns.length >= WIDE_TABLE_COLUMN_THRESHOLD;
+  const useExpandedLayout = isAlwaysScrollable || isWideTable;
 
   const tableMinWidth = useMemo(() => {
-    if (!isScrollable) return undefined;
+    if (!useExpandedLayout) return undefined;
     const total = displayColumns.reduce((sum, col) => {
       if (col.key === '_rowNum') return sum + 44;
       if (col.key === 'actions') return sum + 120;
@@ -79,7 +84,26 @@ export function DataTable({
       return sum + 120;
     }, 0);
     return Math.max(total, 720);
-  }, [displayColumns, isScrollable]);
+  }, [displayColumns, useExpandedLayout]);
+
+  const wrapperClassName = [
+    'apex-table-wrapper',
+    isAlwaysScrollable ? 'apex-table-wrapper--scrollable' : 'apex-table-wrapper--fit',
+    isWideTable && !isAlwaysScrollable ? 'apex-table-wrapper--wide' : '',
+  ].filter(Boolean).join(' ');
+
+  const tableClassName = [
+    'table',
+    'apex-table',
+    'mb-0',
+    compact ? 'apex-table--compact' : '',
+    isAlwaysScrollable ? 'apex-table--scrollable' : '',
+    isWideTable && !isAlwaysScrollable ? 'apex-table--wide' : '',
+  ].filter(Boolean).join(' ');
+
+  const wrapperStyle = isWideTable && !isAlwaysScrollable && tableMinWidth
+    ? { '--apex-table-min-width': `${tableMinWidth}px` }
+    : undefined;
 
   const getCellClass = (col) => {
     if (col.key === '_rowNum') return 'apex-table-cell--rownum';
@@ -150,20 +174,19 @@ export function DataTable({
         </div>
       )}
 
-      <div className={`apex-table-wrapper${isScrollable ? ' apex-table-wrapper--scrollable' : ' apex-table-wrapper--fit'}`}>
+      <div className={wrapperClassName} style={wrapperStyle}>
         <table
-          className={`table apex-table mb-0${compact ? ' apex-table--compact' : ''}${isScrollable ? ' apex-table--scrollable' : ''}`}
-          style={isScrollable ? { minWidth: tableMinWidth } : undefined}
+          className={tableClassName}
+          style={isAlwaysScrollable && tableMinWidth ? { minWidth: tableMinWidth } : undefined}
         >
-          {(isScrollable
-            ? displayColumns.some((col) => col.minWidth)
-            : displayColumns.some((col) => col.width)) && (
+          {((isAlwaysScrollable && displayColumns.some((col) => col.minWidth))
+            || (!isWideTable && displayColumns.some((col) => col.width))) && (
             <colgroup>
               {displayColumns.map((col) => (
                 <col
                   key={col.key}
                   style={
-                    isScrollable
+                    isAlwaysScrollable
                       ? { minWidth: col.minWidth || (col.key === '_rowNum' ? '2.75rem' : col.key === 'actions' ? '7rem' : undefined) }
                       : col.width ? { width: col.width } : undefined
                   }
@@ -180,7 +203,7 @@ export function DataTable({
                   onClick={col.sortable ? () => handleSort(col.key) : undefined}
                   style={{
                     cursor: col.sortable ? 'pointer' : 'default',
-                    ...(isScrollable
+                    ...(isAlwaysScrollable
                       ? { minWidth: col.minWidth || (col.key === '_rowNum' ? '2.75rem' : col.key === 'actions' ? '7rem' : undefined) }
                       : col.width ? { width: col.width } : {}),
                   }}
@@ -233,7 +256,7 @@ export function DataTable({
                       <td
                         key={col.key}
                         className={getCellClass(col)}
-                        style={isScrollable && col.minWidth ? { minWidth: col.minWidth } : undefined}
+                        style={isAlwaysScrollable && col.minWidth ? { minWidth: col.minWidth } : undefined}
                       >
                         {wrapCellContent(col, rendered, title)}
                       </td>

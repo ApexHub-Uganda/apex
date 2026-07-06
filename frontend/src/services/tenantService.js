@@ -156,8 +156,12 @@ export const tenantService = {
     return data?.data || data;
   },
 
-  async resetRolePermissions(role) {
-    const { data } = await api.post('/tenants/role-permissions/', role ? { role } : {});
+  async resetRolePermissions({ role, password, acknowledge_risk }) {
+    const { data } = await api.post('/tenants/role-permissions/', {
+      ...(role ? { role } : {}),
+      password,
+      acknowledge_risk,
+    });
     return data?.data || data;
   },
 };

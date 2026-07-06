@@ -1,0 +1,18 @@
+---
+pid: 18092
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_delete.py -q"
+started_at: 2026-07-06T08:41:42.908Z
+running_for_ms: 18335008 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 2 items
+
+tests\test_plan_delete.py ..                                             [100%]
+
+============================= 2 passed in 25.62s ==============================

@@ -138,9 +138,20 @@ export function TenantProvider({ children }) {
         return true;
       }
 
+      const menuChild = moduleMenu
+        .flatMap((module) => module.children || [])
+        .find((child) => child.feature_key === featureKey);
+      if (menuChild) {
+        return requireWrite ? Boolean(menuChild.can_write) : Boolean(menuChild.can_read ?? true);
+      }
+
       const perms = featurePermissions[featureKey];
       if (perms) {
         return requireWrite ? Boolean(perms.can_write) : Boolean(perms.can_read);
+      }
+
+      if (Object.keys(featurePermissions).length > 0) {
+        return false;
       }
 
       if (permissionTokens.length) {
@@ -151,13 +162,6 @@ export function TenantProvider({ children }) {
           permissionTokens.includes(`${featureKey}.read`)
           || permissionTokens.includes(`${featureKey}.write`)
         );
-      }
-
-      const menuChild = moduleMenu
-        .flatMap((module) => module.children || [])
-        .find((child) => child.feature_key === featureKey);
-      if (menuChild) {
-        return requireWrite ? Boolean(menuChild.can_write) : Boolean(menuChild.can_read ?? true);
       }
 
       const moduleKey = getModuleKeyForFeature(featureKey);

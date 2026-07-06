@@ -17,6 +17,23 @@ def feature_key_for_path(path: str) -> str | None:
                 return child.get("feature_key")
     return None
 
+
+def _readable_hub_feature_key(
+    path: str,
+    feature_permissions: dict[str, dict[str, bool]] | None,
+) -> str | None:
+    """First readable child feature for a module hub path (granular roles)."""
+    if not feature_permissions:
+        return None
+    for module in SCHOOL_MODULES:
+        if module.get("path") != path:
+            continue
+        for child in module.get("children", []):
+            feature_key = child.get("feature_key")
+            if feature_permissions.get(feature_key, {}).get("can_read"):
+                return feature_key
+    return None
+
 ROLE_PROFILES: dict[str, dict[str, Any]] = {
     UserRole.SCHOOL_ADMIN: {
         "title": "School Admin Dashboard",
@@ -186,13 +203,17 @@ def filter_quick_actions(
         module_key = action.get("module_key")
         feature_key = action.get("feature_key") or feature_key_for_path(action.get("path", ""))
 
-        if feature_permissions and feature_key:
-            feat_perms = feature_permissions.get(feature_key, {})
+        if feature_permissions is not None:
+            resolved_key = feature_key
+            feat_perms = feature_permissions.get(resolved_key or "", {})
             if not feat_perms.get("can_read"):
+                resolved_key = _readable_hub_feature_key(action.get("path", ""), feature_permissions)
+                feat_perms = feature_permissions.get(resolved_key or "", {})
+            if not resolved_key or not feat_perms.get("can_read"):
                 continue
             actions.append({
                 **action,
-                "feature_key": feature_key,
+                "feature_key": resolved_key,
                 "can_write": feat_perms.get("can_write", False),
             })
             continue
@@ -211,6 +232,7 @@ def filter_dashboard_widgets(
     plan_widgets: list[dict[str, Any]],
     module_permissions: dict[str, dict[str, bool]],
     profile: dict[str, Any],
+    feature_permissions: dict[str, dict[str, bool]] | None = None,
 ) -> list[dict[str, Any]]:
     allowed_modules = profile.get("widget_modules")
     if allowed_modules is None:
@@ -220,10 +242,14 @@ def filter_dashboard_widgets(
     filtered: list[dict[str, Any]] = []
     for widget in plan_widgets:
         feature_key = widget.get("feature_key", "")
+        if feature_permissions is not None and feature_key:
+            if not feature_permissions.get(feature_key, {}).get("can_read"):
+                continue
         module = get_module_for_feature(feature_key)
         module_key = module["key"] if module else None
         if module_key and module_key in allowed_set:
             perms = module_permissions.get(module_key, {})
             if perms.get("can_read"):
-                filtered.append({**widget, "can_write": perms.get("can_write", False)})
+                feat_write = feature_permissions.get(feature_key, {}).get("can_write", False) if feature_permissions else perms.get("can_write", False)
+                filtered.append({**widget, "can_write": feat_write})
     return filtered

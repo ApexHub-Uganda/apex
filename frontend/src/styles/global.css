@@ -558,6 +558,37 @@ a:hover {
   display: inline-flex;
 }
 
+.apex-sidebar-sublink-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.permission-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.permission-nav-badge--readonly {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.school-module-card .permission-nav-badge--readonly,
+.school-module-hub-card .permission-nav-badge--readonly {
+  background: color-mix(in srgb, var(--apex-text-muted) 12%, var(--apex-surface));
+  color: var(--apex-text-muted);
+  border: 1px solid var(--apex-border);
+}
+
 .apex-sidebar.is-collapsed .apex-sidebar-link {
   justify-content: center;
   padding-inline: 0.5rem;
@@ -662,16 +693,25 @@ a:hover {
 .apex-notifications-panel {
   position: absolute;
   right: 0;
+  left: auto;
   top: calc(100% + 8px);
-  width: min(380px, calc(100vw - 24px));
+  width: min(360px, calc(100vw - 24px));
   max-height: min(520px, calc(100vh - 88px));
-  overflow-y: auto;
-  display: block;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   z-index: 1060;
   background: var(--apex-surface);
   border: 1px solid var(--apex-border);
   border-radius: 12px;
   box-shadow: var(--apex-shadow-lg);
+}
+
+.apex-notifications-panel .notification-message-list,
+.apex-notifications-panel .notification-message-empty {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .apex-notifications-panel-header,
@@ -820,6 +860,248 @@ a:hover {
 
 .notification-page-card .notification-item-actions {
   flex-shrink: 0;
+}
+
+.notification-inbox-warning {
+  margin: 0.75rem 1rem 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 127, 80, 0.35);
+  background: rgba(255, 127, 80, 0.08);
+}
+
+.notification-inbox-warning--compact {
+  margin: 0.65rem 0.75rem 0;
+}
+
+.notification-inbox-warning-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--apex-secondary);
+  margin-bottom: 0.2rem;
+}
+
+.notification-inbox-warning-text {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--apex-text-muted);
+}
+
+.notification-message-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-message-empty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: var(--apex-text-muted);
+  font-size: 0.82rem;
+}
+
+.notification-message-row-wrap {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--apex-border);
+  transition: background 0.15s ease;
+}
+
+.notification-message-row-wrap.is-selected {
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.notification-message-row-wrap.is-selection-mode .notification-message-row {
+  cursor: pointer;
+}
+
+.notification-message-checkbox {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0 0 0 0.85rem;
+  margin: 0;
+  cursor: pointer;
+}
+
+.notification-message-checkbox .form-check-input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  cursor: pointer;
+  border-color: var(--apex-border);
+}
+
+.notification-message-checkbox .form-check-input:checked {
+  background-color: var(--apex-primary);
+  border-color: var(--apex-primary);
+}
+
+.notification-message-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0.75rem 0.85rem;
+  color: var(--apex-text);
+  transition: background 0.15s ease;
+  position: relative;
+}
+
+.notification-message-row:hover {
+  background: rgba(15, 118, 110, 0.06);
+}
+
+.notification-message-row.is-unread {
+  background: rgba(15, 118, 110, 0.04);
+}
+
+.notification-message-row.is-pinned {
+  background: rgba(15, 118, 110, 0.06);
+}
+
+.notification-message-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: rgba(15, 118, 110, 0.12);
+  color: var(--apex-primary);
+}
+
+.notification-message-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.notification-message-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.notification-message-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-message-time {
+  font-size: 0.68rem;
+  color: var(--apex-text-muted);
+  flex-shrink: 0;
+}
+
+.notification-message-preview {
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--apex-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notification-message-unread-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--apex-secondary);
+  flex-shrink: 0;
+}
+
+.notification-message-ad {
+  display: block;
+  width: 100%;
+}
+
+.notification-batch-actions-bar {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid var(--apex-border);
+  background: var(--apex-bg);
+}
+
+.notification-batch-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.notification-batch-actions--compact {
+  gap: 0.5rem;
+}
+
+.notification-batch-actions-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--apex-text-muted);
+  white-space: nowrap;
+}
+
+.notification-batch-actions-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 992px) {
+  .notification-message-checkbox {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .notification-message-row-wrap.is-selection-mode .notification-message-row::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid transparent;
+    pointer-events: none;
+    border-radius: 0;
+  }
+
+  .notification-message-row-wrap.is-selected .notification-message-row::after {
+    border-color: rgba(15, 118, 110, 0.35);
+  }
+}
+
+.notification-detail-body {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+  color: var(--apex-text);
+}
+
+.notification-page-inbox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (max-width: 767.98px) {
+  .apex-notifications-panel {
+    right: 0;
+    left: auto;
+    width: min(300px, calc(100vw - 12px));
+    max-height: min(70vh, 480px);
+    transform: none;
+  }
 }
 
 .apex-sidebar.is-disabled,
@@ -1079,8 +1361,8 @@ a:hover {
 .apex-sidebar-plan {
   display: flex;
   justify-content: center;
-  padding: 0 0.85rem 0.7rem;
-  margin-top: -0.1rem;
+  padding: 0.35rem 0.85rem 0.7rem;
+  margin-top: 0.15rem;
 }
 
 .apex-faint-outline-chip {
@@ -1313,6 +1595,10 @@ h6 .verified-name-inline,
 .apex-navbar .verified-name-inline,
 td .verified-name-inline {
   align-items: center;
+}
+
+.apex-navbar .verified-name-inline {
+  padding-top: 0.125rem;
 }
 
 h6 .verified-name-inline {
@@ -1929,7 +2215,46 @@ h6 .verified-name-inline {
   }
 
   .apex-content {
-    padding: 1rem;
+    padding: 1.35rem 1rem 1rem;
+  }
+
+  .apex-page-header--centered {
+    margin-top: 0.25rem;
+    padding-top: 0.2rem;
+  }
+
+  .apex-page-header-main--centered .apex-page-title {
+    margin-top: 0.15rem;
+  }
+
+  .apex-sidebar-plan {
+    margin-top: 0.35rem;
+    padding-top: 0.45rem;
+  }
+
+  .apex-sidebar-plan-chip {
+    padding-top: 0.38rem;
+    padding-bottom: 0.38rem;
+  }
+
+  .apex-navbar .verified-name-inline {
+    padding-top: 0.2rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .apex-content {
+    padding-top: 1.5rem;
+  }
+
+  .apex-page-header--centered {
+    margin-top: 0.35rem;
+    padding-top: 0.3rem;
+  }
+
+  .apex-sidebar-plan {
+    margin-top: 0.45rem;
+    padding-top: 0.55rem;
   }
 }
 
@@ -2016,6 +2341,7 @@ h6 .verified-name-inline {
 .apex-table-panel {
   min-width: 0;
   max-width: 100%;
+  overflow-x: clip;
 }
 
 .apex-table-panel--embedded {
@@ -2030,16 +2356,29 @@ h6 .verified-name-inline {
   width: 100%;
   max-width: 100%;
   border-radius: var(--apex-radius);
+  overflow-x: hidden;
 }
 
 .apex-table-wrapper--fit {
-  overflow-x: auto;
+  overflow-x: hidden;
 }
 
 .apex-table-wrapper--scrollable {
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 118, 110, 0.35) transparent;
+}
+
+.apex-table-wrapper--scrollable::-webkit-scrollbar {
+  height: 6px;
+}
+
+.apex-table-wrapper--scrollable::-webkit-scrollbar-thumb {
+  background: rgba(15, 118, 110, 0.35);
+  border-radius: 999px;
 }
 
 .apex-table-search {
@@ -2202,6 +2541,54 @@ h6 .verified-name-inline {
 
   .apex-table thead th {
     font-size: 0.6875rem;
+  }
+}
+
+/* Wide tables: horizontal scroll on the table wrapper only (small viewports). */
+@media (max-width: 991.98px) {
+  .apex-table-wrapper--wide {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(15, 118, 110, 0.35) transparent;
+  }
+
+  .apex-table-wrapper--wide::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .apex-table-wrapper--wide::-webkit-scrollbar-thumb {
+    background: rgba(15, 118, 110, 0.35);
+    border-radius: 999px;
+  }
+
+  .apex-table--wide {
+    table-layout: auto;
+    width: max-content;
+    min-width: var(--apex-table-min-width, 100%);
+  }
+
+  .apex-table--wide thead th,
+  .apex-table--wide tbody td {
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .apex-table--wide.apex-table--compact thead th,
+  .apex-table--wide.apex-table--compact tbody td {
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .apex-table--wide tbody td.apex-table-cell--truncate {
+    max-width: none;
+  }
+
+  .apex-table--wide thead th:not(.apex-table-cell--rownum):not(.apex-table-cell--actions),
+  .apex-table--wide tbody td:not(.apex-table-cell--rownum):not(.apex-table-cell--actions):not(.apex-table-cell--fit) {
+    min-width: 7.5rem;
   }
 }
 
@@ -3377,6 +3764,13 @@ h6 .verified-name-inline {
   background: color-mix(in srgb, var(--apex-primary) 12%, transparent);
   color: var(--apex-primary);
   flex-shrink: 0;
+}
+
+.permission-reset-warning {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--apex-danger, #dc2626) 6%, var(--apex-surface));
+  border: 1px solid color-mix(in srgb, var(--apex-danger, #dc2626) 18%, var(--apex-border));
 }
 
 .permission-matrix-shell {

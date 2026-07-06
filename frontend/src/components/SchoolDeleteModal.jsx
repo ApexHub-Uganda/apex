@@ -63,9 +63,6 @@ export function SchoolDeleteModal({
               Back
             </button>
           )}
-          <button type="button" className="btn btn-secondary" onClick={onHide} disabled={deleting}>
-            Cancel
-          </button>
           {step === 'review' && (
             <button
               type="button"
