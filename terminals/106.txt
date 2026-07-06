@@ -1,0 +1,13 @@
+---
+pid: 3568
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend ; npm run preview -- --port 4173 2>&1"
+started_at: 2026-07-04T06:44:49.621Z
+running_for_ms: 5449998  
+---
+
+> apex-hub-frontend@1.0.0 preview
+> vite preview --port 4173
+
+  ➜  Local:   http://localhost:4173/
+  ➜  Network: use --host to expose

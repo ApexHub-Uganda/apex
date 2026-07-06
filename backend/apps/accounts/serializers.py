@@ -9,8 +9,10 @@ from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 
+from apps.accounts.avatar_serializers import AvatarFieldsMixin
 from apps.accounts.models import LoginHistory, User, UserDevice, UserSession
 from apps.core.constants import UserRole, normalize_role
+from apps.core.serializer_fields import DeliverableEmailField
 from apps.core.mixins import get_client_ip
 
 
@@ -98,7 +100,9 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
         return data
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(AvatarFieldsMixin, serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+    has_avatar = serializers.SerializerMethodField()
     full_name = serializers.CharField(read_only=True)
     tenant_name = serializers.CharField(source="tenant.name", read_only=True, allow_null=True)
     tenant_status = serializers.CharField(source="tenant.status", read_only=True, allow_null=True)
@@ -118,7 +122,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             "id", "email", "first_name", "last_name", "full_name", "phone",
-            "avatar", "role", "effective_role", "tenant", "tenant_name", "tenant_status",
+            "avatar", "avatar_url", "has_avatar", "role", "effective_role", "tenant", "tenant_name", "tenant_status",
             "tenant_plan_slug", "is_school_admin", "is_school_portal_user",
             "module_permissions", "permissions",
             "tenant_is_verified", "tenant_is_suspended", "tenant_registration_type", "is_active",
@@ -160,13 +164,25 @@ class UserSerializer(serializers.ModelSerializer):
         return self._resolve_module_permissions(obj)
 
     def get_permissions(self, obj: User) -> list[str]:
-        from apps.tenants.role_permissions import permissions_to_strings
+        from apps.tenants.role_permissions import (
+            get_user_feature_permissions,
+            permissions_to_strings,
+        )
 
-        return permissions_to_strings(self._resolve_module_permissions(obj))
+        if not obj.tenant_id:
+            return permissions_to_strings(self._resolve_module_permissions(obj))
+        tenant = obj.tenant
+        if tenant is None:
+            return permissions_to_strings(self._resolve_module_permissions(obj))
+        return permissions_to_strings(
+            self._resolve_module_permissions(obj),
+            get_user_feature_permissions(tenant, obj),
+        )
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
+    email = DeliverableEmailField()
 
     class Meta:
         model = User
@@ -222,7 +238,7 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    email = DeliverableEmailField()
 
     def save(self) -> None:
         email = self.validated_data["email"]

@@ -1,0 +1,97 @@
+---
+pid: 15824
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_email_validation.py tests/test_school_messaging.py tests/test_bulk_import.py -q --tb=short 2>&1"
+started_at: 2026-07-04T08:02:24.450Z
+running_for_ms: 790014   
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 22 items
+
+tests\test_school_messaging.py ..FFF.FF.                                 [ 40%]
+tests\test_bulk_import.py ....                                           [ 59%]
+tests\test_email_validation.py F..FF.                                    [ 86%]
+tests\test_bulk_import.py ...                                            [100%]
+
+================================== FAILURES ===================================
+__________ TestSchoolMessaging.test_publish_announcement_sends_email __________
+tests\test_school_messaging.py:83: in test_publish_announcement_sends_email
+    result = publish_announcement(announcement)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\contextlib.py:85: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+apps\communication\services\messaging.py:412: in publish_announcement
+    stats = _dispatch_email(
+apps\communication\services\messaging.py:222: in _dispatch_email
+    raise MessagingError(result["error"])
+E   apps.communication.services.messaging.MessagingError: No deliverable email addresses found for the selected audience. Add real staff/parent/student emails — demo addresses like staff1@school.ug are rejected.
+________ TestSchoolMessaging.test_send_school_broadcast_email_channel _________
+tests\test_school_messaging.py:101: in test_send_school_broadcast_email_channel
+    result = send_school_broadcast(broadcast)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\contextlib.py:85: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+apps\communication\services\messaging.py:341: in send_school_broadcast
+    stats = _dispatch_email(
+apps\communication\services\messaging.py:222: in _dispatch_email
+    raise MessagingError(result["error"])
+E   apps.communication.services.messaging.MessagingError: No deliverable email addresses found for the selected audience. Add real staff/parent/student emails — demo addresses like staff1@school.ug are rejected.
+_______ TestSchoolMessaging.test_publish_without_email_addresses_raises _______
+tests\test_school_messaging.py:121: in test_publish_without_email_addresses_raises
+    with pytest.raises(MessagingError, match="No email addresses"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AssertionError: Regex pattern did not match.
+E     Expected regex: 'No email addresses'
+E     Actual message: 'No deliverable email addresses found for the selected audience. Add real staff/parent/student emails — demo addresses like staff1@school.ug are rejected.'
+______________ TestSchoolMessaging.test_api_publish_announcement ______________
+tests\test_school_messaging.py:152: in test_api_publish_announcement
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = <Response status_code=400, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-04 01:02:57,416 log Bad Request: /api/v1/communication/announcements/1f6e2046-c3ad-451d-ad2d-b59d60333f2a/publish/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/communication/announcements/1f6e2046-c3ad-451d-ad2d-b59d60333f2a/publish/
+_________________ TestSchoolMessaging.test_api_send_broadcast _________________
+tests\test_school_messaging.py:171: in test_api_send_broadcast
+    assert response.status_code == 200
+E   assert 400 == 200
+E    +  where 400 = <Response status_code=400, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-04 01:02:58,204 log Bad Request: /api/v1/communication/broadcasts/79f9681f-90e1-47d6-b833-b32b8c82589a/send/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/communication/broadcasts/79f9681f-90e1-47d6-b833-b32b8c82589a/send/
+_______________ TestEmailValidation.test_accepts_real_addresses _______________
+tests\test_email_validation.py:12: in test_accepts_real_addresses
+    assert validate_deliverable_email("teacher@greenwoodacademy.ug") is None
+E   AssertionError: assert 'Use a real email address, not a demo or placeholder domain.' is None
+E    +  where 'Use a real email address, not a demo or placeholder domain.' = validate_deliverable_email('teacher@greenwoodacademy.ug')
+_______________ TestEmailValidation.test_filter_removes_invalid _______________
+tests\test_email_validation.py:27: in test_filter_removes_invalid
+    assert result == ["client.apex@gmail.com"]
+E   AssertionError: assert [] == ['client.apex@gmail.com']
+E     
+E     Right contains one more item: 'client.apex@gmail.com'
+E     Use -v to get more diff
+_______________ TestEmailValidation.test_is_deliverable_helper ________________
+tests\test_email_validation.py:30: in test_is_deliverable_helper
+    assert is_deliverable_email("parent@realschool.org") is True
+E   AssertionError: assert False is True
+E    +  where False = is_deliverable_email('parent@realschool.org')
+=========================== short test summary info ===========================
+FAILED tests/test_school_messaging.py::TestSchoolMessaging::test_publish_announcement_sends_email
+FAILED tests/test_school_messaging.py::TestSchoolMessaging::test_send_school_broadcast_email_channel
+FAILED tests/test_school_messaging.py::TestSchoolMessaging::test_publish_without_email_addresses_raises
+FAILED tests/test_school_messaging.py::TestSchoolMessaging::test_api_publish_announcement
+FAILED tests/test_school_messaging.py::TestSchoolMessaging::test_api_send_broadcast
+FAILED tests/test_email_validation.py::TestEmailValidation::test_accepts_real_addresses
+FAILED tests/test_email_validation.py::TestEmailValidation::test_filter_removes_invalid
+FAILED tests/test_email_validation.py::TestEmailValidation::test_is_deliverable_helper
+======================== 8 failed, 14 passed in 35.25s ========================

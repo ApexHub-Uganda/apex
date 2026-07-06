@@ -10,9 +10,11 @@ const Gated = ({ featureKey, children }) => (
 
 /** Paths served by dedicated page components — skip SubModulePage generation. */
 const DEDICATED_SEGMENTS = new Set([
-  '', 'students', 'staff', 'classes', 'attendance', 'finance', 'library',
-  'hostel', 'transport', 'inventory', 'hr', 'hr/staffs', 'payroll', 'reports',
+  '', 'students', 'students/new', 'parents', 'parents/new', 'staff', 'classes',
+  'academics/terms', 'attendance', 'finance', 'library',
+  'hostel', 'transport', 'inventory', 'hr', 'hr/staffs', 'hr/staffs/new', 'payroll', 'reports',
   'communication', 'settings', 'settings/plans', 'notifications',
+  'examinations/marks',
 ]);
 
 /** Modules that use ModuleHub as their landing page. */

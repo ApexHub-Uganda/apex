@@ -12,7 +12,7 @@ import {
   notificationsService,
   platformNotificationsService,
 } from '../../services/moduleService';
-import { extractApiError, notify } from '../../utils/notify';
+import { alert, extractApiError, notify } from '../../utils/notify';
 
 const iconMap = {
   info: FiInfo,
@@ -94,6 +94,23 @@ export function Notifications() {
     onError: (err) => notify.error(extractApiError(err, 'Unable to mark notification as read.')),
   });
 
+  const confirmDeleteAll = async () => {
+    const result = await alert.confirm({
+      title: 'Delete all notifications?',
+      text: 'This will permanently remove all notifications. This cannot be undone.',
+      confirmText: 'Yes, delete all',
+      cancelText: 'Cancel',
+      icon: 'warning',
+      danger: true,
+    });
+    if (result.isConfirmed) deleteAll.mutate();
+  };
+
+  const confirmDeleteOne = async (itemId) => {
+    const result = await alert.delete('this notification');
+    if (result.isConfirmed) deleteOne.mutate(itemId);
+  };
+
   const pinnedAds = (feed?.items || []).filter(
     (item) => item.metadata?.advertisement || item.metadata?.pinned,
   );
@@ -124,7 +141,7 @@ export function Notifications() {
                 Mark all as read
               </button>
             )}
-            <button className="btn btn-outline-danger btn-sm" onClick={() => deleteAll.mutate()}>
+            <button className="btn btn-outline-danger btn-sm" onClick={confirmDeleteAll}>
               Delete all
             </button>
           </div>
@@ -151,7 +168,7 @@ export function Notifications() {
               <NotificationItemActions
                 itemId={item.id}
                 isRead={item.is_read}
-                onDelete={(id) => deleteOne.mutate(id)}
+                onDelete={confirmDeleteOne}
                 deleting={deleteOne.isPending}
               />
             </div>
@@ -224,7 +241,7 @@ export function Notifications() {
                       isRead={notif.is_read}
                       canMarkRead={isSuperAdmin}
                       onMarkRead={(id) => markReadOne.mutate(id)}
-                      onDelete={(id) => deleteOne.mutate(id)}
+                      onDelete={confirmDeleteOne}
                       deleting={deleteOne.isPending}
                       marking={markReadOne.isPending}
                     />

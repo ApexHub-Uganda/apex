@@ -8,6 +8,7 @@ import { PageSkeleton } from '../../components/LoadingSkeleton';
 import { settingsService } from '../../services/moduleService';
 import { alert, extractApiError, notify } from '../../utils/notify';
 import { useMaintenance } from '../../hooks/useMaintenance';
+import { emailValidationRules } from '../../utils/emailValidation';
 
 export function SuperAdminSettings() {
   const { refreshMaintenanceStatus } = useMaintenance();
@@ -138,7 +139,7 @@ export function SuperAdminSettings() {
               <h5 className="fw-bold mb-3 d-flex align-items-center gap-2"><FiMail /> Email & Support</h5>
               <div className="mb-3">
                 <label className="form-label small fw-medium">Support Email</label>
-                <input type="email" className="form-control" {...register('support_email')} />
+                <input type="email" className="form-control" {...register('support_email', emailValidationRules({ required: false, label: 'Support email' }))} />
               </div>
               <div className="mb-3">
                 <label className="form-label small fw-medium">Max Upload Size (MB)</label>

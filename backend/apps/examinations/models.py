@@ -16,6 +16,14 @@ class GradingScale(BaseModel):
 class Exam(BaseModel):
     name = models.CharField(max_length=255)
     subject = models.ForeignKey("academics.Subject", on_delete=models.CASCADE, related_name="exams")
+    paper = models.ForeignKey(
+        "academics.SubjectPaper",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="exams",
+        help_text="Optional paper when the subject has multiple papers",
+    )
     school_class = models.ForeignKey("academics.Class", on_delete=models.CASCADE, related_name="exams")
     term = models.ForeignKey("academics.Term", on_delete=models.CASCADE, related_name="exams")
     exam_date = models.DateField()

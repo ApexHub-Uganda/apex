@@ -1,0 +1,10 @@
+---
+pid: 2384
+cwd: "E:\apex"
+command: "$ids = @('1522202176988-66273c2fd55f','1509062526006-2295a5198c76','1529390079861-591de354faf5'); foreach ($id in $ids) { $u = \"https://images.unsplash.com/photo-$id?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80\"; $code = (curl.exe -s -o NUL -w \"%{http_code}\" $u); Write-Output \"$code $id\" }"
+started_at: 2026-07-03T21:32:02.188Z
+running_for_ms: 965007   
+---
+404 1522202176988-66273c2fd55f
+404 1509062526006-2295a5198c76
+404 1529390079861-591de354faf5

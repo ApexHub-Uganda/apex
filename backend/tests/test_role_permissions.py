@@ -7,6 +7,7 @@ from rest_framework.test import APIClient
 from apps.core.constants import UserRole
 from apps.subscriptions.services import assign_plan_features, get_tenant_module_menu
 from apps.tenants.role_permissions import (
+    get_user_feature_permissions,
     get_user_module_menu,
     get_user_module_permissions,
     save_role_permissions,
@@ -59,6 +60,22 @@ def librarian(db, premium_tenant):
         last_name="Rarian",
         role=UserRole.LIBRARIAN,
         tenant=premium_tenant,
+    )
+
+
+@pytest.fixture
+def premium_teacher(db, premium_tenant):
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    return User.objects.create_user(
+        email="teacher.prem@test.edu",
+        password="TestPass@2026",
+        first_name="Prem",
+        last_name="Teacher",
+        role=UserRole.TEACHER,
+        tenant=premium_tenant,
+        is_email_verified=True,
     )
 
 
@@ -134,6 +151,75 @@ class TestRolePermissions:
         lib_client = APIClient()
         lib_client.force_authenticate(user=librarian)
         assert lib_client.get("/api/v1/tenants/role-permissions/").status_code == 403
+
+    def test_granular_feature_write_denied_blocks_create(self, premium_tenant, premium_teacher):
+        save_role_permissions(premium_tenant, [
+            {
+                "role": UserRole.TEACHER,
+                "module_key": "academics",
+                "can_read": True,
+                "can_write": True,
+            },
+            {
+                "role": UserRole.TEACHER,
+                "feature_key": "classes",
+                "can_read": True,
+                "can_write": False,
+            },
+        ])
+        feature_perms = get_user_feature_permissions(premium_tenant, premium_teacher)
+        assert feature_perms["classes"]["can_write"] is False
+
+        from apps.academics.models import AcademicYear
+
+        year = AcademicYear.objects.create(
+            tenant=premium_tenant,
+            name="2025-2026",
+            start_date="2025-09-01",
+            end_date="2026-06-30",
+            is_current=True,
+        )
+        client = APIClient()
+        client.force_authenticate(user=premium_teacher)
+        response = client.post(
+            "/api/v1/academics/classes/",
+            {"name": "Grade 1", "code": "G1", "academic_year": str(year.id)},
+            format="json",
+        )
+        assert response.status_code == 403
+
+    def test_granular_features_hide_ungranted_submodules(self, premium_tenant, premium_teacher):
+        save_role_permissions(premium_tenant, [
+            {
+                "role": UserRole.TEACHER,
+                "module_key": "academics",
+                "can_read": True,
+                "can_write": False,
+            },
+            {
+                "role": UserRole.TEACHER,
+                "feature_key": "classes",
+                "can_read": True,
+                "can_write": True,
+            },
+            {
+                "role": UserRole.TEACHER,
+                "feature_key": "academic_years",
+                "can_read": True,
+                "can_write": False,
+            },
+        ])
+        menu = get_user_module_menu(premium_tenant, premium_teacher)
+        academics = next((m for m in menu if m["key"] == "academics"), None)
+        assert academics is not None
+        child_keys = {c["feature_key"] for c in academics.get("children", [])}
+        assert child_keys == {"classes", "academic_years"}
+        assert "terms" not in child_keys
+        assert "subjects" not in child_keys
+
+        feature_perms = get_user_feature_permissions(premium_tenant, premium_teacher)
+        assert feature_perms["classes"]["can_read"] is True
+        assert feature_perms.get("terms", {}).get("can_read") in (None, False)
 
     def test_plan_gating_blocks_unpaid_module_even_with_permission(self, premium_tenant, librarian):
         """Support module is not on premium_plan — permission alone must not grant access."""

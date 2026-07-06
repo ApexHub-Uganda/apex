@@ -1,0 +1,26 @@
+---
+pid: 15204
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py -q 2>&1"
+started_at: 2026-07-04T07:36:28.503Z
+running_for_ms: 2345001  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 9 items
+
+tests\test_school_messaging.py ....F....                                 [100%]
+
+================================== FAILURES ===================================
+_______ TestSchoolMessaging.test_publish_without_email_addresses_raises _______
+tests\test_school_messaging.py:121: in test_publish_without_email_addresses_raises
+    with pytest.raises(MessagingError, match="No email addresses"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: DID NOT RAISE MessagingError
+=========================== short test summary info ===========================
+FAILED tests/test_school_messaging.py::TestSchoolMessaging::test_publish_without_email_addresses_raises
+======================== 1 failed, 8 passed in 42.34s =========================

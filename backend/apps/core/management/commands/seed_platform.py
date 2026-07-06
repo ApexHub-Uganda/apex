@@ -16,7 +16,7 @@ from apps.attendance.models import AttendanceRecord
 from apps.audit.models import AuditLog
 from apps.core.constants import COLOR_ACCENT, COLOR_PRIMARY, COLOR_SECONDARY, PlanSlug, UserRole
 from apps.finance.models import FeePayment, FeeStructure, Invoice
-from apps.platform.models import GlobalSetting, PlatformBroadcast, PlatformMetrics, SystemHealthLog
+from apps.platform.models import EmailSetting, GlobalSetting, PlatformBroadcast, PlatformMetrics, SystemHealthLog
 from apps.staff.models import Staff, Teacher
 from apps.students.models import Parent, Student
 from apps.subscriptions.models import PaymentProvider, PaymentTransaction, Plan, Subscription
@@ -175,6 +175,7 @@ class Command(BaseCommand):
         self._seed_payment_transactions(tenants, provider)
         self._seed_audit_logs(super_admin, tenants)
         self._seed_platform_settings()
+        self._seed_email_settings()
         self._seed_broadcasts()
         self._seed_demo_school_extras(tenants[0] if tenants else None)
 
@@ -699,6 +700,23 @@ class Command(BaseCommand):
             defaults={"value": {"enabled": False}},
         )
         self.stdout.write(self.style.SUCCESS("  Seeded platform settings"))
+
+    def _seed_email_settings(self) -> None:
+        from apps.platform.services.email_config import sync_email_settings_from_env
+
+        record = sync_email_settings_from_env()
+        if record:
+            self.stdout.write(self.style.SUCCESS("  Synced email settings from environment"))
+        elif not EmailSetting.objects.exists():
+            EmailSetting.objects.create(
+                provider="smtp",
+                host="smtp.gmail.com",
+                port=587,
+                use_tls=True,
+                from_email="noreply@apexhub.io",
+                is_active=False,
+            )
+            self.stdout.write("  Created placeholder email settings (configure .env to activate)")
 
     def _seed_broadcasts(self) -> None:
         if PlatformBroadcast.objects.exists():

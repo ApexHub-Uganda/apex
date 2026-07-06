@@ -8,11 +8,13 @@ from apps.subscriptions.views import (
     FeatureFlagViewSet,
     PaymentProviderViewSet,
     PaymentTransactionViewSet,
+    MarketingCatalogView,
     PlanListView,
     PlanUpgradeCatalogView,
     PlanUpgradeCheckoutView,
     PlanViewSet,
     SubscriptionViewSet,
+    TrustedSchoolsView,
 )
 
 router = DefaultRouter()
@@ -24,6 +26,8 @@ router.register("payments/providers", PaymentProviderViewSet, basename="payment-
 router.register("payments/transactions", PaymentTransactionViewSet, basename="payment-transaction")
 
 urlpatterns = [
+    path("marketing/", MarketingCatalogView.as_view(), name="marketing-catalog"),
+    path("marketing/trusted-schools/", TrustedSchoolsView.as_view(), name="marketing-trusted-schools"),
     path("plans/", PlanListView.as_view(), name="plan-list"),
     path("features/catalog/", FeatureCatalogView.as_view(), name="feature-catalog"),
     path("current/", CurrentSubscriptionView.as_view(), name="subscription-current"),

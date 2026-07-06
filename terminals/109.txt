@@ -1,0 +1,27 @@
+---
+pid: 11952
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py tests/test_integration_providers.py -q 2>&1"
+started_at: 2026-07-04T07:20:23.653Z
+running_for_ms: 3310006  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 12 items
+
+tests\test_school_messaging.py .......                                   [ 58%]
+tests\test_integration_providers.py .F...                                [100%]
+
+================================== FAILURES ===================================
+_ TestIntegrationProviders.test_email_builds_smtp_payload_before_live_dispatch _
+tests\test_integration_providers.py:35: in test_email_builds_smtp_payload_before_live_dispatch
+    assert "smtp.example.com" in result.metadata["endpoint"]
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'endpoint'
+=========================== short test summary info ===========================
+FAILED tests/test_integration_providers.py::TestIntegrationProviders::test_email_builds_smtp_payload_before_live_dispatch
+======================== 1 failed, 11 passed in 30.72s ========================

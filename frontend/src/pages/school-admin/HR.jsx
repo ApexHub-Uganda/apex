@@ -15,7 +15,7 @@ const HR_LINKS = [
   },
   {
     featureKey: 'hr_departments',
-    path: '/school-admin/hr',
+    path: '/school-admin/hr/departments',
     label: 'Departments',
     icon: FiLayers,
     description: 'Organize staff into academic and administrative departments.',

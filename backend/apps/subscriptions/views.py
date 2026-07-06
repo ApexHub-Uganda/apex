@@ -30,6 +30,33 @@ class PlanListView(generics.ListAPIView):
     permission_classes = [AllowAny]
 
 
+class MarketingCatalogView(APIView):
+    """Public plans, features, and platform stats for the marketing landing page."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request: Request) -> Response:
+        from apps.subscriptions.marketing import get_marketing_catalog
+
+        return Response({"success": True, "data": get_marketing_catalog()})
+
+
+class TrustedSchoolsView(APIView):
+    """Random active schools for the landing page trust strip."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request: Request) -> Response:
+        from apps.subscriptions.marketing import TRUSTED_SCHOOLS_LIMIT, get_trusted_schools
+
+        try:
+            limit = min(int(request.query_params.get("limit", TRUSTED_SCHOOLS_LIMIT)), 20)
+        except (TypeError, ValueError):
+            limit = TRUSTED_SCHOOLS_LIMIT
+
+        return Response({"success": True, "data": {"schools": get_trusted_schools(limit=limit)}})
+
+
 class PlanViewSet(viewsets.ModelViewSet):
     queryset = Plan.objects.prefetch_related("features__category").all()
     serializer_class = PlanSerializer

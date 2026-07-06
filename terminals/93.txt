@@ -1,0 +1,24 @@
+---
+pid: 11292
+cwd: "E:\apex"
+command: "python -c \"
+import urllib.request, shutil
+from pathlib import Path
+u = 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1920&q=85'
+req = urllib.request.Request(u, headers={'User-Agent':'Mozilla/5.0'})
+data = urllib.request.urlopen(req, timeout=30).read()
+assets = Path(r'E:\\apex\\frontend\\src\\assets\\landing')
+public = Path(r'E:\\apex\\frontend\\public\\landing\\hero')
+assets.mkdir(parents=True, exist_ok=True)
+public.mkdir(parents=True, exist_ok=True)
+(assets / 'hero-learner.jpg').write_bytes(data)
+(public / 'hero-learner.jpg').write_bytes(data)
+for p in assets.glob('candidate-*.jpg'):
+    p.unlink()
+(assets / 'hero-learner-alt.jpg').unlink(missing_ok=True)
+print('saved', len(data))
+\""
+started_at: 2026-07-03T21:43:17.020Z
+running_for_ms: 290012   
+---
+saved 390632

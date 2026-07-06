@@ -7,6 +7,9 @@ class Hostel(BaseModel):
     gender = models.CharField(max_length=10, choices=[("male","Male"),("female","Female"),("mixed","Mixed")])
     warden = models.ForeignKey("staff.Staff", on_delete=models.SET_NULL, null=True, blank=True, related_name="managed_hostels")
     address = models.TextField(blank=True)
+    county = models.CharField(max_length=100, blank=True)
+    contact_phone = models.CharField(max_length=20, blank=True)
+    monthly_fee = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     total_rooms = models.PositiveIntegerField(default=0)
     capacity = models.PositiveIntegerField(default=0)
 

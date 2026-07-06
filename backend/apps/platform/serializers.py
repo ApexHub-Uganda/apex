@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from apps.core.serializer_fields import DeliverableEmailField
 from apps.platform.models import (
     APIKey,
     CallSetting,
@@ -215,7 +216,7 @@ class PlatformBroadcastSerializer(serializers.ModelSerializer):
 class PlatformSettingsSerializer(serializers.Serializer):
     platform_name = serializers.CharField(max_length=255, required=False)
     platform_tagline = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    support_email = serializers.EmailField(required=False)
+    support_email = DeliverableEmailField(required=False, allow_blank=True)
     default_plan = serializers.SlugField(required=False)
     max_upload_size = serializers.IntegerField(min_value=1, max_value=500, required=False)
     maintenance_mode = serializers.BooleanField(required=False)

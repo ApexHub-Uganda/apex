@@ -172,3 +172,38 @@ class SchoolRoleModulePermission(models.Model):
     def __str__(self) -> str:
         access = "rw" if self.can_write else ("r" if self.can_read else "—")
         return f"{self.tenant.code}:{self.role}:{self.module_key} ({access})"
+
+
+class SchoolRoleFeaturePermission(models.Model):
+    """Per-tenant sub-module (feature) read/write permissions by role."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant = models.ForeignKey(
+        Tenant,
+        on_delete=models.CASCADE,
+        related_name="role_feature_permissions",
+        db_index=True,
+    )
+    role = models.CharField(max_length=30, choices=UserRole.CHOICES, db_index=True)
+    feature_key = models.CharField(max_length=80, db_index=True)
+    can_read = models.BooleanField(default=False)
+    can_write = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["role", "feature_key"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "role", "feature_key"],
+                name="uniq_tenant_role_feature_permission",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "role"]),
+            models.Index(fields=["tenant", "feature_key"]),
+        ]
+
+    def __str__(self) -> str:
+        access = "rw" if self.can_write else ("r" if self.can_read else "—")
+        return f"{self.tenant.code}:{self.role}:{self.feature_key} ({access})"

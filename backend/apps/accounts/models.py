@@ -52,6 +52,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Legacy mirror of profile_picture.image — prefer UserProfilePicture for new uploads.
+    avatar_updated_at = models.DateTimeField(null=True, blank=True)
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"
@@ -91,6 +94,31 @@ class User(AbstractBaseUser, PermissionsMixin):
         elif self.role in UserRole.STAFF_ROLES:
             self.is_staff = True
         super().save(*args, **kwargs)
+
+
+class UserProfilePicture(models.Model):
+    """Canonical profile picture record with upload metadata."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="profile_picture",
+    )
+    image = models.ImageField(upload_to="avatars/")
+    original_filename = models.CharField(max_length=255, blank=True)
+    file_size = models.PositiveIntegerField(default=0)
+    content_type = models.CharField(max_length=100, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+        verbose_name = "user profile picture"
+        verbose_name_plural = "user profile pictures"
+
+    def __str__(self) -> str:
+        return f"Profile picture for {self.user.email}"
 
 
 class UserSession(models.Model):

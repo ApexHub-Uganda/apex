@@ -1,5 +1,7 @@
-import { useParams } from 'react-router-dom';
-import ModulePage from '../../components/ModulePage';
+import { Navigate, useParams } from 'react-router-dom';
+import EntityListPage from '../../components/EntityListPage';
+import ModuleEmptyState from '../../components/ModuleEmptyState';
+import { getEntityConfig } from '../../config/entityRegistry';
 import { useTenant } from '../../hooks/useTenant';
 
 export function SubModulePage({ title, subtitle, featureKey, createLabel = 'Add Record' }) {
@@ -17,23 +19,35 @@ export function SubModulePage({ title, subtitle, featureKey, createLabel = 'Add 
     );
   }
 
+  const config = key ? getEntityConfig(key) : null;
+
+  if (!config) {
+    return (
+      <div className="apex-card p-4 p-md-5">
+        <ModuleEmptyState
+          title={resolvedTitle}
+          message={
+            subtitle
+            || `${resolvedTitle} is not yet wired to the live API. Use related modules from the sidebar, or contact support.`
+          }
+        />
+      </div>
+    );
+  }
+
+  if (config.redirectTo) {
+    return <Navigate to={config.redirectTo} replace />;
+  }
+
   return (
-    <ModulePage
+    <EntityListPage
       title={resolvedTitle}
-      subtitle={subtitle || `Manage ${resolvedTitle.toLowerCase()} records`}
-      queryKey={['submodule', resolvedTitle, params]}
-      fetchData={async () => []}
-      createLabel={createLabel}
-      onCreate={async () => ({})}
-      columns={[
-        { key: 'name', label: 'Name', accessor: 'name', sortable: true },
-        { key: 'status', label: 'Status', accessor: 'status' },
-        { key: 'updated', label: 'Updated', accessor: 'updated' },
-      ]}
-      formFields={[
-        { name: 'name', label: 'Name', required: true },
-        { name: 'notes', label: 'Notes', type: 'textarea' },
-      ]}
+      featureKey={key}
+      config={{
+        ...config,
+        createLabel: createLabel || config.createLabel,
+        subtitle: subtitle || config.subtitle,
+      }}
     />
   );
 }

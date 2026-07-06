@@ -6,10 +6,11 @@ class Announcement(BaseModel):
     title = models.CharField(max_length=255)
     content = models.TextField()
     target_audience = models.CharField(max_length=20, choices=[("all","All"),("staff","Staff"),("students","Students"),("parents","Parents")], default="all")
+    channels = models.JSONField(default=list, blank=True, help_text="Delivery channels: email, sms, whatsapp, notification")
     priority = models.CharField(max_length=10, choices=[("low","Low"),("normal","Normal"),("high","High"),("urgent","Urgent")], default="normal")
     publish_date = models.DateTimeField()
     expiry_date = models.DateTimeField(null=True, blank=True)
-    is_published = models.BooleanField(default=True)
+    is_published = models.BooleanField(default=False)
     attachment = models.FileField(upload_to="announcements/", blank=True, null=True)
 
     class Meta:
@@ -76,6 +77,16 @@ class Broadcast(BaseModel):
 
     class Meta:
         ordering = ["-created_at"]
+
+class TicketReply(BaseModel):
+    ticket = models.ForeignKey("communication.SupportTicket", on_delete=models.CASCADE, related_name="replies")
+    author = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, related_name="ticket_replies")
+    message = models.TextField()
+    is_internal = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["created_at"]
+
 
 class SupportTicket(BaseModel):
     ticket_number = models.CharField(max_length=20, db_index=True)

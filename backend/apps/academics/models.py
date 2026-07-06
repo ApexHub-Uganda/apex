@@ -21,8 +21,13 @@ class AcademicYear(BaseModel):
 class Term(BaseModel):
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, related_name="terms")
     name = models.CharField(max_length=50)
+    term_number = models.PositiveSmallIntegerField(null=True, blank=True, help_text="1, 2, or 3 for Kenyan terms")
     start_date = models.DateField()
     end_date = models.DateField()
+    reporting_date = models.DateField(null=True, blank=True)
+    closing_date = models.DateField(null=True, blank=True)
+    mid_term_break_start = models.DateField(null=True, blank=True)
+    mid_term_break_end = models.DateField(null=True, blank=True)
     is_current = models.BooleanField(default=False)
 
     class Meta:
@@ -45,6 +50,28 @@ class Class(BaseModel):
     name = models.CharField(max_length=50)
     code = models.CharField(max_length=20)
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, related_name="classes")
+    level_type = models.CharField(
+        max_length=30,
+        choices=[
+            ("pre_primary", "Pre-Primary"),
+            ("primary", "Primary"),
+            ("junior_secondary", "Junior Secondary"),
+            ("senior_secondary", "Senior Secondary"),
+            ("tertiary", "Tertiary"),
+        ],
+        blank=True,
+    )
+    curriculum = models.CharField(
+        max_length=20,
+        choices=[
+            ("cbc", "CBC"),
+            ("844", "8-4-4"),
+            ("igcse", "IGCSE"),
+            ("other", "Other"),
+        ],
+        default="cbc",
+    )
+    section = models.CharField(max_length=20, blank=True, help_text="Section label e.g. A, B, East")
     class_teacher = models.ForeignKey("staff.Teacher", on_delete=models.SET_NULL, null=True, blank=True, related_name="classes")
     capacity = models.PositiveIntegerField(default=40)
     room = models.CharField(max_length=50, blank=True)
@@ -74,6 +101,24 @@ class Subject(BaseModel):
     class Meta:
         unique_together = [("tenant", "code")]
         ordering = ["name"]
+
+    @property
+    def has_papers(self) -> bool:
+        return self.papers.exists()
+
+
+class SubjectPaper(BaseModel):
+    """Optional exam papers within a subject (e.g. Mathematics M223, M224)."""
+
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="papers")
+    code = models.CharField(max_length=20, help_text="Paper code e.g. M223")
+    name = models.CharField(max_length=100, blank=True, help_text="Optional label e.g. Paper 1")
+    sort_order = models.PositiveSmallIntegerField(default=1)
+
+    class Meta:
+        ordering = ["sort_order", "code"]
+        unique_together = [("tenant", "subject", "code")]
+        verbose_name = "subject paper"
 
 
 class Timetable(BaseModel):
@@ -119,3 +164,39 @@ class Homework(BaseModel):
 
     class Meta:
         ordering = ["-assigned_date"]
+
+
+class Period(BaseModel):
+    name = models.CharField(max_length=50)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    sort_order = models.PositiveSmallIntegerField(default=1)
+    is_break = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["sort_order", "start_time"]
+        unique_together = [("tenant", "name")]
+
+
+class Classroom(BaseModel):
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=20)
+    building = models.CharField(max_length=100, blank=True)
+    floor = models.CharField(max_length=20, blank=True)
+    capacity = models.PositiveIntegerField(default=40)
+    room_type = models.CharField(
+        max_length=20,
+        choices=[
+            ("classroom", "Classroom"),
+            ("lab", "Laboratory"),
+            ("hall", "Hall"),
+            ("office", "Office"),
+            ("other", "Other"),
+        ],
+        default="classroom",
+    )
+    is_available = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = [("tenant", "code")]

@@ -1,0 +1,24 @@
+---
+pid: 304
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -c \"import os,django; os.environ.setdefault('DJANGO_SETTINGS_MODULE','apex_hub.settings'); django.setup(); from apps.core.email_validation import validate_deliverable_email; tests=['client.apex@gmail.com','parent@realschool.org','teacher@greenwoodacademy.ug','staff1@kra.ug','admin@test.edu']; [print(t, '->', validate_deliverable_email(t)) for t in tests]\"; python -m pytest tests/test_email_validation.py tests/test_school_messaging.py -q --tb=short"
+started_at: 2026-07-04T08:06:09.560Z
+running_for_ms: 565009   
+---
+client.apex@gmail.com -> None
+parent@realschool.org -> None
+teacher@greenwoodacademy.ug -> None
+staff1@kra.ug -> Use each staff member's real work email, not generated demo addresses.
+admin@test.edu -> None
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 15 items
+
+tests\test_school_messaging.py .........                                 [ 60%]
+tests\test_email_validation.py ......                                    [100%]
+
+============================= 15 passed in 31.86s =============================

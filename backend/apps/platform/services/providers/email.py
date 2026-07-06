@@ -31,6 +31,22 @@ class SmtpEmailProvider(BaseMessagingProvider):
             },
         )
 
+    def _smtp_connection(self, config):
+        from django.conf import settings as django_settings
+        from django.core.mail import get_connection
+
+        backend = django_settings.EMAIL_BACKEND
+        kwargs: dict = {"backend": backend, "fail_silently": False}
+        if backend.endswith("smtp.EmailBackend"):
+            kwargs.update({
+                "host": config.host,
+                "port": config.port,
+                "username": config.username or None,
+                "password": config.password or None,
+                "use_tls": config.use_tls,
+            })
+        return get_connection(**kwargs)
+
     def dispatch_live(
         self,
         config,
@@ -43,19 +59,26 @@ class SmtpEmailProvider(BaseMessagingProvider):
         from django.core.mail import send_mail
 
         try:
-            sent = send_mail(
-                subject,
-                message,
-                request.body["from"],
-                [to],
-                fail_silently=False,
-                connection=None,
-            )
+            with self._smtp_connection(config) as connection:
+                sent = send_mail(
+                    subject,
+                    message,
+                    request.body["from"],
+                    [to],
+                    fail_silently=False,
+                    connection=connection,
+                )
         except Exception as exc:
+            from apps.platform.services.email_config import format_smtp_error
+
             return ProviderResponse(
                 success=False,
-                message=f"SMTP send failed: {exc}",
-                metadata={"provider": self.provider_slug, "endpoint": request.endpoint},
+                message=format_smtp_error(exc),
+                metadata={
+                    "provider": self.provider_slug,
+                    "endpoint": request.endpoint,
+                    "smtp_error": str(exc),
+                },
             )
 
         if sent:

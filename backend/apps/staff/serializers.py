@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from apps.accounts.avatar_service import resolve_avatar_url, user_has_avatar
 from apps.core.constants import UserRole
+from apps.core.serializer_fields import DeliverableEmailField
+from apps.core.media_utils import resolve_media_url
 from apps.staff.models import Staff, Teacher
 from apps.staff.services import StaffOnboardingError, onboard_staff, update_staff_record
 from apps.staff.staff_roles import get_role_definition, list_staff_role_options
@@ -28,6 +31,9 @@ class StaffListSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source="department.name", read_only=True, allow_null=True)
     role_label = serializers.SerializerMethodField()
     has_user_account = serializers.SerializerMethodField()
+    photo_url = serializers.SerializerMethodField()
+    avatar_url = serializers.SerializerMethodField()
+    has_avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = Staff
@@ -36,7 +42,25 @@ class StaffListSerializer(serializers.ModelSerializer):
             "email", "personal_email", "phone", "staff_category", "portal_role", "role_label",
             "designation", "department", "department_name", "employment_type", "status",
             "has_portal_access", "has_user_account", "date_joined", "photo",
+            "photo_url", "avatar_url", "has_avatar",
         ]
+
+    def get_photo_url(self, obj: Staff) -> str | None:
+        return resolve_media_url(self.context.get("request"), obj.photo)
+
+    def get_avatar_url(self, obj: Staff) -> str | None:
+        if obj.user_id:
+            url = resolve_avatar_url(obj.user, self.context.get("request"))
+            if url:
+                return url
+        return self.get_photo_url(obj)
+
+    def get_has_avatar(self, obj: Staff) -> bool:
+        if obj.photo:
+            return True
+        if obj.user_id:
+            return user_has_avatar(obj.user)
+        return False
 
     def get_role_label(self, obj: Staff) -> str:
         return get_role_definition(obj.portal_role).get("label", obj.portal_role)
@@ -46,8 +70,15 @@ class StaffListSerializer(serializers.ModelSerializer):
 
 
 class StaffDetailSerializer(StaffListSerializer):
-    teacher_profile = TeacherNestedSerializer(read_only=True)
+    teacher_profile = serializers.SerializerMethodField()
     supervisor_name = serializers.CharField(source="supervisor.full_name", read_only=True, allow_null=True)
+
+    def get_teacher_profile(self, obj: Staff) -> dict | None:
+        try:
+            teacher = obj.teacher_profile
+        except Exception:
+            return None
+        return TeacherNestedSerializer(teacher).data
 
     class Meta(StaffListSerializer.Meta):
         fields = StaffListSerializer.Meta.fields + [
@@ -63,8 +94,8 @@ class StaffOnboardSerializer(serializers.Serializer):
     first_name = serializers.CharField(max_length=100)
     middle_name = serializers.CharField(required=False, allow_blank=True, max_length=100)
     last_name = serializers.CharField(max_length=100)
-    email = serializers.EmailField()
-    personal_email = serializers.EmailField(required=False, allow_blank=True)
+    email = DeliverableEmailField()
+    personal_email = DeliverableEmailField(required=False, allow_blank=True)
     phone = serializers.CharField(max_length=20)
     alternate_phone = serializers.CharField(required=False, allow_blank=True, max_length=20)
     gender = serializers.ChoiceField(
@@ -139,6 +170,8 @@ class StaffOnboardSerializer(serializers.Serializer):
 
 class StaffUpdateSerializer(serializers.ModelSerializer):
     teacher = TeacherNestedSerializer(required=False)
+    email = DeliverableEmailField()
+    personal_email = DeliverableEmailField(required=False, allow_blank=True)
 
     class Meta:
         model = Staff
@@ -150,7 +183,7 @@ class StaffUpdateSerializer(serializers.ModelSerializer):
             "emergency_contact", "emergency_phone", "emergency_relationship",
             "qualification_summary", "notes", "has_portal_access", "teacher",
         ]
-        read_only_fields = ["employee_id"]
+        read_only_fields = []
 
     def update(self, instance: Staff, validated_data: dict) -> Staff:
         teacher_data = validated_data.pop("teacher", None)

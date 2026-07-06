@@ -1,0 +1,51 @@
+---
+pid: 1788
+cwd: "E:\apex"
+command: "python -c \"
+import urllib.request
+from pathlib import Path
+# try more recent education unsplash ids from web search slugs / common patterns
+candidates = [
+'https://images.unsplash.com/photo-1509062526006-2295a5198c76?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1497633768263-8f5cbd2278a2?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1529390081429-10d8710a4c6e?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1503676260728-1c00da094a0e?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1607016439216-52b4cf4ce00e?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1920&q=85',
+'https://images.unsplash.com/photo-1503676260728-1c00da094a0e?auto=format&fit=crop&w=1920&q=85',
+]
+for u in candidates:
+    try:
+        req = urllib.request.Request(u, headers={'User-Agent':'Mozilla/5.0'})
+        data = urllib.request.urlopen(req, timeout=15).read()
+        if len(data) > 10000:
+            print('OK', len(data), u.split('/photo-')[1][:30])
+    except Exception as e:
+        print('NO', str(e)[:40], u.split('/photo-')[1][:30] if '/photo-' in u else u)
+\""
+started_at: 2026-07-03T21:32:47.776Z
+running_for_ms: 920004   
+---
+NO HTTP Error 404: Not Found 1509062526006-2295a5198c76?aut
+NO HTTP Error 404: Not Found 1497633768263-8f5cbd2278a2?aut
+OK 262155 1434030216411-0b793f4b4173?aut
+OK 358307 1524178232363-1fb2b075b655?aut
+NO HTTP Error 404: Not Found 1523050854058-8df90110c9f1?aut
+NO HTTP Error 404: Not Found 1529390081429-10d8710a4c6e?aut
+NO HTTP Error 404: Not Found 1503676260728-1c00da094a0e?aut
+NO HTTP Error 404: Not Found 1607016439216-52b4cf4ce00e?aut
+OK 441542 1625246333195-78d9c38ad449?aut
+NO HTTP Error 404: Not Found 1523050854058-8df90110c9f1?aut
+OK 448583 1541339907198-e08756dedf3f?aut
+OK 390632 1522202176988-66273c2fd55f?aut
+OK 292071 1516321318423-f06f85e504b3?aut
+OK 376099 1523240795612-9a054b0db644?aut
+NO HTTP Error 404: Not Found 1503676260728-1c00da094a0e?aut

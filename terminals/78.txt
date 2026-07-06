@@ -1,0 +1,20 @@
+---
+pid: 7072
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_avatar_upload.py tests/test_portal_search.py tests/test_profile_workspace.py -q"
+started_at: 2026-07-03T18:48:53.580Z
+running_for_ms: 10755003 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 13 items
+
+tests\test_avatar_upload.py ...                                          [ 23%]
+tests\test_portal_search.py ......                                       [ 69%]
+tests\test_profile_workspace.py ....                                     [100%]
+
+============================= 13 passed in 40.02s =============================

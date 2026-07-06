@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FiUser, FiMail, FiLock, FiBriefcase } from 'react-icons/fi';
 import { registrationService } from '../../services/registrationService';
 import { extractApiError, notify } from '../../utils/notify';
+import { emailValidationRules } from '../../utils/emailValidation';
 
 export function Register() {
   const navigate = useNavigate();
@@ -72,7 +73,7 @@ export function Register() {
           <label className="form-label small fw-medium">Email</label>
           <div className="position-relative">
             <FiMail className="position-absolute text-muted" style={{ left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-            <input type="email" className="form-control ps-5" {...register('email', { required: true })} />
+            <input type="email" className="form-control ps-5" {...register('email', emailValidationRules({ label: 'Email' }))} />
           </div>
         </div>
 

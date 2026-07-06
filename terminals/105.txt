@@ -1,0 +1,16 @@
+---
+pid: 8180
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend ; npm run dev -- --port 5173 2>&1"
+started_at: 2026-07-04T06:43:53.983Z
+running_for_ms: 5505004  
+---
+
+> apex-hub-frontend@1.0.0 dev
+> vite --port 5173
+
+
+  VITE v6.4.3  ready in 619 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose

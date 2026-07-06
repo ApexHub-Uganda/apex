@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from apps.core.serializer_fields import DeliverableEmailField
 from apps.staff.models import Staff
 from apps.students.models import Student
 from apps.tenants.models import Tenant
@@ -77,7 +78,8 @@ class TenantSerializer(serializers.ModelSerializer):
 
 
 class TenantRegistrationSerializer(serializers.ModelSerializer):
-    admin_email = serializers.EmailField(write_only=True)
+    email = DeliverableEmailField(required=False, allow_blank=True)
+    admin_email = DeliverableEmailField(write_only=True)
     admin_password = serializers.CharField(write_only=True, min_length=8)
     admin_first_name = serializers.CharField(write_only=True, max_length=100)
     admin_last_name = serializers.CharField(write_only=True, max_length=100)
@@ -193,7 +195,8 @@ class TenantAdminListSerializer(serializers.ModelSerializer):
 class TenantAdminCreateSerializer(serializers.ModelSerializer):
     """Super-admin school creation with optional admin account."""
 
-    admin_email = serializers.EmailField(write_only=True, required=False)
+    email = DeliverableEmailField(required=False, allow_blank=True)
+    admin_email = DeliverableEmailField(write_only=True, required=False, allow_blank=True)
     admin_password = serializers.CharField(write_only=True, required=False, min_length=8)
     admin_first_name = serializers.CharField(write_only=True, required=False, default="School")
     admin_last_name = serializers.CharField(write_only=True, required=False, default="Admin")
@@ -260,6 +263,8 @@ class TenantAdminCreateSerializer(serializers.ModelSerializer):
 
 
 class TenantAdminUpdateSerializer(serializers.ModelSerializer):
+    email = DeliverableEmailField(required=False, allow_blank=True)
+
     class Meta:
         model = Tenant
         fields = [

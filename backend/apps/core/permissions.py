@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import SAFE_METHODS, BasePermission
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
@@ -123,6 +123,19 @@ class TenantActivePermission(BasePermission):
         return True
 
 
+def mutation_requires_write(request: Request, view: APIView) -> bool:
+    """True when the request mutates data (POST/PUT/PATCH/DELETE or write viewset actions)."""
+    if request.method not in SAFE_METHODS:
+        return True
+    action = getattr(view, "action", None)
+    return action in {
+        "create", "update", "partial_update", "destroy",
+        "validate_import", "commit_import",
+        "link_student", "unlink_student", "set_children",
+        "publish", "send", "delete_all",
+    }
+
+
 def RequiresModuleAccess(module_key: str, *, require_write: bool = False) -> type[BasePermission]:
     """Factory: plan feature + school role module permission."""
 
@@ -140,10 +153,11 @@ def RequiresModuleAccess(module_key: str, *, require_write: bool = False) -> typ
 
             from apps.tenants.role_permissions import user_can_access_module
 
+            needs_write = require_write or mutation_requires_write(request, view)
             if not user_can_access_module(
-                tenant, user, module_key, require_write=require_write,
+                tenant, user, module_key, require_write=needs_write,
             ):
-                action = "modify" if require_write else "view"
+                action = "modify" if needs_write else "view"
                 raise FeatureNotAvailableError(
                     detail=f"You do not have permission to {action} the {module_key.replace('_', ' ')} module.",
                 )
@@ -153,7 +167,7 @@ def RequiresModuleAccess(module_key: str, *, require_write: bool = False) -> typ
 
 
 def RequiresFeature(feature: str) -> type[BasePermission]:
-    """Factory for subscription feature flag permissions."""
+    """Factory: plan + role feature permission (read for GET, write for mutations)."""
 
     class _RequiresFeaturePermission(BasePermission):
         def has_permission(self, request: Request, view: APIView) -> bool:
@@ -172,9 +186,63 @@ def RequiresFeature(feature: str) -> type[BasePermission]:
                 raise FeatureNotAvailableError(
                     detail=f"Feature '{feature}' is not available on your plan."
                 )
+
+            from apps.tenants.role_permissions import user_can_access_feature
+
+            needs_write = mutation_requires_write(request, view)
+            if not user_can_access_feature(tenant, user, feature, require_write=needs_write):
+                label = feature.replace("_", " ")
+                if needs_write:
+                    raise FeatureNotAvailableError(
+                        detail=f"You do not have write permission for '{label}'.",
+                    )
+                raise FeatureNotAvailableError(
+                    detail=f"You do not have permission to access '{label}'.",
+                )
             return True
 
     return _RequiresFeaturePermission
+
+
+def RequiresAnyFeature(*features: str) -> type[BasePermission]:
+    """Factory: allow access when the tenant plan and role permit any listed feature."""
+
+    class _RequiresAnyFeaturePermission(BasePermission):
+        def has_permission(self, request: Request, view: APIView) -> bool:
+            user = request.user
+            if not user or not user.is_authenticated:
+                return False
+
+            if user.role == UserRole.SUPER_ADMIN:
+                return True
+
+            tenant = getattr(user, "tenant", None)
+            if tenant is None:
+                return False
+
+            from apps.tenants.role_permissions import user_can_access_feature
+
+            needs_write = mutation_requires_write(request, view)
+            matched: list[str] = []
+            for feature in features:
+                if not tenant.has_feature(feature):
+                    continue
+                if user_can_access_feature(tenant, user, feature, require_write=needs_write):
+                    matched.append(feature)
+
+            if matched:
+                return True
+
+            labels = ", ".join(f.replace("_", " ") for f in features)
+            if needs_write:
+                raise FeatureNotAvailableError(
+                    detail=f"You do not have write permission for any of: {labels}.",
+                )
+            raise FeatureNotAvailableError(
+                detail=f"Feature not available. Enable one of: {labels}.",
+            )
+
+    return _RequiresAnyFeaturePermission
 
 
 class IsOwnerOrStaff(BasePermission):

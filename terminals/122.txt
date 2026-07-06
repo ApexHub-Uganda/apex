@@ -1,0 +1,23 @@
+---
+pid: 12980
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_admissions.py -v --tb=short"
+started_at: 2026-07-04T10:34:47.602Z
+running_for_ms: 3890001  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 5 items
+
+tests/test_admissions.py::TestAdmissionApplications::test_create_application_without_student PASSED [ 20%]
+tests/test_admissions.py::TestAdmissionApplications::test_admit_creates_student PASSED [ 40%]
+tests/test_admissions.py::TestAdmissionApplications::test_admitted_list_endpoint PASSED [ 60%]
+tests/test_admissions.py::TestAdmissionVacancies::test_create_and_publish_vacancy PASSED [ 80%]
+tests/test_admissions.py::TestAdmissionVacancies::test_public_vacancies_list PASSED [100%]
+
+============================= 5 passed in 39.28s ==============================

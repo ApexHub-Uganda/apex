@@ -5,18 +5,56 @@ from rest_framework.response import Response
 from django.utils import timezone
 from apps.core.permissions import IsStaffMember, TenantActivePermission
 from apps.core.views import BaseModelViewSet
-from apps.communication.models import Announcement, Broadcast, EmailMessage, Notification, SMSMessage, SupportTicket
+from apps.communication.models import Announcement, Broadcast, EmailMessage, Notification, SMSMessage, SupportTicket, TicketReply
 from apps.communication.serializers import (
     AnnouncementSerializer, BroadcastSerializer, EmailMessageSerializer,
-    NotificationSerializer, SMSMessageSerializer, SupportTicketSerializer,
+    NotificationSerializer, SMSMessageSerializer, SupportTicketSerializer, TicketReplySerializer,
 )
 
-class AnnouncementViewSet(BaseModelViewSet):
+
+class MessageBulkDeleteMixin:
+    """Soft-delete all tenant-scoped messages for a viewset."""
+
+    @action(detail=False, methods=["post"])
+    def delete_all(self, request: Request) -> Response:
+        qs = self.get_queryset()
+        count = qs.count()
+        now = timezone.now()
+        qs.update(is_deleted=True, updated_at=now, updated_by=request.user)
+        return Response({
+            "success": True,
+            "message": f"{count} record(s) deleted.",
+            "deleted_count": count,
+        })
+
+
+class AnnouncementViewSet(MessageBulkDeleteMixin, BaseModelViewSet):
     required_feature_key = "announcements"
     queryset = Announcement.objects.all()
     serializer_class = AnnouncementSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["target_audience", "priority", "is_published"]
+
+    @action(detail=True, methods=["post"])
+    def publish(self, request: Request, pk: str = None) -> Response:
+        from apps.communication.services.messaging import MessagingError, publish_announcement
+
+        announcement = self.get_object()
+        channels = request.data.get("channels")
+        try:
+            result = publish_announcement(
+                announcement,
+                channels=channels if isinstance(channels, list) else None,
+                actor=request.user,
+            )
+        except MessagingError as exc:
+            return Response({"success": False, "error": {"message": str(exc)}}, status=400)
+
+        message = result.get("message", "Announcement published.")
+        if result.get("warnings"):
+            message = f"{message} {' '.join(result['warnings'])}"
+        return Response({"success": True, "message": message, "data": result})
+
 
 class NotificationViewSet(BaseModelViewSet):
     required_feature_key = "notifications"
@@ -74,26 +112,69 @@ class NotificationViewSet(BaseModelViewSet):
             },
         })
 
-class SMSMessageViewSet(BaseModelViewSet):
+
+class SMSMessageViewSet(MessageBulkDeleteMixin, BaseModelViewSet):
     required_feature_key = "sms_communication"
     queryset = SMSMessage.objects.all()
     serializer_class = SMSMessageSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["status"]
 
-class EmailMessageViewSet(BaseModelViewSet):
+
+class EmailMessageViewSet(MessageBulkDeleteMixin, BaseModelViewSet):
     required_feature_key = "email_templates"
     queryset = EmailMessage.objects.all()
     serializer_class = EmailMessageSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["status"]
 
-class BroadcastViewSet(BaseModelViewSet):
+    def perform_create(self, serializer):
+        from rest_framework.exceptions import ValidationError
+
+        from apps.communication.services.messaging import MessagingError, send_email_message
+
+        email_message = serializer.save(status="pending")
+        try:
+            send_email_message(email_message)
+        except MessagingError as exc:
+            email_message.status = "failed"
+            email_message.save(update_fields=["status", "updated_at"])
+            raise ValidationError({"detail": str(exc)}) from exc
+
+    @action(detail=True, methods=["post"])
+    def send(self, request: Request, pk: str = None) -> Response:
+        from apps.communication.services.messaging import MessagingError, send_email_message
+
+        email_message = self.get_object()
+        try:
+            result = send_email_message(email_message)
+        except MessagingError as exc:
+            return Response({"success": False, "error": {"message": str(exc)}}, status=400)
+        return Response({"success": True, "message": result["message"], "data": result})
+
+
+class BroadcastViewSet(MessageBulkDeleteMixin, BaseModelViewSet):
     required_feature_key = "broadcast_messaging"
     queryset = Broadcast.objects.all()
     serializer_class = BroadcastSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["status"]
+
+    @action(detail=True, methods=["post"])
+    def send(self, request: Request, pk: str = None) -> Response:
+        from apps.communication.services.messaging import MessagingError, send_school_broadcast
+
+        broadcast = self.get_object()
+        try:
+            result = send_school_broadcast(broadcast, actor=request.user)
+        except MessagingError as exc:
+            return Response({"success": False, "error": {"message": str(exc)}}, status=400)
+
+        message = "Broadcast sent."
+        if result.get("warnings"):
+            message = f"{message} {' '.join(result['warnings'])}"
+        return Response({"success": True, "message": message, "data": result})
+
 
 class SupportTicketViewSet(BaseModelViewSet):
     required_feature_key = "support_tickets"
@@ -102,3 +183,12 @@ class SupportTicketViewSet(BaseModelViewSet):
     permission_classes = [IsAuthenticated, TenantActivePermission]
     filterset_fields = ["status", "category", "priority"]
     search_fields = ["ticket_number", "subject"]
+
+
+class TicketReplyViewSet(BaseModelViewSet):
+    required_feature_key = "ticket_replies"
+    queryset = TicketReply.objects.select_related("ticket", "author")
+    serializer_class = TicketReplySerializer
+    permission_classes = [IsStaffMember, TenantActivePermission]
+    filterset_fields = ["ticket", "is_internal"]
+    search_fields = ["message"]

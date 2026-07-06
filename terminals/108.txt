@@ -1,0 +1,72 @@
+---
+pid: 8152
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py tests/test_integration_providers.py tests/test_platform_broadcast.py -q 2>&1"
+started_at: 2026-07-04T07:17:28.673Z
+running_for_ms: 3485009  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 21 items
+
+tests\test_school_messaging.py .FFF.FF                                   [ 33%]
+tests\test_integration_providers.py FF...                                [ 57%]
+tests\test_platform_broadcast.py .........                               [100%]
+
+================================== FAILURES ===================================
+_________ TestSchoolMessaging.test_send_email_message_updates_status __________
+tests\test_school_messaging.py:53: in test_send_email_message_updates_status
+    assert result["success"] is True
+E   assert False is True
+__________ TestSchoolMessaging.test_publish_announcement_sends_email __________
+tests\test_school_messaging.py:78: in test_publish_announcement_sends_email
+    assert len(mail.outbox) >= 1
+E   assert 0 >= 1
+E    +  where 0 = len([])
+E    +    where [] = mail.outbox
+________ TestSchoolMessaging.test_send_school_broadcast_email_channel _________
+tests\test_school_messaging.py:95: in test_send_school_broadcast_email_channel
+    assert result["delivered_count"] >= 1
+E   assert 0 >= 1
+______________ TestSchoolMessaging.test_api_publish_announcement ______________
+tests\test_school_messaging.py:125: in test_api_publish_announcement
+    assert response.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response status_code=403, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-04 00:18:15,737 log Forbidden: /api/v1/communication/announcements/aa605b93-abc8-41eb-a862-8def18c77e0d/publish/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Forbidden: /api/v1/communication/announcements/aa605b93-abc8-41eb-a862-8def18c77e0d/publish/
+_________________ TestSchoolMessaging.test_api_send_broadcast _________________
+tests\test_school_messaging.py:143: in test_api_send_broadcast
+    assert response.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response status_code=403, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-04 00:18:16,701 log Forbidden: /api/v1/communication/broadcasts/b4561d69-b225-427d-8350-2312adc4bbff/send/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Forbidden: /api/v1/communication/broadcasts/b4561d69-b225-427d-8350-2312adc4bbff/send/
+_ TestIntegrationProviders.test_channel_status_reports_unconfigured_channels __
+tests\test_integration_providers.py:17: in test_channel_status_reports_unconfigured_channels
+    assert status["live_dispatch"] is False
+E   assert True is False
+_ TestIntegrationProviders.test_email_builds_smtp_payload_before_live_dispatch _
+tests\test_integration_providers.py:31: in test_email_builds_smtp_payload_before_live_dispatch
+    assert "live dispatch is disabled" in result.message.lower()
+E   AssertionError: assert 'live dispatch is disabled' in 'smtp send failed: [errno 11001] getaddrinfo failed'
+E    +  where 'smtp send failed: [errno 11001] getaddrinfo failed' = <built-in method lower of str object at 0x000002731AC34BD0>()
+E    +    where <built-in method lower of str object at 0x000002731AC34BD0> = 'SMTP send failed: [Errno 11001] getaddrinfo failed'.lower
+E    +      where 'SMTP send failed: [Errno 11001] getaddrinfo failed' = IntegrationResult(success=False, message='SMTP send failed: [Errno 11001] getaddrinfo failed', reference='email_80e237...ample.com', 'attempted_at': '2026-07-04T07:18:16.888247+00:00'}}], 'attempted_at': '2026-07-04T07:18:16.890383+00:00'}).message
+=========================== short test summary info ===========================
+FAILED tests/test_school_messaging.py::TestSchoolMessaging::test_send_email_message_updates_status
+FAILED tests/test_school_messaging.py::TestSchoolMessaging::test_publish_announcement_sends_email
+FAILED tests/test_school_messaging.py::TestSchoolMessaging::test_send_school_broadcast_email_channel
+FAILED tests/test_school_messaging.py::TestSchoolMessaging::test_api_publish_announcement
+FAILED tests/test_school_messaging.py::TestSchoolMessaging::test_api_send_broadcast
+FAILED tests/test_integration_providers.py::TestIntegrationProviders::test_channel_status_reports_unconfigured_channels
+FAILED tests/test_integration_providers.py::TestIntegrationProviders::test_email_builds_smtp_payload_before_live_dispatch
+=================== 7 failed, 14 passed in 62.08s (0:01:02) ===================

@@ -82,7 +82,9 @@ class EmailService:
 
     @staticmethod
     def _get_config() -> Optional[EmailSetting]:
-        return EmailSetting.objects.filter(is_active=True).first()
+        from apps.platform.services.email_config import ensure_email_config
+
+        return ensure_email_config()
 
     @classmethod
     def send(
@@ -94,10 +96,10 @@ class EmailService:
         html_body: str = "",
         from_email: str = "",
         tenant=None,
+        log_attempt: bool = True,
     ) -> IntegrationResult:
         reference = f"email_{uuid.uuid4().hex[:12]}"
-        recipients = [to] if isinstance(to, str) else to
-        primary_to = recipients[0] if recipients else ""
+        recipients = [addr.strip() for addr in ([to] if isinstance(to, str) else to) if (addr or "").strip()]
 
         config = cls._get_config()
         if not config:
@@ -107,23 +109,71 @@ class EmailService:
                 reference=reference,
                 metadata={"recipients": recipients, "subject": subject, "provider": "none"},
             )
-            if primary_to:
-                _log_email_attempt(to=primary_to, subject=subject, body=body, result=result, tenant=tenant)
+            if log_attempt and recipients:
+                for recipient in recipients:
+                    _log_email_attempt(
+                        to=recipient, subject=subject, body=body, result=result, tenant=tenant,
+                    )
             return result
 
         adapter = get_email_provider(config.provider)
-        response = adapter.dispatch(config, to=primary_to, subject=subject, message=body)
-        result = _from_provider_response(response, reference=reference)
-        result.metadata = {
-            **(result.metadata or {}),
-            "recipients": recipients,
-            "subject": subject,
-            "from_email": from_email or config.from_email,
-            "attempted_at": timezone.now().isoformat(),
-        }
-        if primary_to:
-            _log_email_attempt(to=primary_to, subject=subject, body=body, result=result, tenant=tenant)
-        return result
+        sender = from_email or config.from_email
+        delivery_results: list[dict[str, Any]] = []
+        sent_count = 0
+        failed_count = 0
+
+        for recipient in recipients:
+            response = adapter.dispatch(config, to=recipient, subject=subject, message=body)
+            item = _from_provider_response(response, reference=reference)
+            item.metadata = {
+                **(item.metadata or {}),
+                "recipient": recipient,
+                "subject": subject,
+                "from_email": sender,
+                "attempted_at": timezone.now().isoformat(),
+            }
+            delivery_results.append(item.to_dict())
+            if item.success:
+                sent_count += 1
+            else:
+                failed_count += 1
+            if log_attempt:
+                _log_email_attempt(
+                    to=recipient, subject=subject, body=body, result=item, tenant=tenant,
+                )
+
+        if not recipients:
+            return IntegrationResult(
+                success=False,
+                message="No email recipients provided.",
+                reference=reference,
+                metadata={"recipients": [], "subject": subject, "provider": config.provider},
+            )
+
+        all_sent = sent_count == len(recipients)
+        any_sent = sent_count > 0
+        if all_sent:
+            message = f"Email delivered to {sent_count} recipient(s)."
+        elif any_sent:
+            message = f"Email delivered to {sent_count} of {len(recipients)} recipient(s); {failed_count} failed."
+        else:
+            message = delivery_results[0]["message"] if delivery_results else "Email delivery failed."
+
+        return IntegrationResult(
+            success=all_sent,
+            message=message,
+            reference=reference,
+            metadata={
+                "recipients": recipients,
+                "subject": subject,
+                "from_email": sender,
+                "provider": config.provider,
+                "sent_count": sent_count,
+                "failed_count": failed_count,
+                "deliveries": delivery_results,
+                "attempted_at": timezone.now().isoformat(),
+            },
+        )
 
 
 class SMSService:

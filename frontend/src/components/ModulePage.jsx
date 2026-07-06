@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiPlus, FiEdit2, FiTrash2, FiAlertTriangle } from 'react-icons/fi';
 import PageHeader from './PageHeader';
 import DataTable from './DataTable';
 import Modal from './Modal';
 import StatusBadge from './StatusBadge';
 import ModuleEmptyState from './ModuleEmptyState';
+import { useTenantContext } from '../context/TenantContext';
 import { alert, extractApiError, notify } from '../utils/notify';
 
 export function ModulePage({
@@ -22,8 +23,15 @@ export function ModulePage({
   filters,
   createLabel = 'Add New',
   readOnly = false,
+  featureKey = null,
   extraActions,
 }) {
+  const { canWriteFeature, canAccessFeature, isSchoolAdmin } = useTenantContext();
+  const canRead = !featureKey || isSchoolAdmin || canAccessFeature(featureKey, false);
+  const canMutate = !readOnly && canRead && (
+    !featureKey || isSchoolAdmin || canWriteFeature(featureKey)
+  );
+  const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -58,6 +66,7 @@ export function ModulePage({
         notify.success(`${title} created successfully.`);
       }
       setShowModal(false);
+      await queryClient.invalidateQueries({ queryKey: queryKey || [title] });
       refetch();
     } catch (err) {
       notify.error(extractApiError(err, `Unable to save ${title.toLowerCase()}.`));
@@ -72,6 +81,7 @@ export function ModulePage({
     try {
       await onDelete?.(row.id);
       notify.success('Record deleted successfully.');
+      await queryClient.invalidateQueries({ queryKey: queryKey || [title] });
       refetch();
     } catch (err) {
       notify.error(extractApiError(err, 'Unable to delete record.'));
@@ -84,14 +94,14 @@ export function ModulePage({
       key: 'actions',
       label: 'Actions',
       render: (row) => (
-        <div className="d-flex gap-1">
+        <div className="apex-table-row-actions">
           {extraActions?.(row, { refetch })}
-          {!readOnly && onUpdate && (
+          {canMutate && onUpdate && (
             <button className="btn btn-sm btn-outline-primary" onClick={() => openEdit(row)}>
               <FiEdit2 size={14} />
             </button>
           )}
-          {!readOnly && onDelete && (
+          {canMutate && onDelete && (
             <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(row)}>
               <FiTrash2 size={14} />
             </button>
@@ -110,7 +120,7 @@ export function ModulePage({
         title={title}
         subtitle={subtitle}
         actions={
-          !readOnly && onCreate ? (
+          canMutate && onCreate ? (
             <button className="btn btn-primary d-flex align-items-center gap-2" onClick={openCreate}>
               <FiPlus /> {createLabel}
             </button>
@@ -118,13 +128,23 @@ export function ModulePage({
         }
       />
 
+      {canRead && !canMutate && (onCreate || onUpdate || onDelete) && (
+        <div className="alert alert-light border mb-3 py-2 px-3 small">
+          You have read-only access to {title.toLowerCase()}. Contact your school admin to request write permission.
+        </div>
+      )}
+
       {isError ? (
         <div className="apex-card">
           <ModuleEmptyState
             title={`${title} not set up yet`}
-            message={`We couldn't load existing ${title.toLowerCase()} records. You can still create new data — your plan includes this module.`}
-            actionLabel={!readOnly && onCreate ? createLabel : undefined}
-            onAction={!readOnly && onCreate ? openCreate : undefined}
+            message={
+              canMutate
+                ? `We couldn't load existing ${title.toLowerCase()} records. You can still create new data — your plan includes this module.`
+                : `We couldn't load existing ${title.toLowerCase()} records.`
+            }
+            actionLabel={canMutate && onCreate ? createLabel : undefined}
+            onAction={canMutate && onCreate ? openCreate : undefined}
             icon={FiAlertTriangle}
           />
         </div>
@@ -132,9 +152,13 @@ export function ModulePage({
         <div className="apex-card">
           <ModuleEmptyState
             title={`No ${title.toLowerCase()} yet`}
-            message={`This module is ready on your plan, but no records exist yet. Create your first entry to populate ${title.toLowerCase()}.`}
-            actionLabel={!readOnly && onCreate ? createLabel : undefined}
-            onAction={!readOnly && onCreate ? openCreate : undefined}
+            message={
+              canMutate
+                ? `This module is ready on your plan, but no records exist yet. Create your first entry to populate ${title.toLowerCase()}.`
+                : `No ${title.toLowerCase()} records yet. You can view entries here when they are added.`
+            }
+            actionLabel={canMutate && onCreate ? createLabel : undefined}
+            onAction={canMutate && onCreate ? openCreate : undefined}
           />
         </div>
       ) : (
@@ -146,7 +170,7 @@ export function ModulePage({
         />
       )}
 
-      {!readOnly && formFields?.length > 0 && (
+      {canMutate && formFields?.length > 0 && (
         <Modal
           show={showModal}
           onHide={() => setShowModal(false)}
@@ -161,6 +185,13 @@ export function ModulePage({
           }
         >
           <form onSubmit={handleSubmit(onSubmit)}>
+            {editing?.id && (
+              <div className="mb-3">
+                <label className="form-label small text-muted">Record ID</label>
+                <input className="form-control form-control-sm font-monospace" readOnly value={editing.id} />
+                <div className="form-text">Internal identifier — only visible when editing this record.</div>
+              </div>
+            )}
             {formFields.map((field) => (
               <div key={field.name} className="mb-3">
                 <label className="form-label fw-medium">{field.label}</label>

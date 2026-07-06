@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
 import { getLoginErrorMessage } from '../../utils/authErrors';
 import { notify } from '../../utils/notify';
+import { emailFormatRules } from '../../utils/emailValidation';
 
 export function Login() {
   const { login } = useAuth();
@@ -75,7 +76,7 @@ export function Login() {
               type="email"
               className="form-control ps-5"
               placeholder="you@school.edu"
-              {...register('email', { required: 'Email is required' })}
+              {...register('email', emailFormatRules({ label: 'Email address' }))}
             />
           </div>
           {errors.email && <div className="text-danger small mt-1">{errors.email.message}</div>}
@@ -126,6 +127,9 @@ export function Login() {
       <div className="text-center mt-4">
         <span className="text-muted small">Don&apos;t have an account? </span>
         <Link to="/register" className="small fw-semibold">Register your school</Link>
+      </div>
+      <div className="text-center mt-2">
+        <Link to="/" className="small text-muted">← Back to Apex Hub</Link>
       </div>
     </motion.div>
   );

@@ -5,9 +5,36 @@ from apps.core.models import BaseModel
 
 class FeeStructure(BaseModel):
     name = models.CharField(max_length=255)
+    fee_category = models.CharField(
+        max_length=30,
+        choices=[
+            ("tuition", "Tuition"),
+            ("boarding", "Boarding"),
+            ("transport", "Transport"),
+            ("meals", "Meals"),
+            ("activity", "Activity / Clubs"),
+            ("exam", "Examination"),
+            ("uniform", "Uniform"),
+            ("development", "Development Levy"),
+            ("other", "Other"),
+        ],
+        default="tuition",
+    )
+    vote_head_code = models.CharField(max_length=30, blank=True, help_text="Government vote head / account code")
     school_class = models.ForeignKey("academics.Class", on_delete=models.CASCADE, related_name="fee_structures")
     term = models.ForeignKey("academics.Term", on_delete=models.CASCADE, related_name="fee_structures")
     amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="UGX")
+    frequency = models.CharField(
+        max_length=20,
+        choices=[
+            ("once", "One-time"),
+            ("termly", "Per Term"),
+            ("annual", "Annual"),
+            ("monthly", "Monthly"),
+        ],
+        default="termly",
+    )
     due_date = models.DateField()
     description = models.TextField(blank=True)
     is_mandatory = models.BooleanField(default=True)
@@ -22,6 +49,9 @@ class FeePayment(BaseModel):
     payment_date = models.DateField()
     payment_method = models.CharField(max_length=20, choices=[("cash","Cash"),("bank","Bank Transfer"),("mpesa","M-Pesa"),("card","Card"),("cheque","Cheque")], default="cash")
     reference = models.CharField(max_length=100, blank=True)
+    receipt_number = models.CharField(max_length=50, blank=True, db_index=True)
+    mpesa_transaction_id = models.CharField(max_length=50, blank=True)
+    mpesa_phone = models.CharField(max_length=20, blank=True)
     received_by = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, related_name="received_payments")
     status = models.CharField(max_length=20, choices=[("pending","Pending"),("completed","Completed"),("failed","Failed"),("refunded","Refunded")], default="completed")
     notes = models.TextField(blank=True)

@@ -669,11 +669,13 @@ export function Broadcast() {
   };
 
   const handleSend = async (item) => {
-    const confirmed = await alert.confirm(
-      'Send broadcast now?',
-      `Deliver "${item.title}" to ${item.audience_display || item.audience} via ${(item.channels_display || item.channels || []).join(', ') || 'selected channels'}.`,
-    );
-    if (!confirmed) return;
+    const result = await alert.confirm({
+      title: 'Send broadcast now?',
+      text: `Deliver "${item.title}" to ${item.audience_display || item.audience} via ${(item.channels_display || item.channels || []).join(', ') || 'selected channels'}.`,
+      confirmText: 'Yes, send now',
+      cancelText: 'Cancel',
+    });
+    if (!result.isConfirmed) return;
     sendMutation.mutate(item.id);
   };
 
@@ -683,11 +685,13 @@ export function Broadcast() {
       notify.warning('Set a schedule date before scheduling.');
       return;
     }
-    const confirmed = await alert.confirm(
-      'Schedule broadcast?',
-      `This broadcast will send automatically at ${new Date(startsAt).toLocaleString()}.`,
-    );
-    if (!confirmed) return;
+    const result = await alert.confirm({
+      title: 'Schedule broadcast?',
+      text: `This broadcast will send automatically at ${new Date(startsAt).toLocaleString()}.`,
+      confirmText: 'Yes, schedule',
+      cancelText: 'Cancel',
+    });
+    if (!result.isConfirmed) return;
     scheduleMutation.mutate({ id: item.id, startsAt });
   };
 
@@ -699,11 +703,15 @@ export function Broadcast() {
       cancelled: 'This cancelled broadcast will be permanently removed from the database.',
       expired: 'This expired broadcast will be permanently removed from the database.',
     };
-    const confirmed = await alert.confirm(
-      'Delete broadcast?',
-      messages[item.status] || 'This broadcast will be permanently removed from the database.',
-    );
-    if (!confirmed) return;
+    const result = await alert.confirm({
+      title: 'Delete broadcast?',
+      text: messages[item.status] || 'This broadcast will be permanently removed from the database.',
+      confirmText: 'Yes, delete',
+      cancelText: 'Keep it',
+      icon: 'warning',
+      danger: true,
+    });
+    if (!result.isConfirmed) return;
     deleteMutation.mutate(item.id);
   };
 

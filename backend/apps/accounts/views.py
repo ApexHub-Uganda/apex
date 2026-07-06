@@ -85,7 +85,69 @@ class PasswordResetConfirmView(generics.GenericAPIView):
         return Response({"success": True, "message": "Password reset successfully."})
 
 
+class MeAvatarView(APIView):
+    """Upload or remove the authenticated user's profile picture."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method == "DELETE":
+            return [IsAuthenticated()]
+        return [IsAuthenticated(), TenantActivePermission()]
+
+    def post(self, request: Request) -> Response:
+        from apps.accounts.avatar_service import upload_user_avatar
+        from apps.accounts.profile_serializers import MeProfileSerializer
+
+        uploaded = request.FILES.get("avatar") or request.FILES.get("image")
+        if not uploaded:
+            return Response(
+                {"success": False, "error": {"message": "No image file provided. Use field name 'avatar'."}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            upload_user_avatar(request.user, uploaded)
+        except ValueError as exc:
+            return Response(
+                {"success": False, "error": {"message": str(exc)}},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = (
+            User.objects.select_related("staff_profile", "parent_profile", "tenant", "profile_picture")
+            .filter(pk=request.user.pk)
+            .first()
+            or request.user
+        )
+        data = MeProfileSerializer(user, context={"request": request}).data
+        return Response({
+            "success": True,
+            "message": "Profile picture uploaded successfully.",
+            "data": data,
+        })
+
+    def delete(self, request: Request) -> Response:
+        from apps.accounts.avatar_service import delete_user_avatar
+        from apps.accounts.profile_serializers import MeProfileSerializer
+
+        delete_user_avatar(request.user)
+        user = (
+            User.objects.select_related("staff_profile", "parent_profile", "tenant", "profile_picture")
+            .filter(pk=request.user.pk)
+            .first()
+            or request.user
+        )
+        data = MeProfileSerializer(user, context={"request": request}).data
+        return Response({
+            "success": True,
+            "message": "Profile picture removed.",
+            "data": data,
+        })
+
+
 class MeView(generics.RetrieveUpdateAPIView):
+    """Personal profile — self-service fields only; critical data is admin-managed."""
+
     def get_permissions(self):
         if self.request.method in ("GET", "HEAD", "OPTIONS"):
             return [IsAuthenticated()]
@@ -93,11 +155,36 @@ class MeView(generics.RetrieveUpdateAPIView):
 
     def get_serializer_class(self):
         if self.request.method in ("PUT", "PATCH"):
-            return UserUpdateSerializer
-        return UserSerializer
+            from apps.accounts.profile_serializers import MeProfileUpdateSerializer
+            return MeProfileUpdateSerializer
+        from apps.accounts.profile_serializers import MeProfileSerializer
+        return MeProfileSerializer
 
     def get_object(self) -> User:
-        return self.request.user
+        user = self.request.user
+        return (
+            User.objects.select_related("staff_profile", "parent_profile", "tenant")
+            .filter(pk=user.pk)
+            .first()
+            or user
+        )
+
+    def retrieve(self, request: Request, *args, **kwargs) -> Response:
+        serializer = self.get_serializer(self.get_object())
+        return Response({"success": True, "data": serializer.data})
+
+    def update(self, request: Request, *args, **kwargs) -> Response:
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        output = self.get_serializer(instance)
+        return Response({
+            "success": True,
+            "message": "Profile updated successfully.",
+            "data": output.data,
+        })
 
 
 class ChangePasswordView(generics.GenericAPIView):

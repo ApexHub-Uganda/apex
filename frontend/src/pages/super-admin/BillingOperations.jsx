@@ -158,14 +158,18 @@ export function BillingOperations() {
         ) : (
           <DataTable
             compact
+            embedded
+            scrollable
+            showRowNumbers={false}
             columns={[
-              { key: 'school', label: 'School', accessor: 'school', width: '22%' },
-              { key: 'amount', label: 'Amount', width: '14%', render: (r) => formatMoney(r.amount, r.currency) },
-              { key: 'provider', label: 'Provider', accessor: 'provider', width: '16%' },
-              { key: 'reference', label: 'Reference', accessor: 'reference', width: '22%' },
-              { key: 'created_at', label: 'Failed At', width: '18%', render: (r) => formatDate(r.created_at) },
+              { key: 'school', label: 'School', accessor: 'school', minWidth: '160px' },
+              { key: 'amount', label: 'Amount', minWidth: '110px', render: (r) => formatMoney(r.amount, r.currency) },
+              { key: 'provider', label: 'Provider', accessor: 'provider', minWidth: '120px' },
+              { key: 'reference', label: 'Reference', accessor: 'reference', minWidth: '180px' },
+              { key: 'created_at', label: 'Failed At', minWidth: '160px', render: (r) => formatDate(r.created_at) },
             ]}
             data={hub.failed_queue}
+            searchable={false}
             pageSize={5}
           />
         )}
@@ -173,32 +177,37 @@ export function BillingOperations() {
 
       <motion.div className="apex-card p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <h5 className="fw-bold mb-3">Transaction Ledger</h5>
-        <div className="d-flex gap-2 mb-3 flex-wrap">
-          {['', 'completed', 'failed', 'pending', 'refunded'].map((s) => (
-            <button
-              key={s || 'all'}
-              type="button"
-              className={`btn btn-sm ${statusFilter === s ? 'btn-primary' : 'btn-outline-secondary'}`}
-              onClick={() => setStatusFilter(s)}
-            >
-              {s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All'}
-            </button>
-          ))}
-        </div>
         <DataTable
           compact
+          embedded
+          scrollable
+          showRowNumbers={false}
           columns={[
-            { key: 'school', label: 'School', accessor: 'school', sortable: true, width: '18%' },
-            { key: 'amount', label: 'Amount', width: '12%', render: (r) => formatMoney(r.amount, r.currency) },
-            { key: 'status', label: 'Status', width: '12%', render: (r) => <StatusBadge status={r.status} /> },
-            { key: 'provider_name', label: 'Provider', accessor: 'provider_name', width: '14%' },
-            { key: 'reference', label: 'Reference', accessor: 'reference', width: '18%' },
-            { key: 'created_at', label: 'Date', width: '16%', render: (r) => formatDate(r.created_at) },
+            { key: 'school', label: 'School', accessor: 'school', sortable: true, minWidth: '160px' },
+            { key: 'amount', label: 'Amount', minWidth: '110px', render: (r) => formatMoney(r.amount, r.currency) },
+            { key: 'status', label: 'Status', minWidth: '110px', truncate: false, render: (r) => <StatusBadge status={r.status} /> },
+            { key: 'provider_name', label: 'Provider', accessor: 'provider_name', minWidth: '120px' },
+            { key: 'reference', label: 'Reference', accessor: 'reference', minWidth: '180px' },
+            { key: 'created_at', label: 'Date', minWidth: '160px', render: (r) => formatDate(r.created_at) },
           ]}
           data={transactions}
           loading={txnLoading}
           searchable
           pageSize={12}
+          filters={(
+            <div className="d-flex gap-2 flex-wrap">
+              {['', 'completed', 'failed', 'pending', 'refunded'].map((s) => (
+                <button
+                  key={s || 'all'}
+                  type="button"
+                  className={`btn btn-sm ${statusFilter === s ? 'btn-primary' : 'btn-outline-secondary'}`}
+                  onClick={() => setStatusFilter(s)}
+                >
+                  {s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All'}
+                </button>
+              ))}
+            </div>
+          )}
         />
       </motion.div>
     </div>

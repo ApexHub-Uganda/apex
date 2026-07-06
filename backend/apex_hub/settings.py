@@ -15,6 +15,10 @@ env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
+    CSRF_TRUSTED_ORIGINS=(list, []),
+    NGROK_DOMAIN=(str, ""),
+    PUBLIC_APP_URL=(str, ""),
+    TRUST_PROXY_HEADERS=(bool, False),
     JWT_ACCESS_TOKEN_LIFETIME_MINUTES=(int, 60),
     JWT_REFRESH_TOKEN_LIFETIME_DAYS=(int, 7),
     MAX_UPLOAD_SIZE_MB=(int, 10),
@@ -27,6 +31,12 @@ environ.Env.read_env(os.path.join(BASE_DIR.parent, ".env"))
 SECRET_KEY = env("SECRET_KEY", default="django-insecure-dev-key-change-in-production")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+NGROK_DOMAIN = env("NGROK_DOMAIN", default="").strip()
+PUBLIC_APP_URL = env("PUBLIC_APP_URL", default="").strip().rstrip("/")
+TRUST_PROXY_HEADERS = env.bool("TRUST_PROXY_HEADERS", default=bool(NGROK_DOMAIN or PUBLIC_APP_URL))
+
+if NGROK_DOMAIN and NGROK_DOMAIN not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(NGROK_DOMAIN)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -49,6 +59,7 @@ INSTALLED_APPS = [
     "apps.subscriptions",
     "apps.academics",
     "apps.students",
+    "apps.admissions",
     "apps.staff",
     "apps.attendance",
     "apps.examinations",
@@ -60,6 +71,7 @@ INSTALLED_APPS = [
     "apps.hr",
     "apps.payroll",
     "apps.communication",
+    "apps.events",
     "apps.analytics",
     "apps.audit",
     "apps.platform.apps.PlatformConfig",
@@ -148,9 +160,31 @@ MEDIA_ROOT = BASE_DIR.parent / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CORS
+# CORS & CSRF (local dev + optional public tunnel e.g. ngrok)
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS")
+
+_tunnel_origins: list[str] = []
+if NGROK_DOMAIN:
+    _tunnel_origins.append(f"https://{NGROK_DOMAIN}")
+if PUBLIC_APP_URL.startswith("http"):
+    _tunnel_origins.append(PUBLIC_APP_URL)
+
+for origin in _tunnel_origins:
+    if origin not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append(origin)
+    if origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.ngrok-free\.dev$",
+    r"^https://.*\.ngrok\.io$",
+]
 CORS_ALLOW_CREDENTIALS = True
+
+if TRUST_PROXY_HEADERS:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    USE_X_FORWARDED_HOST = True
 
 # Redis & Cache
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
@@ -191,6 +225,11 @@ CELERY_BEAT_SCHEDULE = {
 
 # Email
 EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST", default="")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@apexhub.io")
 
 # Outbound integrations (email / SMS / WhatsApp broadcasts)

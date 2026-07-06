@@ -2,7 +2,7 @@
 
 Outbound email, SMS, and WhatsApp broadcasts use a small adapter layer so the rest of the app stays provider-agnostic.
 
-> **See also:** [docs/INTEGRATIONS.md](../../../../docs/INTEGRATIONS.md) · [docs/BROADCAST_INTEGRATIONS.md](../../../../docs/BROADCAST_INTEGRATIONS.md) · [docs/BACKEND.md](../../../../docs/BACKEND.md)
+> **See also:** [docs/EMAIL_SERVICE.md](../../../../docs/EMAIL_SERVICE.md) · [docs/INTEGRATIONS.md](../../../../docs/INTEGRATIONS.md) · [docs/BROADCAST_INTEGRATIONS.md](../../../../docs/BROADCAST_INTEGRATIONS.md) · [docs/BACKEND.md](../../../../docs/BACKEND.md)
 
 ## Layout
 

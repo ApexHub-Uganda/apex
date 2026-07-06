@@ -13,6 +13,7 @@ import ProgressBar from '../../components/ProgressBar';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { PageSkeleton } from '../../components/LoadingSkeleton';
 import { dashboardService } from '../../services/dashboardService';
+import { admissionPortalService } from '../../services/landingService';
 import { useTenant } from '../../hooks/useTenant';
 import { resolveFeatureIcon } from '../../utils/featureIcons';
 import {
@@ -137,6 +138,16 @@ export function SchoolAdminDashboard() {
 
   const activeModules = useMemo(() => moduleMenu || [], [moduleMenu]);
 
+  const isParent = roleProfile?.role === 'parent';
+  const showAdmissionVacancies = isParent && enabledFeatureKeys.includes('admission_vacancies');
+
+  const { data: portalVacancies = [] } = useQuery({
+    queryKey: ['portal-admission-vacancies', tenant?.id],
+    queryFn: () => admissionPortalService.getVacancies(),
+    enabled: showAdmissionVacancies,
+    staleTime: 60_000,
+  });
+
   if (isLoading && !data) return <PageSkeleton />;
 
   const subscription = data?.subscription ?? tenant?.subscription;
@@ -168,6 +179,38 @@ export function SchoolAdminDashboard() {
         ) : dashboardTitle}
         subtitle={dashboardSubtitle}
       />
+
+      {showAdmissionVacancies && portalVacancies.length > 0 && (
+        <motion.div className="apex-card p-4 mb-4" {...sectionMotion}>
+          <h5 className="fw-bold mb-1">Open Admissions</h5>
+          <p className="text-muted small mb-3">Grade vacancies published by your school</p>
+          <div className="row g-3">
+            {portalVacancies.map((vacancy) => (
+              <div className="col-md-6 col-lg-4" key={vacancy.id}>
+                <div className="border rounded-3 p-3 h-100 bg-light-subtle">
+                  <h6 className="fw-bold mb-1">{vacancy.title}</h6>
+                  {vacancy.grade_levels && (
+                    <div className="small text-muted mb-2">{vacancy.grade_levels}</div>
+                  )}
+                  {vacancy.description && (
+                    <p className="small text-muted mb-2">{vacancy.description}</p>
+                  )}
+                  <div className="small">
+                    <span className="badge text-bg-primary-subtle border text-primary me-1">
+                      {vacancy.remaining_openings} opening{vacancy.remaining_openings === 1 ? '' : 's'}
+                    </span>
+                    {vacancy.application_deadline && (
+                      <span className="badge text-bg-light border">
+                        Deadline: {vacancy.application_deadline}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {quickActions.length > 0 && (
         <motion.div className="row g-2 mb-4" {...sectionMotion}>

@@ -4,7 +4,13 @@ import { useTenantContext } from '../context/TenantContext';
 
 export function usePermissions() {
   const { user, isSchoolAdmin } = useAuth();
-  const { permissions, modulePermissions, canAccessModule } = useTenantContext();
+  const {
+    permissions,
+    modulePermissions,
+    featurePermissions,
+    canAccessModule,
+    canAccessFeature,
+  } = useTenantContext();
 
   const permissionList = useMemo(
     () => permissions?.length ? permissions : (user?.permissions || []),
@@ -34,12 +40,25 @@ export function usePermissions() {
     [canAccessModule],
   );
 
+  const canReadFeature = useCallback(
+    (featureKey) => canAccessFeature(featureKey, false),
+    [canAccessFeature],
+  );
+
+  const canWriteFeaturePerm = useCallback(
+    (featureKey) => canAccessFeature(featureKey, true),
+    [canAccessFeature],
+  );
+
   const hasAnyPermission = (...perms) => perms.some(hasPermission);
   const hasAllPermissions = (...perms) => perms.every(hasPermission);
 
   return {
     permissions: permissionList,
     modulePermissions,
+    featurePermissions,
+    canReadFeature,
+    canWriteFeature: canWriteFeaturePerm,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
@@ -47,9 +66,15 @@ export function usePermissions() {
     canWriteModule,
     canManage: hasPermission('manage') || isSchoolAdmin,
     canView: hasPermission('view') || isSchoolAdmin,
-    canCreate: (moduleKey) => canWriteModule(moduleKey),
-    canEdit: (moduleKey) => canWriteModule(moduleKey),
-    canDelete: (moduleKey) => canWriteModule(moduleKey),
+    canCreate: (moduleOrFeatureKey) => (
+      canAccessFeature(moduleOrFeatureKey, true) || canWriteModule(moduleOrFeatureKey)
+    ),
+    canEdit: (moduleOrFeatureKey) => (
+      canAccessFeature(moduleOrFeatureKey, true) || canWriteModule(moduleOrFeatureKey)
+    ),
+    canDelete: (moduleOrFeatureKey) => (
+      canAccessFeature(moduleOrFeatureKey, true) || canWriteModule(moduleOrFeatureKey)
+    ),
   };
 }
 

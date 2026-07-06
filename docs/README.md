@@ -21,6 +21,7 @@ Central index for integrating, extending, and operating Apex Hub.
 | Topic | Document |
 |-------|----------|
 | Platform broadcasts (email / SMS / WhatsApp) | [BROADCAST_INTEGRATIONS.md](BROADCAST_INTEGRATIONS.md) |
+| Email service (SMTP, school messaging, customization) | [EMAIL_SERVICE.md](EMAIL_SERVICE.md) |
 | Messaging provider adapters (code-level) | [../backend/apps/platform/services/providers/README.md](../backend/apps/platform/services/providers/README.md) |
 
 ## Recommended reading order

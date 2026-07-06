@@ -4,7 +4,18 @@ from __future__ import annotations
 from typing import Any
 
 from apps.core.constants import UserRole, normalize_role
-from apps.subscriptions.module_registry import get_module_for_feature
+from apps.subscriptions.module_registry import SCHOOL_MODULES, get_module_for_feature
+
+
+def feature_key_for_path(path: str) -> str | None:
+    for module in SCHOOL_MODULES:
+        if module.get("path") == path:
+            keys = module.get("feature_keys") or []
+            return keys[0] if keys else None
+        for child in module.get("children", []):
+            if child.get("path") == path:
+                return child.get("feature_key")
+    return None
 
 ROLE_PROFILES: dict[str, dict[str, Any]] = {
     UserRole.SCHOOL_ADMIN: {
@@ -47,6 +58,7 @@ ROLE_PROFILES: dict[str, dict[str, Any]] = {
         "icon": "FiUsers",
         "accent": "primary",
         "quick_actions": [
+            {"label": "Manage Staffs", "path": "/school-admin/hr/staffs", "module_key": "human_resource"},
             {"label": "Leave Requests", "path": "/school-admin/hr/leave", "module_key": "human_resource"},
             {"label": "Performance Reviews", "path": "/school-admin/hr/reviews", "module_key": "human_resource"},
         ],
@@ -167,13 +179,28 @@ def get_role_profile(user) -> dict[str, Any]:
 def filter_quick_actions(
     profile: dict[str, Any],
     module_permissions: dict[str, dict[str, bool]],
+    feature_permissions: dict[str, dict[str, bool]] | None = None,
 ) -> list[dict[str, Any]]:
     actions: list[dict[str, Any]] = []
     for action in profile.get("quick_actions", []):
         module_key = action.get("module_key")
+        feature_key = action.get("feature_key") or feature_key_for_path(action.get("path", ""))
+
+        if feature_permissions and feature_key:
+            feat_perms = feature_permissions.get(feature_key, {})
+            if not feat_perms.get("can_read"):
+                continue
+            actions.append({
+                **action,
+                "feature_key": feature_key,
+                "can_write": feat_perms.get("can_write", False),
+            })
+            continue
+
         if not module_key:
             actions.append(action)
             continue
+
         perms = module_permissions.get(module_key, {})
         if perms.get("can_read"):
             actions.append({**action, "can_write": perms.get("can_write", False)})

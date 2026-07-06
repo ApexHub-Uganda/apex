@@ -5,8 +5,13 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from apps.core.permissions import IsStaffMember, TenantActivePermission
+from apps.core.constants import UserRole
+from apps.core.permissions import IsSchoolAdmin, IsStaffMember, RequiresFeature, TenantActivePermission
+from apps.staff.permissions import CanManageStaffRecords
+from apps.core.import_mixins import BulkImportMixin
 from apps.core.views import BaseModelViewSet
+from apps.staff.import_handlers import STAFF_IMPORT_SPEC, commit_staff_rows, staff_import_resolver
+from apps.tenants.context import TenantContext
 from apps.staff.models import Staff, Teacher
 from apps.staff.serializers import (
     StaffDetailSerializer,
@@ -20,9 +25,11 @@ from apps.staff.serializers import (
 from apps.staff.staff_roles import get_role_definition
 
 
-class StaffViewSet(BaseModelViewSet):
+class StaffViewSet(BulkImportMixin, BaseModelViewSet):
     required_feature_key = "staff_management"
-    queryset = Staff.objects.select_related("department", "user", "supervisor").prefetch_related(
+    queryset = Staff.objects.select_related(
+        "department", "user", "user__profile_picture", "supervisor",
+    ).prefetch_related(
         "teacher_profile", "teacher_profile__subjects",
     )
     permission_classes = [IsStaffMember, TenantActivePermission]
@@ -31,6 +38,25 @@ class StaffViewSet(BaseModelViewSet):
         "first_name", "last_name", "middle_name", "employee_id",
         "email", "personal_email", "designation", "national_id",
     ]
+    import_spec = STAFF_IMPORT_SPEC
+
+    def get_import_row_resolver(self):
+        tenant = TenantContext.get_tenant() or self.request.user.tenant
+        return staff_import_resolver(tenant)
+
+    def commit_import_rows(self, rows, *, request: Request):
+        tenant = TenantContext.get_tenant() or request.user.tenant
+        return commit_staff_rows(tenant, rows, actor=request.user)
+
+    def get_permissions(self):
+        perms: list = []
+        if self.action in ("create", "update", "partial_update", "destroy", "validate_import", "commit_import"):
+            perms.extend([CanManageStaffRecords(), TenantActivePermission()])
+        else:
+            perms.extend([IsStaffMember(), TenantActivePermission()])
+        if self.required_feature_key:
+            perms.append(RequiresFeature(self.required_feature_key)())
+        return perms
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -61,6 +87,22 @@ class StaffViewSet(BaseModelViewSet):
         instance = self.get_object()
         serializer = StaffDetailSerializer(instance, context=self.get_serializer_context())
         return Response({"success": True, "data": serializer.data})
+
+    def update(self, request: Request, *args, **kwargs) -> Response:
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        staff = serializer.save()
+        return Response({
+            "success": True,
+            "message": "Staff profile updated successfully.",
+            "data": StaffDetailSerializer(staff, context=self.get_serializer_context()).data,
+        })
+
+    def partial_update(self, request: Request, *args, **kwargs) -> Response:
+        kwargs["partial"] = True
+        return self.update(request, *args, **kwargs)
 
     def list(self, request: Request, *args, **kwargs) -> Response:
         queryset = self.filter_queryset(self.get_queryset())

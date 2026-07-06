@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { FiBriefcase, FiLock, FiMail, FiUser, FiUsers } from 'react-icons/fi';
@@ -6,6 +6,7 @@ import { staffService, departmentsService } from '../services/moduleService';
 import { FALLBACK_STAFF_ROLES, STAFF_CATEGORIES, EMPLOYMENT_TYPES, GENDER_OPTIONS } from '../config/staffRoleConfig';
 import { usePermissions } from '../hooks/usePermissions';
 import { useAuth } from '../hooks/useAuth';
+import { emailValidationRules } from '../utils/emailValidation';
 
 const Section = ({ title, icon: Icon, children }) => (
   <div className="staff-form-section">
@@ -29,10 +30,19 @@ const Field = ({ label, required, error, children, hint }) => (
   </div>
 );
 
-export function StaffOnboardForm({ onSubmit, saving, initialValues, submitLabel = 'Add Staff Member' }) {
+export function StaffOnboardForm({
+  onSubmit,
+  saving: savingProp,
+  initialValues,
+  submitLabel = 'Add Staff Member',
+  mode = 'create',
+  adminMode = false,
+}) {
+  const [savingLocal, setSavingLocal] = useState(false);
+  const saving = savingProp ?? savingLocal;
   const { isSchoolAdmin } = useAuth();
   const { canWriteModule } = usePermissions();
-  const canSubmit = isSchoolAdmin || canWriteModule('human_resource') || canWriteModule('core_management');
+  const canSubmit = adminMode || isSchoolAdmin || canWriteModule('human_resource') || canWriteModule('core_management');
 
   const { register, handleSubmit, setValue, control, formState: { errors } } = useForm({
     defaultValues: {
@@ -45,6 +55,15 @@ export function StaffOnboardForm({ onSubmit, saving, initialValues, submitLabel 
       ...initialValues,
     },
   });
+
+  const wrapSubmit = async (data) => {
+    setSavingLocal(true);
+    try {
+      await onSubmit(data);
+    } finally {
+      setSavingLocal(false);
+    }
+  };
 
   const portalRole = useWatch({ control, name: 'portal_role' });
   const hasPortalAccess = useWatch({ control, name: 'has_portal_access' });
@@ -67,17 +86,17 @@ export function StaffOnboardForm({ onSubmit, saving, initialValues, submitLabel 
   );
 
   useEffect(() => {
-    if (!selectedRole || initialValues) return;
+    if (!selectedRole || mode === 'edit') return;
     setValue('staff_category', selectedRole.category);
     setValue('designation', selectedRole.default_designation);
     setValue('has_portal_access', selectedRole.portal_access_default);
-  }, [selectedRole, setValue, initialValues]);
+  }, [selectedRole, setValue, mode]);
 
   const showTeachingFields = selectedRole?.requires_teacher_profile
     || staffCategory === 'teaching';
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="staff-onboard-form">
+    <form onSubmit={handleSubmit(wrapSubmit)} className="staff-onboard-form">
       <Section title="Personal Information" icon={FiUser}>
         <Field label="First Name" required error={errors.first_name?.message}>
           <input className="form-control" {...register('first_name', { required: 'First name is required' })} />
@@ -116,11 +135,11 @@ export function StaffOnboardForm({ onSubmit, saving, initialValues, submitLabel 
           <input
             type="email"
             className="form-control"
-            {...register('email', { required: 'Work email is required' })}
+            {...register('email', emailValidationRules({ label: 'Work email' }))}
           />
         </Field>
         <Field label="Personal Email" error={errors.personal_email?.message}>
-          <input type="email" className="form-control" {...register('personal_email')} />
+          <input type="email" className="form-control" {...register('personal_email', emailValidationRules({ required: false, label: 'Personal email' }))} />
         </Field>
         <Field label="Phone" required error={errors.phone?.message}>
           <input className="form-control" {...register('phone', { required: 'Phone is required' })} />
@@ -145,8 +164,8 @@ export function StaffOnboardForm({ onSubmit, saving, initialValues, submitLabel 
       </Section>
 
       <Section title="Employment & Role" icon={FiBriefcase}>
-        <Field label="Employee ID" hint="Leave blank to auto-generate" error={errors.employee_id?.message}>
-          <input className="form-control" placeholder="Auto-generated if empty" {...register('employee_id')} />
+        <Field label="Employee ID" hint={mode === 'create' ? 'Leave blank to auto-generate' : 'Admin-managed identifier'} error={errors.employee_id?.message}>
+          <input className="form-control" placeholder="Auto-generated if empty" readOnly={mode === 'edit' && !adminMode} {...register('employee_id')} />
         </Field>
         <Field label="Dashboard Role" required error={errors.portal_role?.message}>
           <select className="form-select" {...register('portal_role', { required: true })}>
@@ -236,7 +255,7 @@ export function StaffOnboardForm({ onSubmit, saving, initialValues, submitLabel 
             </div>
           </div>
         </div>
-        {hasPortalAccess && (
+        {hasPortalAccess && mode === 'create' && (
           <>
             <Field
               label="Initial Password"

@@ -1,0 +1,652 @@
+---
+pid: 19180
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_avatar_upload.py tests/test_portal_search.py tests/test_profile_workspace.py -q"
+started_at: 2026-07-03T18:44:17.180Z
+running_for_ms: 11030012 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 13 items
+
+tests\test_avatar_upload.py F.F                                          [ 23%]
+tests\test_portal_search.py ....F.                                       [ 69%]
+tests\test_profile_workspace.py ...F                                     [100%]
+
+================================== FAILURES ===================================
+_______________ TestAvatarUpload.test_upload_and_delete_avatar ________________
+tests\test_avatar_upload.py:46: in test_upload_and_delete_avatar
+    upload = client.post("/api/v1/auth/me/avatar/", {"avatar": _make_image()}, format="multipart")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\accounts\views.py:122: in post
+    data = MeProfileSerializer(user, context={"request": request}).data
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:585: in data
+    ret = super().data
+          ^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:251: in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:537: in to_representation
+    for field in fields:
+                 ^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:398: in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\utils\functional.py:47: in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:386: in fields
+    for key, value in self.get_fields().items():
+                      ^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:1132: in get_fields
+    field_class, field_kwargs = self.build_field(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:1278: in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:1396: in build_unknown_field
+    raise ImproperlyConfigured(
+E   django.core.exceptions.ImproperlyConfigured: Field name `avatar_url` is not valid for model `User` in `apps.accounts.profile_serializers.MeProfileSerializer`.
+---------------------------- Captured stderr call -----------------------------
+ERROR 2026-07-03 11:44:40,544 log Internal Server Error: /api/v1/auth/me/avatar/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "E:\apex\backend\apps\accounts\views.py", line 122, in post
+    data = MeProfileSerializer(user, context={"request": request}).data
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 585, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 537, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 398, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 386, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1132, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1278, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1396, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `avatar_url` is not valid for model `User` in `apps.accounts.profile_serializers.MeProfileSerializer`.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/auth/me/avatar/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "E:\apex\backend\apps\accounts\views.py", line 122, in post
+    data = MeProfileSerializer(user, context={"request": request}).data
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 585, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 537, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 398, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 386, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1132, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1278, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1396, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `avatar_url` is not valid for model `User` in `apps.accounts.profile_serializers.MeProfileSerializer`.
+___________ TestAvatarUpload.test_me_profile_includes_avatar_fields ___________
+tests\test_avatar_upload.py:76: in test_me_profile_includes_avatar_fields
+    client.post("/api/v1/auth/me/avatar/", {"avatar": _make_image()}, format="multipart")
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\accounts\views.py:122: in post
+    data = MeProfileSerializer(user, context={"request": request}).data
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:585: in data
+    ret = super().data
+          ^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:251: in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:537: in to_representation
+    for field in fields:
+                 ^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:398: in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\utils\functional.py:47: in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:386: in fields
+    for key, value in self.get_fields().items():
+                      ^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:1132: in get_fields
+    field_class, field_kwargs = self.build_field(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:1278: in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:1396: in build_unknown_field
+    raise ImproperlyConfigured(
+E   django.core.exceptions.ImproperlyConfigured: Field name `avatar_url` is not valid for model `User` in `apps.accounts.profile_serializers.MeProfileSerializer`.
+---------------------------- Captured stderr call -----------------------------
+ERROR 2026-07-03 11:44:42,761 log Internal Server Error: /api/v1/auth/me/avatar/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "E:\apex\backend\apps\accounts\views.py", line 122, in post
+    data = MeProfileSerializer(user, context={"request": request}).data
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 585, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 537, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 398, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 386, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1132, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1278, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1396, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `avatar_url` is not valid for model `User` in `apps.accounts.profile_serializers.MeProfileSerializer`.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/auth/me/avatar/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "E:\apex\backend\apps\accounts\views.py", line 122, in post
+    data = MeProfileSerializer(user, context={"request": request}).data
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 585, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 537, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 398, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 386, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1132, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1278, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1396, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `avatar_url` is not valid for model `User` in `apps.accounts.profile_serializers.MeProfileSerializer`.
+___________ TestPortalSearch.test_school_admin_can_search_students ____________
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   sqlite3.IntegrityError: NOT NULL constraint failed: students_student.enrollment_date
+
+The above exception was the direct cause of the following exception:
+tests\test_portal_search.py:135: in test_school_admin_can_search_students
+    Student.objects.create(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\query.py:665: in create
+    obj.save(force_insert=True, using=self.db)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\base.py:902: in save
+    self.save_base(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\base.py:1008: in save_base
+    updated = self._save_table(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\base.py:1169: in _save_table
+    results = self._do_insert(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\base.py:1210: in _do_insert
+    return manager._insert(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\sql\compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\backends\sqlite3\base.py:360: in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   django.db.utils.IntegrityError: NOT NULL constraint failed: students_student.enrollment_date
+_________ TestProfileWorkspace.test_profile_completion_in_me_response _________
+tests\test_profile_workspace.py:80: in test_profile_completion_in_me_response
+    response = client.get("/api/v1/auth/me/")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:276: in get
+    response = super().get(path, data=data, **extra)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:193: in get
+    return self.generic('GET', path, **r)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\generics.py:256: in get
+    return self.retrieve(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\accounts\views.py:174: in retrieve
+    return Response({"success": True, "data": serializer.data})
+                                              ^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:585: in data
+    ret = super().data
+          ^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:251: in data
+    self._data = self.to_representation(self.instance)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:537: in to_representation
+    for field in fields:
+                 ^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:398: in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\utils\functional.py:47: in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:386: in fields
+    for key, value in self.get_fields().items():
+                      ^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:1132: in get_fields
+    field_class, field_kwargs = self.build_field(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:1278: in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py:1396: in build_unknown_field
+    raise ImproperlyConfigured(
+E   django.core.exceptions.ImproperlyConfigured: Field name `avatar_url` is not valid for model `User` in `apps.accounts.profile_serializers.MeProfileSerializer`.
+---------------------------- Captured stderr call -----------------------------
+ERROR 2026-07-03 11:44:52,075 log Internal Server Error: /api/v1/auth/me/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\generics.py", line 256, in get
+    return self.retrieve(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\apex\backend\apps\accounts\views.py", line 174, in retrieve
+    return Response({"success": True, "data": serializer.data})
+                                              ^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 585, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 537, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 398, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 386, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1132, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1278, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1396, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `avatar_url` is not valid for model `User` in `apps.accounts.profile_serializers.MeProfileSerializer`.
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/auth/me/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\generics.py", line 256, in get
+    return self.retrieve(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\apex\backend\apps\accounts\views.py", line 174, in retrieve
+    return Response({"success": True, "data": serializer.data})
+                                              ^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 585, in data
+    ret = super().data
+          ^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 251, in data
+    self._data = self.to_representation(self.instance)
+                 ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 537, in to_representation
+    for field in fields:
+                 ^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 398, in _readable_fields
+    for field in self.fields.values():
+                 ^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\utils\functional.py", line 47, in __get__
+    res = instance.__dict__[self.name] = self.func(instance)
+                                         ~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 386, in fields
+    for key, value in self.get_fields().items():
+                      ~~~~~~~~~~~~~~~^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1132, in get_fields
+    field_class, field_kwargs = self.build_field(
+                                ~~~~~~~~~~~~~~~~^
+        source, info, model, depth
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1278, in build_field
+    return self.build_unknown_field(field_name, model_class)
+           ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\serializers.py", line 1396, in build_unknown_field
+    raise ImproperlyConfigured(
+    ...<2 lines>...
+    )
+django.core.exceptions.ImproperlyConfigured: Field name `avatar_url` is not valid for model `User` in `apps.accounts.profile_serializers.MeProfileSerializer`.
+=========================== short test summary info ===========================
+FAILED tests/test_avatar_upload.py::TestAvatarUpload::test_upload_and_delete_avatar
+FAILED tests/test_avatar_upload.py::TestAvatarUpload::test_me_profile_includes_avatar_fields
+FAILED tests/test_portal_search.py::TestPortalSearch::test_school_admin_can_search_students
+FAILED tests/test_profile_workspace.py::TestProfileWorkspace::test_profile_completion_in_me_response
+======================== 4 failed, 9 passed in 32.57s =========================

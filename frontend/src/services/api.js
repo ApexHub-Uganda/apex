@@ -20,6 +20,16 @@ const api = axios.create({
   timeout: 30000,
 });
 
+api.interceptors.request.use((config) => {
+  if (
+    typeof window !== 'undefined'
+    && /\.ngrok-free\.dev$|\.ngrok\.io$/.test(window.location.hostname)
+  ) {
+    config.headers['ngrok-skip-browser-warning'] = '69420';
+  }
+  return config;
+});
+
 let isRefreshing = false;
 let failedQueue = [];
 
@@ -65,6 +75,10 @@ const isDemoToken = (token) =>
 
 api.interceptors.request.use(
   async (config) => {
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     if (isAuthSkipRequest(config.url)) {
       delete config.headers.Authorization;
       return config;

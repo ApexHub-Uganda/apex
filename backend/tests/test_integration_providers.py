@@ -9,6 +9,7 @@ from apps.platform.services.providers.registry import get_email_provider
 
 @pytest.mark.django_db
 class TestIntegrationProviders:
+    @override_settings(INTEGRATION_LIVE_DISPATCH=False)
     def test_channel_status_reports_unconfigured_channels(self):
         status = get_integration_channel_status()
         assert "email" in status["channels"]
@@ -16,7 +17,9 @@ class TestIntegrationProviders:
         assert "whatsapp" in status["channels"]
         assert status["live_dispatch"] is False
 
+    @override_settings(INTEGRATION_LIVE_DISPATCH=False)
     def test_email_builds_smtp_payload_before_live_dispatch(self):
+        EmailSetting.objects.all().delete()
         EmailSetting.objects.create(
             provider="smtp",
             host="smtp.example.com",
@@ -30,7 +33,9 @@ class TestIntegrationProviders:
         assert result.success is False
         assert "live dispatch is disabled" in result.message.lower()
         assert result.metadata["provider"] == "smtp"
-        assert "smtp.example.com" in result.metadata["endpoint"]
+        deliveries = result.metadata.get("deliveries") or []
+        endpoint = deliveries[0]["metadata"]["endpoint"] if deliveries else result.metadata.get("endpoint", "")
+        assert "smtp.example.com" in endpoint
 
     @override_settings(INTEGRATION_LIVE_DISPATCH=True)
     def test_sms_twilio_payload_prepared_with_normalized_phone(self):

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { FiMail, FiArrowLeft } from 'react-icons/fi';
 import { authService } from '../../services/authService';
 import { notify } from '../../utils/notify';
+import { emailValidationRules } from '../../utils/emailValidation';
 
 export function ForgotPassword() {
   const [sent, setSent] = useState(false);
@@ -40,7 +41,7 @@ export function ForgotPassword() {
             <label className="form-label small fw-medium">Email address</label>
             <div className="position-relative">
               <FiMail className="position-absolute text-muted" style={{ left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-              <input type="email" className="form-control ps-5" placeholder="you@school.edu" {...register('email', { required: true })} />
+              <input type="email" className="form-control ps-5" placeholder="you@school.edu" {...register('email', emailValidationRules({ label: 'Email address' }))} />
             </div>
           </div>
           <button type="submit" className="btn btn-primary w-100 py-2" disabled={loading}>

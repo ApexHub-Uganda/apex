@@ -15,11 +15,15 @@ const unwrapData = (response) => {
 };
 
 const createCrudService = (basePath) => ({
-  list: (params) => api.get(basePath, { params }).then((r) => unwrapList(r)),
+  list: (params = {}) => api.get(basePath, { params: { page_size: 100, ...params } }).then((r) => unwrapList(r)),
   get: (id) => api.get(`${basePath}${id}/`).then((r) => unwrapData(r)),
   create: (payload) => api.post(basePath, payload).then((r) => unwrapData(r)),
   update: (id, payload) => api.patch(`${basePath}${id}/`, payload).then((r) => unwrapData(r)),
   delete: (id) => api.delete(`${basePath}${id}/`).then((r) => unwrapData(r)),
+  deleteAll: () => api.post(`${basePath}delete_all/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
 });
 
 export const schoolsService = {
@@ -172,12 +176,127 @@ export const platformService = {
 };
 
 export const studentsService = createCrudService('/students/');
+export const parentsService = {
+  ...createCrudService('/students/parents/'),
+  linkStudent: (parentId, studentId) =>
+    api.post(`/students/parents/${parentId}/link-student/`, { student_id: studentId }).then((r) => unwrapData(r)),
+  unlinkStudent: (parentId, studentId) =>
+    api.post(`/students/parents/${parentId}/unlink-student/`, { student_id: studentId }).then((r) => unwrapData(r)),
+  setChildren: (parentId, childIds) =>
+    api.post(`/students/parents/${parentId}/set-children/`, { child_ids: childIds }).then((r) => unwrapData(r)),
+  getMatchingSummary: () =>
+    api.get('/students/parents/matching-summary/').then((r) => unwrapData(r)),
+};
+export const academicYearsService = createCrudService('/academics/years/');
+export const termsService = createCrudService('/academics/terms/');
+export const streamsService = createCrudService('/academics/streams/');
+export const subjectsService = createCrudService('/academics/subjects/');
+export const homeworkService = createCrudService('/academics/homework/');
+export const assignmentsService = createCrudService('/academics/assignments/');
+export const timetablesService = createCrudService('/academics/timetables/');
+export const feeStructuresService = createCrudService('/finance/fee-structures/');
+export const feePaymentsService = createCrudService('/finance/payments/');
+export const invoicesService = createCrudService('/finance/invoices/');
+export const accountingService = createCrudService('/finance/accounting/');
+const admissionApplicationsBase = '/admissions/applications/';
+export const admissionApplicationsService = {
+  ...createCrudService(admissionApplicationsBase),
+  admit: (id, payload = {}) =>
+    api.post(`${admissionApplicationsBase}${id}/admit/`, payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+  reject: (id, payload = {}) =>
+    api.post(`${admissionApplicationsBase}${id}/reject/`, payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+};
+export const admittedStudentsService = createCrudService('/admissions/admitted/');
+export const admissionVacanciesService = {
+  ...createCrudService('/admissions/vacancies/'),
+  publish: (id) =>
+    api.post(`/admissions/vacancies/${id}/publish/`).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+};
+/** @deprecated Use admissionApplicationsService */
+export const admissionsService = admissionApplicationsService;
+export const medicalRecordsService = createCrudService('/students/medical-records/');
+export const periodsService = createCrudService('/academics/periods/');
+export const classroomsService = createCrudService('/academics/classrooms/');
+export const gradingScalesService = createCrudService('/examinations/grading-scales/');
+export const gradesService = createCrudService('/examinations/grades/');
+export const subjectPapersService = createCrudService('/academics/subject-papers/');
+export const examinationReferenceService = {
+  get: () => api.get('/examinations/reference/').then((r) => unwrapData(r)),
+};
+export const marksEntryService = {
+  getOptions: (params = {}) =>
+    api.get('/examinations/marks-entry/options/', { params }).then((r) => unwrapData(r)),
+  saveBulk: (payload) =>
+    api.post('/examinations/marks-entry/bulk/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+    }),
+};
+export const reportCardsService = createCrudService('/examinations/report-cards/');
+export const examsService = createCrudService('/examinations/exams/');
+export const booksService = createCrudService('/library/books/');
+export const borrowsService = createCrudService('/library/borrows/');
+export const routesService = createCrudService('/transport/routes/');
+export const vehiclesService = createCrudService('/transport/vehicles/');
+export const studentTransportService = createCrudService('/transport/student-assignments/');
+export const roomsService = createCrudService('/hostel/rooms/');
+export const allocationsService = createCrudService('/hostel/allocations/');
+export const inventoryItemsService = createCrudService('/inventory/items/');
+export const stockMovementsService = createCrudService('/inventory/movements/');
+export const procurementsService = createCrudService('/inventory/procurements/');
+export const leavesService = createCrudService('/hr/leaves/');
+export const performanceReviewsService = createCrudService('/hr/performance-reviews/');
+export const payrollRunsService = createCrudService('/payroll/runs/');
+export const payslipsService = createCrudService('/payroll/payslips/');
+export const salaryStructuresService = createCrudService('/payroll/salary-structures/');
+export const announcementsService = {
+  ...createCrudService('/communication/announcements/'),
+  publish: (id, payload = {}) =>
+    api.post(`/communication/announcements/${id}/publish/`, payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+};
+export const smsService = createCrudService('/communication/sms/');
+export const emailsService = {
+  ...createCrudService('/communication/emails/'),
+  send: (id) =>
+    api.post(`/communication/emails/${id}/send/`).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+};
+export const broadcastsService = {
+  ...createCrudService('/communication/broadcasts/'),
+  send: (id) =>
+    api.post(`/communication/broadcasts/${id}/send/`).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+};
+export const supportTicketsService = createCrudService('/communication/support-tickets/');
+export const ticketRepliesService = createCrudService('/communication/ticket-replies/');
+export const eventsService = createCrudService('/events/');
+export const eventRegistrationsService = createCrudService('/events/registrations/');
 export const staffService = {
   ...createCrudService('/staff/'),
-  list: (params) => api.get('/staff/', { params }).then((r) => {
+  list: (params = {}) => api.get('/staff/', { params: { page_size: 100, ...params } }).then((r) => {
     const body = r?.data ?? r;
     if (Array.isArray(body?.data)) return body.data;
     return unwrapList(r);
+  }),
+  get: (id) => api.get(`/staff/${id}/`).then((r) => {
+    const body = r?.data ?? r;
+    return body?.data ?? body;
   }),
   create: (payload) => api.post('/staff/', payload).then((r) => {
     const body = r?.data ?? r;
@@ -187,6 +306,10 @@ export const staffService = {
       message: body?.message,
     };
   }),
+  update: (id, payload) => api.patch(`/staff/${id}/`, payload).then((r) => {
+    const body = r?.data ?? r;
+    return body?.data ?? body;
+  }),
   getRoleOptions: () => api.get('/staff/role-options/').then((r) => {
     const body = r?.data ?? r;
     return body?.data ?? unwrapData(r) ?? [];
@@ -194,15 +317,18 @@ export const staffService = {
   getRolePreview: (role) => api.get('/staff/role-preview/', { params: { role } }).then((r) => unwrapData(r)),
 };
 export const departmentsService = createCrudService('/academics/departments/');
-export const classesService = createCrudService('/school-admin/classes/');
-export const attendanceService = createCrudService('/school-admin/attendance/');
-export const financeService = createCrudService('/school-admin/finance/');
-export const libraryService = createCrudService('/school-admin/library/');
-export const hostelService = createCrudService('/school-admin/hostel/');
-export const transportService = createCrudService('/school-admin/transport/');
-export const inventoryService = createCrudService('/school-admin/inventory/');
-export const hrService = createCrudService('/school-admin/hr/');
-export const payrollService = createCrudService('/school-admin/payroll/');
+export const classesService = {
+  ...createCrudService('/academics/classes/'),
+  listStreams: (classId) => streamsService.list({ school_class: classId }),
+};
+export const attendanceService = createCrudService('/attendance/');
+export const financeService = feePaymentsService;
+export const libraryService = booksService;
+export const hostelService = createCrudService('/hostel/');
+export const transportService = routesService;
+export const inventoryService = inventoryItemsService;
+export const hrService = leavesService;
+export const payrollService = payrollRunsService;
 export const reportsService = {
   list: (params) => api.get('/school-admin/reports/', { params }).then((r) => unwrapList(r)),
   generate: (payload) => api.post('/school-admin/reports/generate/', payload).then((r) => unwrapData(r)),
@@ -220,7 +346,10 @@ export const notificationsService = {
   markRead: (id) => api.post(`/communication/notifications/${id}/mark_read/`).then((r) => unwrapData(r)),
   markAllRead: () => api.post('/communication/notifications/mark_all_read/').then((r) => unwrapData(r)),
   delete: (id) => api.post(`/communication/notifications/${id}/delete_notification/`).then((r) => unwrapData(r)),
-  deleteAll: () => api.post('/communication/notifications/delete_all/').then((r) => unwrapData(r)),
+  deleteAll: () => api.post('/communication/notifications/delete_all/').then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
   getSummary: () => api.get('/communication/notifications/summary/').then((r) => unwrapData(r)),
 };
 

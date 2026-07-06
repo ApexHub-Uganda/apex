@@ -1,0 +1,24 @@
+---
+pid: 14444
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_bulk_import.py -v --tb=short 2>&1"
+started_at: 2026-07-04T06:03:25.662Z
+running_for_ms: 7930012  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 6 items
+
+tests/test_bulk_import.py::test_student_import_resolver_duplicate_admission PASSED [ 16%]
+tests/test_bulk_import.py::test_commit_parent_rows PASSED                [ 33%]
+tests/test_bulk_import.py::test_parent_import_template_endpoint PASSED   [ 50%]
+tests/test_bulk_import.py::test_student_validate_import_endpoint PASSED  [ 66%]
+tests/test_bulk_import.py::test_generate_csv_template_has_headers PASSED [ 83%]
+tests/test_bulk_import.py::test_validate_headers_missing_required PASSED [100%]
+
+============================= 6 passed in 33.37s ==============================

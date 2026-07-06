@@ -1,44 +1,202 @@
-import ModulePage from '../../components/ModulePage';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FiPlus } from 'react-icons/fi';
+import PageHeader from '../../components/PageHeader';
+import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
-import { financeService } from '../../services/moduleService';
+import ModuleEmptyState from '../../components/ModuleEmptyState';
+import { Modal } from '../../components/Modal';
+import {
+  feePaymentsService, feeStructuresService, studentsService,
+} from '../../services/moduleService';
+import { usePermissions } from '../../hooks/usePermissions';
+import { extractApiError, notify } from '../../utils/notify';
 
-const MOCK_FINANCE = [
-  { id: 1, student: 'Aisha Patel', class: 'Grade 10-A', fee_type: 'Tuition', amount: 2500, due_date: '2026-07-01', status: 'paid' },
-  { id: 2, student: 'James Wilson', class: 'Grade 9-B', fee_type: 'Tuition', amount: 2500, due_date: '2026-07-01', status: 'pending' },
-  { id: 3, student: 'Emma Chen', class: 'Grade 11-A', fee_type: 'Transport', amount: 500, due_date: '2026-06-15', status: 'overdue' },
-  { id: 4, student: 'Omar Hassan', class: 'Grade 8-C', fee_type: 'Tuition', amount: 2200, due_date: '2026-07-01', status: 'paid' },
+const formatUGX = (amount) => {
+  const n = Number(amount);
+  if (Number.isNaN(n)) return '—';
+  return `UGX ${n.toLocaleString('en-UG', { minimumFractionDigits: 0 })}`;
+};
+
+const PAYMENT_METHODS = [
+  { value: 'mpesa', label: 'M-Pesa' },
+  { value: 'cash', label: 'Cash' },
+  { value: 'bank', label: 'Bank Transfer' },
+  { value: 'cheque', label: 'Cheque' },
+  { value: 'card', label: 'Card' },
 ];
 
+const EMPTY_FORM = {
+  student: '', fee_structure: '', amount_paid: '', payment_date: '',
+  payment_method: 'mpesa', reference: '', receipt_number: '',
+  mpesa_transaction_id: '', mpesa_phone: '', notes: '',
+};
+
 export function Finance() {
+  const queryClient = useQueryClient();
+  const { canWriteModule } = usePermissions();
+  const canManage = canWriteModule('payment_recording') || canWriteModule('student_billing');
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+
+  const { data: payments = [], isLoading, isError } = useQuery({
+    queryKey: ['fee-payments'],
+    queryFn: () => feePaymentsService.list(),
+  });
+
+  const { data: structures = [] } = useQuery({
+    queryKey: ['fee-structures'],
+    queryFn: () => feeStructuresService.list(),
+  });
+
+  const { data: students = [] } = useQuery({
+    queryKey: ['students', 'finance-select'],
+    queryFn: () => studentsService.list({ status: 'active' }),
+  });
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await feePaymentsService.create({
+        ...form,
+        amount_paid: form.amount_paid,
+        status: 'completed',
+      });
+      notify.success('Payment recorded.');
+      await queryClient.invalidateQueries({ queryKey: ['fee-payments'] });
+      setShowModal(false);
+      setForm(EMPTY_FORM);
+    } catch (err) {
+      notify.error(extractApiError(err, 'Unable to record payment.'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const columns = [
+    { key: 'student_name', label: 'Student', accessor: 'student_name', sortable: true },
+    { key: 'student_admission', label: 'Admission No', accessor: 'student_admission' },
+    { key: 'class_name', label: 'Class', accessor: 'class_name' },
+    { key: 'fee_name', label: 'Fee Item', accessor: 'fee_name' },
+    {
+      key: 'amount_paid',
+      label: 'Amount',
+      render: (row) => <span className="fw-medium">{formatUGX(row.amount_paid)}</span>,
+    },
+    { key: 'payment_date', label: 'Date', accessor: 'payment_date' },
+    {
+      key: 'payment_method',
+      label: 'Method',
+      render: (row) => PAYMENT_METHODS.find((m) => m.value === row.payment_method)?.label || row.payment_method,
+    },
+    { key: 'receipt_number', label: 'Receipt', accessor: 'receipt_number' },
+    { key: 'mpesa_transaction_id', label: 'M-Pesa ID', accessor: 'mpesa_transaction_id' },
+    { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
+  ];
+
   return (
-    <ModulePage
-      title="Finance"
-      subtitle="Manage fees, payments, and financial records"
-      queryKey={['finance']}
-      fetchData={() => financeService.list()}
-      mockData={MOCK_FINANCE}
-      onCreate={(data) => financeService.create(data)}
-      createLabel="Record Payment"
-      columns={[
-        { key: 'student', label: 'Student', accessor: 'student', sortable: true },
-        { key: 'class', label: 'Class', accessor: 'class' },
-        { key: 'fee_type', label: 'Fee Type', accessor: 'fee_type' },
-        { key: 'amount', label: 'Amount', render: (row) => `$${row.amount.toLocaleString()}` },
-        { key: 'due_date', label: 'Due Date', accessor: 'due_date' },
-        { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
-      ]}
-      formFields={[
-        { name: 'student', label: 'Student', required: true },
-        { name: 'fee_type', label: 'Fee Type', type: 'select', options: [
-          { value: 'Tuition', label: 'Tuition' },
-          { value: 'Transport', label: 'Transport' },
-          { value: 'Hostel', label: 'Hostel' },
-          { value: 'Library', label: 'Library' },
-        ]},
-        { name: 'amount', label: 'Amount', type: 'number', required: true },
-        { name: 'due_date', label: 'Due Date', type: 'date', required: true },
-      ]}
-    />
+    <div>
+      <PageHeader
+        title="Fee Payments"
+        subtitle="Record school fees in UGX — mobile money, cash, bank, and receipt tracking"
+        actions={canManage && (
+          <button type="button" className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1" onClick={() => setShowModal(true)}>
+            <FiPlus size={16} /> Record Payment
+          </button>
+        )}
+      />
+
+      {isError ? (
+        <div className="alert alert-danger">Unable to load payment records.</div>
+      ) : (
+        <div className="apex-card p-3 p-md-4">
+          <DataTable
+            columns={columns}
+            data={payments}
+            loading={isLoading}
+            emptyState={(
+              <ModuleEmptyState
+                title="No payments recorded"
+                message="Record fee payments with M-Pesa transaction IDs and receipt numbers."
+                actionLabel={canManage ? 'Record Payment' : undefined}
+                onAction={canManage ? () => setShowModal(true) : undefined}
+              />
+            )}
+          />
+        </div>
+      )}
+
+      <Modal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        title="Record Fee Payment"
+        size="lg"
+        footer={(
+          <>
+            <button type="button" className="btn btn-outline-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving…' : 'Record payment'}
+            </button>
+          </>
+        )}
+      >
+        <div className="row g-3">
+          <div className="col-md-6">
+            <label className="form-label small fw-medium">Student *</label>
+            <select className="form-select" value={form.student} onChange={(e) => setForm({ ...form, student: e.target.value })}>
+              <option value="">Select student</option>
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>{s.full_name || s.admission_number} — {s.admission_number}</option>
+              ))}
+            </select>
+          </div>
+          <div className="col-md-6">
+            <label className="form-label small fw-medium">Fee Structure *</label>
+            <select className="form-select" value={form.fee_structure} onChange={(e) => setForm({ ...form, fee_structure: e.target.value })}>
+              <option value="">Select fee item</option>
+              {structures.map((f) => (
+                <option key={f.id} value={f.id}>{f.name} — {formatUGX(f.amount)}</option>
+              ))}
+            </select>
+          </div>
+          <div className="col-md-4">
+            <label className="form-label small fw-medium">Amount (UGX) *</label>
+            <input type="number" className="form-control" value={form.amount_paid} onChange={(e) => setForm({ ...form, amount_paid: e.target.value })} />
+          </div>
+          <div className="col-md-4">
+            <label className="form-label small fw-medium">Payment Date *</label>
+            <input type="date" className="form-control" value={form.payment_date} onChange={(e) => setForm({ ...form, payment_date: e.target.value })} />
+          </div>
+          <div className="col-md-4">
+            <label className="form-label small fw-medium">Payment Method</label>
+            <select className="form-select" value={form.payment_method} onChange={(e) => setForm({ ...form, payment_method: e.target.value })}>
+              {PAYMENT_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </select>
+          </div>
+          <div className="col-md-4">
+            <label className="form-label small fw-medium">Receipt Number</label>
+            <input className="form-control" value={form.receipt_number} onChange={(e) => setForm({ ...form, receipt_number: e.target.value })} />
+          </div>
+          <div className="col-md-4">
+            <label className="form-label small fw-medium">M-Pesa Transaction ID</label>
+            <input className="form-control" value={form.mpesa_transaction_id} onChange={(e) => setForm({ ...form, mpesa_transaction_id: e.target.value })} placeholder="e.g. QHK7X8Y9Z0" />
+          </div>
+          <div className="col-md-4">
+            <label className="form-label small fw-medium">M-Pesa Phone</label>
+            <input className="form-control" value={form.mpesa_phone} onChange={(e) => setForm({ ...form, mpesa_phone: e.target.value })} placeholder="2547XXXXXXXX" />
+          </div>
+          <div className="col-md-6">
+            <label className="form-label small fw-medium">Reference</label>
+            <input className="form-control" value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} />
+          </div>
+          <div className="col-12">
+            <label className="form-label small fw-medium">Notes</label>
+            <textarea className="form-control" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          </div>
+        </div>
+      </Modal>
+    </div>
   );
 }
 

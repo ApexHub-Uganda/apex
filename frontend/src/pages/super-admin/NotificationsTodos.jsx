@@ -11,7 +11,7 @@ import StatusBadge from '../../components/StatusBadge';
 import NotificationItemActions from '../../components/NotificationItemActions';
 import { PageSkeleton } from '../../components/LoadingSkeleton';
 import { platformNotificationsService } from '../../services/moduleService';
-import { extractApiError, notify } from '../../utils/notify';
+import { alert, extractApiError, notify } from '../../utils/notify';
 
 const TYPE_ICONS = {
   school_registration: FiUserPlus,
@@ -96,6 +96,23 @@ export function NotificationsTodos() {
     onError: (err) => notify.error(extractApiError(err, 'Unable to delete notifications.')),
   });
 
+  const confirmDeleteAll = async () => {
+    const result = await alert.confirm({
+      title: 'Delete all notifications?',
+      text: 'This will permanently remove all inbox notifications. This cannot be undone.',
+      confirmText: 'Yes, delete all',
+      cancelText: 'Cancel',
+      icon: 'warning',
+      danger: true,
+    });
+    if (result.isConfirmed) deleteAllMutation.mutate();
+  };
+
+  const confirmDeleteOne = async (id) => {
+    const result = await alert.delete('this notification');
+    if (result.isConfirmed) deleteOneMutation.mutate(id);
+  };
+
   const notifications = data || [];
   const busyId = approveMutation.isPending
     ? approveMutation.variables
@@ -126,7 +143,7 @@ export function NotificationsTodos() {
               <button
                 type="button"
                 className="btn btn-outline-danger btn-sm"
-                onClick={() => deleteAllMutation.mutate()}
+                onClick={confirmDeleteAll}
                 disabled={deleteAllMutation.isPending}
               >
                 Delete all
@@ -202,7 +219,7 @@ export function NotificationsTodos() {
                           isRead={item.is_read}
                           canMarkRead
                           onMarkRead={(id) => markReadMutation.mutate(id)}
-                          onDelete={(id) => deleteOneMutation.mutate(id)}
+                          onDelete={confirmDeleteOne}
                           deleting={deleteOneMutation.isPending}
                           marking={markReadMutation.isPending}
                         />

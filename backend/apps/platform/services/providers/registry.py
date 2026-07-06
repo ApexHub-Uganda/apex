@@ -82,7 +82,10 @@ def _channel_status(config, provider_map: dict, *, channel: str) -> dict[str, An
 
 
 def get_integration_channel_status() -> dict[str, Any]:
-    email = EmailSetting.objects.filter(is_active=True).first() or EmailSetting.objects.first()
+    from apps.platform.services.email_config import diagnose_smtp_config, ensure_email_config
+
+    email = ensure_email_config() or EmailSetting.objects.first()
+    smtp_diagnostic = diagnose_smtp_config()
     sms = SMSSetting.objects.filter(is_active=True).first() or SMSSetting.objects.first()
     whatsapp = WhatsAppSetting.objects.filter(is_active=True).first() or WhatsAppSetting.objects.first()
 
@@ -94,6 +97,7 @@ def get_integration_channel_status() -> dict[str, Any]:
     return {
         "live_dispatch": bool(getattr(settings, "INTEGRATION_LIVE_DISPATCH", False)),
         "channels": channels,
+        "smtp_diagnostic": smtp_diagnostic,
         "notes": (
             "Broadcasts validate recipients, build provider payloads, and log deliveries. "
             "Outbound messages return failed until INTEGRATION_LIVE_DISPATCH=true and "

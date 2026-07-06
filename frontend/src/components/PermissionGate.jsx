@@ -12,13 +12,17 @@ export function PermissionGate({
   fallback = null,
   requireWrite = true,
 }) {
-  const { canAccessModule, loading } = useTenantContext();
+  const { canAccessModule, canAccessFeature, loading } = useTenantContext();
   const resolvedKey = moduleKey || (featureKey ? getModuleKeyForFeature(featureKey) : null);
 
   if (loading) return null;
-  if (!resolvedKey) return children;
 
-  const allowed = canAccessModule(resolvedKey, requireWrite);
+  let allowed = true;
+  if (featureKey) {
+    allowed = canAccessFeature(featureKey, requireWrite);
+  } else if (resolvedKey) {
+    allowed = canAccessModule(resolvedKey, requireWrite);
+  }
   if (allowed) return children;
   return fallback;
 }

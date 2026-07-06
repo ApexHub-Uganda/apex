@@ -38,6 +38,7 @@ const normalizeTenant = (raw) => {
     navigation_menu: raw.navigation_menu || [],
     module_menu: raw.module_menu || [],
     module_permissions: raw.module_permissions || {},
+    feature_permissions: raw.feature_permissions || {},
     permissions: raw.permissions || [],
     role_profile: raw.role_profile || null,
     dashboard_widgets: raw.dashboard_widgets || [],
@@ -95,6 +96,11 @@ export function TenantProvider({ children }) {
     [tenant?.module_permissions, user?.module_permissions],
   );
 
+  const featurePermissions = useMemo(
+    () => tenant?.feature_permissions || {},
+    [tenant?.feature_permissions],
+  );
+
   const moduleMenu = useMemo(() => {
     const fromApi = tenant?.module_menu || [];
     if (fromApi.length > 0) return fromApi;
@@ -118,6 +124,59 @@ export function TenantProvider({ children }) {
     [modulePermissions, isSchoolAdmin, isSuspended],
   );
 
+  const permissionTokens = useMemo(
+    () => tenant?.permissions || [],
+    [tenant?.permissions],
+  );
+
+  const canAccessFeature = useCallback(
+    (featureKey, requireWrite = false) => {
+      if (!featureKey) return true;
+      if (isSuspended) return false;
+      if (isSchoolAdmin) return true;
+      if (CORE_FEATURE_KEYS.includes(featureKey) && featureKey === 'dashboard_analytics') {
+        return true;
+      }
+
+      const perms = featurePermissions[featureKey];
+      if (perms) {
+        return requireWrite ? Boolean(perms.can_write) : Boolean(perms.can_read);
+      }
+
+      if (permissionTokens.length) {
+        if (requireWrite) {
+          return permissionTokens.includes(`${featureKey}.write`);
+        }
+        return (
+          permissionTokens.includes(`${featureKey}.read`)
+          || permissionTokens.includes(`${featureKey}.write`)
+        );
+      }
+
+      const menuChild = moduleMenu
+        .flatMap((module) => module.children || [])
+        .find((child) => child.feature_key === featureKey);
+      if (menuChild) {
+        return requireWrite ? Boolean(menuChild.can_write) : Boolean(menuChild.can_read ?? true);
+      }
+
+      const moduleKey = getModuleKeyForFeature(featureKey);
+      if (!moduleKey) return false;
+      if (requireWrite) {
+        return false;
+      }
+      return canAccessModule(moduleKey, false);
+    },
+    [
+      featurePermissions,
+      isSchoolAdmin,
+      isSuspended,
+      canAccessModule,
+      moduleMenu,
+      permissionTokens,
+    ],
+  );
+
   const isFeatureEnabled = useCallback(
     (featureKey) => {
       if (!featureKey) return true;
@@ -127,25 +186,20 @@ export function TenantProvider({ children }) {
       }
       if (!tenant) return false;
 
-      const moduleKey = getModuleKeyForFeature(featureKey);
-      if (moduleKey && !isSchoolAdmin) {
-        if (!canAccessModule(moduleKey, false)) return false;
+      if (!isSchoolAdmin && !canAccessFeature(featureKey, false)) {
+        return false;
       }
 
       const keys = tenant.enabled_feature_keys || [];
       if (keys.includes(featureKey)) return true;
       return tenant.feature_flags?.[featureKey] === true;
     },
-    [tenant, isSchoolAdmin, isSuspended, canAccessModule],
+    [tenant, isSchoolAdmin, isSuspended, canAccessFeature],
   );
 
   const canWriteFeature = useCallback(
-    (featureKey) => {
-      const moduleKey = getModuleKeyForFeature(featureKey);
-      if (!moduleKey) return isSchoolAdmin;
-      return canAccessModule(moduleKey, true);
-    },
-    [canAccessModule, isSchoolAdmin],
+    (featureKey) => canAccessFeature(featureKey, true),
+    [canAccessFeature],
   );
 
   return (
@@ -167,6 +221,8 @@ export function TenantProvider({ children }) {
         navigationMenu: tenant?.navigation_menu?.length ? tenant.navigation_menu : moduleMenu,
         moduleMenu,
         modulePermissions,
+        featurePermissions,
+        canAccessFeature,
         permissions: tenant?.permissions || user?.permissions || [],
         roleProfile: tenant?.role_profile || null,
         dashboardWidgets: tenant?.dashboard_widgets || [],

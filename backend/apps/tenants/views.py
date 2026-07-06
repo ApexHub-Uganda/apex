@@ -44,6 +44,7 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
         get_role_profile,
     )
     from apps.tenants.role_permissions import (
+        get_user_feature_permissions,
         get_user_module_menu,
         get_user_module_permissions,
         permissions_to_strings,
@@ -129,13 +130,16 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
     feature_flags = get_tenant_feature_flags(tenant)
     plan_module_menu = get_tenant_module_menu(tenant)
     module_permissions = get_user_module_permissions(tenant, user)
+    feature_permissions = get_user_feature_permissions(tenant, user)
     module_menu = get_user_module_menu(tenant, user)
     role_profile = get_role_profile(user)
     plan_widgets = get_tenant_dashboard_widgets(tenant)
     dashboard_widgets = filter_dashboard_widgets(plan_widgets, module_permissions, role_profile)
     role_profile = {
         **role_profile,
-        "quick_actions": filter_quick_actions(role_profile, module_permissions),
+        "quick_actions": filter_quick_actions(
+            role_profile, module_permissions, feature_permissions,
+        ),
     }
     sub = tenant.active_subscription
 
@@ -146,15 +150,9 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
                 enabled_keys.append(core_key)
             feature_flags[core_key] = True
     else:
-        readable_modules = {k for k, p in module_permissions.items() if p.get("can_read")}
         enabled_keys = [
             k for k in enabled_keys
-            if any(
-                child["feature_key"] == k
-                for mod in plan_module_menu
-                if mod["key"] in readable_modules
-                for child in mod.get("children", [])
-            )
+            if feature_permissions.get(k, {}).get("can_read")
             or k in core_keys[:1]
         ]
         feature_flags = {k: v for k, v in feature_flags.items() if k in enabled_keys}
@@ -193,7 +191,8 @@ def build_school_context_payload(tenant: Tenant | None, user) -> dict:
         "navigation_menu": module_menu,
         "module_menu": module_menu,
         "module_permissions": module_permissions,
-        "permissions": permissions_to_strings(module_permissions),
+        "feature_permissions": feature_permissions,
+        "permissions": permissions_to_strings(module_permissions, feature_permissions),
         "role_profile": role_profile,
         "user_role": user_role,
         "is_school_admin": is_school_admin,

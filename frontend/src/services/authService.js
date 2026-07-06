@@ -54,17 +54,31 @@ export const authService = {
 
   async getProfile() {
     const { data } = await api.get('/auth/me/');
-    return data;
+    return data?.data ?? data;
   },
 
   async updateProfile(profileData) {
     const { data } = await api.patch('/auth/me/', profileData);
-    return data;
+    return data?.data ?? data;
   },
 
   async changePassword(passwords) {
-    const { data } = await api.post('/auth/password/change/', passwords);
+    const { data } = await api.post('/auth/change-password/', passwords);
     return data;
+  },
+
+  async uploadAvatar(file) {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const { data } = await api.post('/auth/me/avatar/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data?.data ?? data;
+  },
+
+  async deleteAvatar() {
+    const { data } = await api.delete('/auth/me/avatar/');
+    return data?.data ?? data;
   },
 };
 

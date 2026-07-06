@@ -1,0 +1,20 @@
+---
+pid: 7056
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py tests/test_integration_providers.py tests/test_platform_broadcast.py -q 2>&1"
+started_at: 2026-07-04T07:26:49.931Z
+running_for_ms: 2925016  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 21 items
+
+tests\test_school_messaging.py .......                                   [ 33%]
+tests\test_integration_providers.py .....                                [ 57%]
+tests\test_platform_broadcast.py .........                               [100%]
+
+============================= 21 passed in 37.66s =============================

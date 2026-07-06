@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from apps.accounts.models import LoginHistory, User, UserDevice, UserSession
+from apps.accounts.models import LoginHistory, User, UserDevice, UserProfilePicture, UserSession
 
 
 @admin.register(User)
@@ -26,6 +26,13 @@ class UserAdmin(BaseUserAdmin):
             "fields": ("email", "password1", "password2", "first_name", "last_name", "role", "tenant"),
         }),
     )
+
+
+@admin.register(UserProfilePicture)
+class UserProfilePictureAdmin(admin.ModelAdmin):
+    list_display = ["user", "original_filename", "file_size", "uploaded_at"]
+    search_fields = ["user__email", "original_filename"]
+    readonly_fields = ["uploaded_at", "updated_at"]
 
 
 @admin.register(UserSession)

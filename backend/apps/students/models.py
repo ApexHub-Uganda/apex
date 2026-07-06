@@ -27,6 +27,12 @@ class Parent(BaseModel):
         blank=True,
     )
     national_id = models.CharField(max_length=50, blank=True)
+    county = models.CharField(max_length=100, blank=True)
+    sub_county = models.CharField(max_length=100, blank=True)
+    postal_code = models.CharField(max_length=20, blank=True)
+    mpesa_phone = models.CharField(max_length=20, blank=True, help_text="M-Pesa number for fee payments")
+    is_fee_payer = models.BooleanField(default=False)
+    consent_for_sms = models.BooleanField(default=True)
     occupation = models.CharField(max_length=100, blank=True)
     employer = models.CharField(max_length=150, blank=True)
     relationship_to_student = models.CharField(
@@ -115,6 +121,37 @@ class Student(BaseModel):
     place_of_birth = models.CharField(max_length=150, blank=True)
     previous_school = models.CharField(max_length=255, blank=True)
     national_id = models.CharField(max_length=50, blank=True)
+    upi_number = models.CharField(
+        max_length=50, blank=True, db_index=True,
+        help_text="NEMIS Unique Personal Identifier (UPI)",
+    )
+    birth_certificate_number = models.CharField(max_length=50, blank=True)
+    county = models.CharField(max_length=100, blank=True)
+    sub_county = models.CharField(max_length=100, blank=True)
+    ward = models.CharField(max_length=100, blank=True)
+    curriculum_pathway = models.CharField(
+        max_length=20,
+        choices=[
+            ("cbc", "CBC"),
+            ("844", "8-4-4"),
+            ("igcse", "IGCSE"),
+            ("ace", "ACE"),
+            ("other", "Other"),
+        ],
+        default="cbc",
+        blank=True,
+    )
+    boarding_status = models.CharField(
+        max_length=20,
+        choices=[
+            ("day", "Day Scholar"),
+            ("boarding", "Boarding"),
+            ("weekly", "Weekly Boarding"),
+        ],
+        default="day",
+    )
+    special_needs = models.BooleanField(default=False)
+    special_needs_details = models.TextField(blank=True)
 
     school_class = models.ForeignKey(
         "academics.Class",

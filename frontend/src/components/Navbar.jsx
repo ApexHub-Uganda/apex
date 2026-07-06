@@ -3,18 +3,19 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
-  FiMenu, FiBell, FiSun, FiMoon, FiUser, FiSettings, FiLogOut, FiSearch,
+  FiMenu, FiBell, FiSun, FiMoon, FiUser, FiSettings, FiLogOut,
   FiUserPlus, FiMail, FiCreditCard, FiInfo, FiAlertCircle, FiCheck, FiLayers,
 } from 'react-icons/fi';
+import GlobalSearch from './GlobalSearch';
+import UserAvatar from './UserAvatar';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../hooks/useTheme';
 import { useTenant } from '../hooks/useTenant';
 import { notificationFeedService, platformNotificationsService } from '../services/moduleService';
-import { notify } from '../utils/notify';
+import { alert, extractApiError, notify } from '../utils/notify';
 import PlanAdvertisementPreview from './PlanAdvertisementPreview';
 import NotificationItemActions from './NotificationItemActions';
 import SchoolNameWithBadge from './SchoolNameWithBadge';
-import { extractApiError } from '../utils/notify';
 
 const TYPE_ICONS = {
   school_registration: FiUserPlus,
@@ -103,6 +104,23 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
     onError: (err) => notify.error(extractApiError(err, 'Unable to mark notifications as read.')),
   });
 
+  const confirmDeleteOne = async (itemId) => {
+    const result = await alert.delete('this notification');
+    if (result.isConfirmed) deleteOneMutation.mutate(itemId);
+  };
+
+  const confirmDeleteAll = async () => {
+    const result = await alert.confirm({
+      title: 'Clear all notifications?',
+      text: 'This will permanently remove all notifications from your feed.',
+      confirmText: 'Yes, clear all',
+      cancelText: 'Cancel',
+      icon: 'warning',
+      danger: true,
+    });
+    if (result.isConfirmed) deleteAllMutation.mutate();
+  };
+
   const unreadCount = feed?.unread_count ?? 0;
   const feedItems = feed?.items ?? [];
 
@@ -174,17 +192,8 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
         <FiMenu size={22} />
       </button>
 
-      <div className={`d-none d-md-flex align-items-center flex-grow-1 ${suspended ? 'is-disabled-control' : ''}`} style={{ maxWidth: 400 }}>
-        <div className="position-relative w-100">
-          <FiSearch className="position-absolute text-muted" style={{ left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-          <input
-            type="text"
-            className="form-control form-control-sm ps-5"
-            placeholder={suspended ? 'Search unavailable while suspended' : 'Search...'}
-            disabled={suspended}
-            style={{ background: 'var(--apex-bg)', border: 'none', borderRadius: 10 }}
-          />
-        </div>
+      <div className={`d-none d-md-flex align-items-center flex-grow-1 ${suspended ? 'is-disabled-control' : ''}`} style={{ maxWidth: 480 }}>
+        <GlobalSearch disabled={suspended} />
       </div>
 
       <div className="ms-auto d-flex align-items-center gap-2">
@@ -252,7 +261,7 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
                     <button
                       type="button"
                       className="btn btn-link btn-sm p-0 text-decoration-none text-danger"
-                      onClick={() => deleteAllMutation.mutate()}
+                      onClick={confirmDeleteAll}
                       disabled={deleteAllMutation.isPending}
                     >
                       Clear all
@@ -273,7 +282,7 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
                   <NotificationItemActions
                     itemId={item.id}
                     isRead={item.is_read}
-                    onDelete={(id) => deleteOneMutation.mutate(id)}
+                    onDelete={confirmDeleteOne}
                     deleting={deleteOneMutation.isPending}
                     compact
                   />
@@ -314,7 +323,7 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
                         isRead={item.is_read}
                         canMarkRead={isSuperAdminItem}
                         onMarkRead={(id) => markReadMutation.mutate(id)}
-                        onDelete={(id) => deleteOneMutation.mutate(id)}
+                        onDelete={confirmDeleteOne}
                         deleting={deleteOneMutation.isPending}
                         marking={markReadMutation.isPending}
                         compact
@@ -341,9 +350,7 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
             aria-expanded={showDropdown}
             aria-haspopup="true"
           >
-            <div className="apex-navbar-user-avatar">
-              {user?.first_name?.[0]}{user?.last_name?.[0]}
-            </div>
+            <UserAvatar user={user} size={32} className="apex-navbar-user-avatar" />
             <span className="apex-navbar-user-name d-none d-md-inline">
               {user?.first_name} {user?.last_name}
             </span>
@@ -354,7 +361,7 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
               style={{ position: 'absolute', right: 0, top: '100%', minWidth: 200, borderRadius: 12 }}
             >
               <Link className="dropdown-item d-flex align-items-center gap-2" to={profilePath} onClick={() => setShowDropdown(false)}>
-                <FiUser size={14} /> Profile
+                <FiUser size={14} /> My Profile
               </Link>
               <Link className="dropdown-item d-flex align-items-center gap-2" to={settingsPath} onClick={() => setShowDropdown(false)}>
                 <FiSettings size={14} /> Settings

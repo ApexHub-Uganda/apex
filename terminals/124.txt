@@ -1,0 +1,25 @@
+---
+pid: 9296
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_marks_entry.py -v --tb=short"
+started_at: 2026-07-04T10:57:56.207Z
+running_for_ms: 2505012  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 7 items
+
+tests/test_marks_entry.py::TestMarksEntry::test_options_start_with_subjects PASSED [ 14%]
+tests/test_marks_entry.py::TestMarksEntry::test_classes_from_timetable_without_exam PASSED [ 28%]
+tests/test_marks_entry.py::TestMarksEntry::test_terms_from_school_calendar PASSED [ 42%]
+tests/test_marks_entry.py::TestMarksEntry::test_subjects_readable_with_examination_feature_only PASSED [ 57%]
+tests/test_marks_entry.py::TestMarksEntry::test_options_return_students_when_exam_selected PASSED [ 71%]
+tests/test_marks_entry.py::TestMarksEntry::test_bulk_save_marks PASSED   [ 85%]
+tests/test_marks_entry.py::TestMarksEntry::test_subject_paper_codes_on_create PASSED [100%]
+
+============================= 7 passed in 29.83s ==============================
