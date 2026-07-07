@@ -1,0 +1,29 @@
+---
+pid: 16520
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_password_reset.py tests/test_email_templates.py tests/test_school_messaging.py tests/test_platform_broadcast.py -q --tb=short 2>&1"
+started_at: 2026-07-07T11:59:09.971Z
+running_for_ms: 740008   
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 38 items
+
+tests\test_password_reset.py ...........                                 [ 28%]
+tests\test_email_templates.py F.......                                   [ 50%]
+tests\test_school_messaging.py .........                                 [ 73%]
+tests\test_platform_broadcast.py ..........                              [100%]
+
+================================== FAILURES ===================================
+____ TestEmailTemplates.test_password_reset_template_includes_otp_and_html ____
+tests\test_email_templates.py:34: in test_password_reset_template_includes_otp_and_html
+    assert "482910" in branded.text_body
+E   AssertionError: assert '482910' in 'Apex Hub — Password reset code\n────────────────────────────────────\n\nHello Jane,\n\nUse the verification code belo...an ignore this email. Your password will remain unchanged.\n\n—\nApex Hub\nSent securely from client.apexhub@gmail.com'
+E    +  where 'Apex Hub — Password reset code\n────────────────────────────────────\n\nHello Jane,\n\nUse the verification code belo...an ignore this email. Your password will remain unchanged.\n\n—\nApex Hub\nSent securely from client.apexhub@gmail.com' = BrandedEmail(text_body='Apex Hub — Password reset code\n────────────────────────────────────\n\nHello Jane,\n\nUse the...     </p>\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>').text_body
+=========================== short test summary info ===========================
+FAILED tests/test_email_templates.py::TestEmailTemplates::test_password_reset_template_includes_otp_and_html
+=================== 1 failed, 37 passed in 65.74s (0:01:05) ===================

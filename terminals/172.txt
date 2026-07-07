@@ -1,0 +1,9 @@
+---
+pid: 2124
+cwd: "E:\apex"
+command: "$login = Invoke-RestMethod -Uri \"http://localhost:8000/api/v1/auth/login/\" -Method POST -ContentType \"application/json\" -Body '{\"email\":\"superadmin@apexhub.io\",\"password\":\"ApexHub@2026\"}'; $token = $login.access; $headers = @{ Authorization = \"Bearer $token\"; Accept = \"application/json\" }; $create = Invoke-RestMethod -Uri \"http://localhost:8000/api/v1/platform/broadcasts/\" -Method POST -Headers $headers -ContentType \"application/json\" -Body '{\"title\":\"HTTP Test\",\"message\":\"Hello all\",\"channels\":[\"email\"],\"audience\":\"all\",\"severity\":\"info\",\"starts_at\":\"2026-07-07T12:00:00Z\"}'; $id = $create.id; $resp = Invoke-RestMethod -Uri \"http://localhost:8000/api/v1/platform/broadcasts/$id/send/\" -Method POST -Headers $headers -ContentType \"application/json\" -Body '{}'; $resp.success; $resp.message"
+started_at: 2026-07-07T11:32:12.668Z
+running_for_ms: 2355009  
+---
+True
+Broadcast sent to 15 school admin(s) across 1 channel(s).

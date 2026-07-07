@@ -56,7 +56,10 @@ export const planAdvertisementService = {
   delete: (id) => api.delete(`/platform/plan-advertisements/${id}/`).then((r) => unwrapData(r)),
   getPlanOptions: () => api.get('/platform/plan-advertisements/plan_options/').then((r) => unwrapData(r)),
   getDefaults: (params) => api.get('/platform/plan-advertisements/defaults/', { params }).then((r) => unwrapData(r)),
-  broadcast: (id) => api.post(`/platform/plan-advertisements/${id}/broadcast/`).then((r) => unwrapData(r)),
+  broadcast: (id) => api.post(`/platform/plan-advertisements/${id}/broadcast/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
   pause: (id) => api.post(`/platform/plan-advertisements/${id}/pause/`).then((r) => unwrapData(r)),
   end: (id) => api.post(`/platform/plan-advertisements/${id}/end/`).then((r) => unwrapData(r)),
 };
@@ -203,10 +206,59 @@ export const subjectsService = createCrudService('/academics/subjects/');
 export const homeworkService = createCrudService('/academics/homework/');
 export const assignmentsService = createCrudService('/academics/assignments/');
 export const timetablesService = createCrudService('/academics/timetables/');
+export const feeCategoriesService = createCrudService('/finance/fee-categories/');
 export const feeStructuresService = createCrudService('/finance/fee-structures/');
-export const feePaymentsService = createCrudService('/finance/payments/');
+export const studentFeeBalancesService = createCrudService('/finance/balances/');
+export const feePaymentsService = {
+  ...createCrudService('/finance/payments/'),
+  receipt: (id) => api.get(`/finance/payments/${id}/receipt/`).then((r) => unwrapData(r)),
+  approve: (id) => api.post(`/finance/payments/${id}/approve/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+  }),
+  reverse: (id, payload = {}) => api.post(`/finance/payments/${id}/reverse/`, payload).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+  }),
+};
 export const invoicesService = createCrudService('/finance/invoices/');
+export const feeDiscountsService = {
+  ...createCrudService('/finance/discounts/'),
+  approve: (id) => api.post(`/finance/discounts/${id}/approve/`).then((r) => unwrapData(r)),
+};
+export const refundsService = {
+  ...createCrudService('/finance/refunds/'),
+  approve: (id) => api.post(`/finance/refunds/${id}/approve/`).then((r) => unwrapData(r)),
+};
+export const miscIncomeService = createCrudService('/finance/misc-income/');
+export const financeNotesService = createCrudService('/finance/notes/');
+export const financialAccountsService = createCrudService('/finance/accounts/');
+export const budgetsService = createCrudService('/finance/budgets/');
+export const accountingPeriodsService = {
+  ...createCrudService('/finance/periods/'),
+  close: (id) => api.post(`/finance/periods/${id}/close/`).then((r) => unwrapData(r)),
+  reopen: (id) => api.post(`/finance/periods/${id}/reopen/`).then((r) => unwrapData(r)),
+};
 export const accountingService = createCrudService('/finance/accounting/');
+export const financeWorkspaceService = {
+  get: () => api.get('/finance/workspace/').then((r) => unwrapData(r)),
+};
+export const financeApprovalService = {
+  getQueue: () => api.get('/finance/approval-queue/').then((r) => unwrapData(r)),
+};
+export const financeAnalyticsService = {
+  get: () => api.get('/finance/analytics/').then((r) => unwrapData(r)),
+};
+export const financeReportsService = {
+  get: (params = {}) => api.get('/finance/reports/', { params }).then((r) => unwrapData(r)),
+  downloadCsv: (params = {}) => {
+    const query = new URLSearchParams({ ...params, format: 'csv' }).toString();
+    window.open(`${api.defaults.baseURL}/finance/reports/?${query}`, '_blank');
+  },
+};
+export const parentFeeStatementsService = {
+  get: (params = {}) => api.get('/finance/parent-statements/', { params }).then((r) => unwrapData(r)),
+};
 const admissionApplicationsBase = '/admissions/applications/';
 export const admissionApplicationsService = {
   ...createCrudService(admissionApplicationsBase),
@@ -251,7 +303,60 @@ export const marksEntryService = {
     }),
 };
 export const reportCardsService = createCrudService('/examinations/report-cards/');
-export const examsService = createCrudService('/examinations/exams/');
+export const examsService = {
+  ...createCrudService('/examinations/exams/'),
+  publish: (id) => api.post(`/examinations/exams/${id}/publish/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+  }),
+  archive: (id) => api.post(`/examinations/exams/${id}/archive/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+  }),
+  submitMarks: (id) => api.post(`/examinations/exams/${id}/submit-marks/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+  }),
+  approveMarks: (id) => api.post(`/examinations/exams/${id}/approve-marks/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+  }),
+  lockMarks: (id) => api.post(`/examinations/exams/${id}/lock-marks/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+  }),
+  reopenMarks: (id, payload = {}) => api.post(`/examinations/exams/${id}/reopen-marks/`, payload).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+  }),
+};
+export const examinationSessionsService = createCrudService('/examinations/sessions/');
+export const classNoticesService = {
+  ...createCrudService('/academics/class-notices/'),
+  publish: (id) => api.post(`/academics/class-notices/${id}/publish/`).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+  }),
+};
+export const disciplineRemarksService = createCrudService('/academics/discipline-remarks/');
+export const lessonAttendanceSessionsService = createCrudService('/attendance/lesson-sessions/');
+export const lessonAttendanceEntriesService = createCrudService('/attendance/lesson-entries/');
+export const academicWorkspaceService = {
+  get: () => api.get('/academics/workspace/').then((r) => unwrapData(r)),
+};
+export const marksApprovalService = {
+  getQueue: () => api.get('/examinations/marks-approval/queue/').then((r) => unwrapData(r)),
+  bulkAction: (payload) => api.post('/examinations/workflow/bulk/', payload).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+  }),
+};
+export const lessonAttendanceBulkService = {
+  save: (payload) => api.post('/attendance/lesson-sessions/bulk/', payload).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+  }),
+};
 export const booksService = createCrudService('/library/books/');
 export const borrowsService = createCrudService('/library/borrows/');
 export const routesService = createCrudService('/transport/routes/');

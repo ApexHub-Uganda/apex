@@ -66,6 +66,11 @@ class TestSubscriptions:
         api_client.force_authenticate(user=super_admin)
         response = api_client.get("/api/v1/subscriptions/features/catalog/")
         assert response.status_code == status.HTTP_200_OK
-        expected = len(all_module_feature_keys())
-        assert response.data["data"]["total_features"] == expected
-        assert expected >= 75
+        categories = response.data["data"]["categories"]
+        catalog_keys = {f["feature_key"] for c in categories for f in c["features"]}
+        registry_keys = all_module_feature_keys()
+        assert response.data["data"]["total_features"] == sum(
+            len(c["features"]) for c in categories
+        )
+        assert registry_keys.issubset(catalog_keys)
+        assert len(catalog_keys) >= 75

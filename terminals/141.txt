@@ -1,0 +1,30 @@
+---
+pid: 13928
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_examination_workflow.py -q --tb=short 2>&1"
+started_at: 2026-07-07T09:14:05.850Z
+running_for_ms: 10645008 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 4 items
+
+tests\test_examination_workflow.py ...F                                  [100%]
+
+================================== FAILURES ===================================
+_____________ TestExaminationWorkflow.test_workflow_api_endpoints _____________
+tests\test_examination_workflow.py:252: in test_workflow_api_endpoints
+    bulk_upsert_grades(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\contextlib.py:85: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+apps\examinations\services.py:41: in bulk_upsert_grades
+    raise MarksWorkflowError(
+E   apps.examinations.workflow.MarksWorkflowError: Marks cannot be edited for this assessment in its current status.
+=========================== short test summary info ===========================
+FAILED tests/test_examination_workflow.py::TestExaminationWorkflow::test_workflow_api_endpoints
+======================== 1 failed, 3 passed in 45.82s =========================

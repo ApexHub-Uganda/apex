@@ -9,7 +9,7 @@ import { useLandingMarketing } from '../../context/LandingMarketingContext';
 import { landingService } from '../../services/landingService';
 import {
   TRUSTED_LOGOS, WHY_BENEFITS, WORKFLOW_STEPS,
-  TESTIMONIALS, CASE_STUDIES, SECURITY_ITEMS, MOBILE_APPS, FAQ_ITEMS,
+  TESTIMONIALS, CASE_STUDIES, CASE_STUDY_TEMPLATES, SECURITY_ITEMS, MOBILE_APPS, FAQ_ITEMS,
   RESOURCES, INTEGRATIONS, ROADMAP_ITEMS, THEME_PRESETS,
   AWARDS, UPDATES, ONBOARDING_STEPS, FOOTER_LINKS, BRAND,
 } from '../../pages/landing/landingData';
@@ -546,7 +546,32 @@ export function LandingTestimonials() {
   );
 }
 
+const CASE_STUDY_COUNT = CASE_STUDY_TEMPLATES.length;
+
+function buildCaseStudies(schools = []) {
+  const fallbackNames = CASE_STUDIES.map((item) => item.school);
+  return CASE_STUDY_TEMPLATES.map((template, index) => {
+    const school = schools[index];
+    return {
+      ...template,
+      id: school?.id ?? `fallback-${index}`,
+      school: school?.name ?? fallbackNames[index],
+    };
+  });
+}
+
 export function LandingCaseStudies() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['landing', 'case-study-schools'],
+    queryFn: () => landingService.getTrustedSchools(CASE_STUDY_COUNT),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    retry: 1,
+  });
+
+  const caseStudies = buildCaseStudies(data?.schools);
+
   return (
     <section className="lp-section" aria-labelledby="cases-heading">
       <div className="lp-container">
@@ -554,9 +579,9 @@ export function LandingCaseStudies() {
           <span className="lp-eyebrow">Case Studies</span>
           <h2 id="cases-heading" className="lp-title">Real Results, Real Schools</h2>
         </div>
-        <div className="row g-4">
-          {CASE_STUDIES.map((c, i) => (
-            <div key={c.school} className="col-md-4" data-aos="fade-up" data-aos-delay={i * 80}>
+        <div className="row g-4" aria-busy={isLoading}>
+          {caseStudies.map((c, i) => (
+            <div key={c.id} className="col-md-4" data-aos="fade-up" data-aos-delay={i * 80}>
               <div className="lp-case-card">
                 <h3 className="h6 fw-bold">{c.school}</h3>
                 <p className="small text-muted mb-1"><strong>Before:</strong> {c.before}</p>

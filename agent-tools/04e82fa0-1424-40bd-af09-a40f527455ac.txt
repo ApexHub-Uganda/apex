@@ -1,0 +1,2575 @@
+Invoke-WebRequest : 
+  
+  Page not found at /api/v1/platform/broadcasts//send/
+  
+  
+    html * { padding:0; margin:0; }
+    body * { padding:10px 20px; }
+    body * * { padding:0; }
+    body { font-family: sans-serif; background:#eee; color:#000; }
+    body > :where(header, main, footer) { border-bottom:1px solid #ddd; }
+    h1 { font-weight:normal; margin-bottom:.4em; }
+    h1 small { font-size:60%; color:#666; font-weight:normal; }
+    table { border:none; border-collapse: collapse; width:100%; }
+    td, th { vertical-align:top; padding:2px 3px; }
+    th { width:12em; text-align:right; color:#666; padding-right:.5em; }
+    #info { background:#f6f6f6; }
+    #info ol { margin: 0.5em 4em; }
+    #info ol li { font-family: monospace; }
+    #summary { background: #ffc; }
+    #explanation { background:#eee; border-bottom: 0px none; }
+    pre.exception_value { font-family: sans-serif; color: #575757; font-size: 1.5em; margin: 10px 0 10px 0; }
+  
+  
+    Page not found (404)
+    
+    
+      
+        Request Method:
+        POST
+      
+      
+        Request URL:
+        http://localhost:8000/api/v1/platform/broadcasts//send/
+      
+      
+    
+  
+  
+    
+      
+      Using the URLconf defined in apex_hub.urls,
+      Django tried these URL patterns, in this order:
+      
+      
+        
+          
+            
+              
+                admin/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/schema/
+                [name='schema']
+              
+            
+          
+        
+          
+            
+              
+                api/docs/
+                [name='swagger-ui']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                search/
+                [name='portal-search']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                auth/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                tenants/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                subscriptions/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                academics/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                students/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                admissions/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                staff/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                attendance/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                examinations/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                finance/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                library/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                hostel/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                transport/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                inventory/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                hr/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                payroll/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                communication/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                events/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                analytics/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                audit/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                integrations/test/
+                [name='integration-test']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                settings/public/
+                [name='platform-settings-public']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                settings/general/
+                [name='platform-settings']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                schools/
+                [name='schools-management']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                health/
+                [name='health-check']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                maintenance/
+                [name='maintenance-mode']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^settings/$
+                [name='global-setting-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^settings\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='global-setting-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^settings/(?P&lt;key&gt;[^/.]+)/$
+                [name='global-setting-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^settings/(?P&lt;key&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='global-setting-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^email-settings/$
+                [name='email-setting-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^email-settings\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='email-setting-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^email-settings/(?P&lt;pk&gt;[^/.]+)/$
+                [name='email-setting-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^email-settings/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='email-setting-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^sms-settings/$
+                [name='sms-setting-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^sms-settings\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='sms-setting-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^sms-settings/(?P&lt;pk&gt;[^/.]+)/$
+                [name='sms-setting-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^sms-settings/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='sms-setting-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^whatsapp-settings/$
+                [name='whatsapp-setting-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^whatsapp-settings\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='whatsapp-setting-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^whatsapp-settings/(?P&lt;pk&gt;[^/.]+)/$
+                [name='whatsapp-setting-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^whatsapp-settings/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='whatsapp-setting-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^call-settings/$
+                [name='call-setting-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^call-settings\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='call-setting-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^call-settings/(?P&lt;pk&gt;[^/.]+)/$
+                [name='call-setting-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^call-settings/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='call-setting-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/$
+                [name='platform-notification-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-notification-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/delete_all/$
+                [name='platform-notification-delete-all']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/delete_all\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-notification-delete-all']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/mark_all_read/$
+                [name='platform-notification-mark-all-read']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/mark_all_read\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-notification-mark-all-read']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/summary/$
+                [name='platform-notification-summary']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/summary\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-notification-summary']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/(?P&lt;pk&gt;[^/.]+)/$
+                [name='platform-notification-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-notification-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/(?P&lt;pk&gt;[^/.]+)/approve/$
+                [name='platform-notification-approve']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/(?P&lt;pk&gt;[^/.]+)/approve\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-notification-approve']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/(?P&lt;pk&gt;[^/.]+)/delete_notification/$
+                [name='platform-notification-delete-notification']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/(?P&lt;pk&gt;[^/.]+)/delete_notification\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-notification-delete-notification']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/(?P&lt;pk&gt;[^/.]+)/dismiss/$
+                [name='platform-notification-dismiss']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/(?P&lt;pk&gt;[^/.]+)/dismiss\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-notification-dismiss']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/(?P&lt;pk&gt;[^/.]+)/mark_read/$
+                [name='platform-notification-mark-read']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^notifications/(?P&lt;pk&gt;[^/.]+)/mark_read\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-notification-mark-read']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^api-keys/$
+                [name='api-key-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^api-keys\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='api-key-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^api-keys/(?P&lt;pk&gt;[^/.]+)/$
+                [name='api-key-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^api-keys/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='api-key-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^news/$
+                [name='platform-news-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^news\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-news-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^news/(?P&lt;pk&gt;[^/.]+)/$
+                [name='platform-news-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^news/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-news-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/$
+                [name='plan-advertisement-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='plan-advertisement-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/defaults/$
+                [name='plan-advertisement-defaults']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/defaults\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='plan-advertisement-defaults']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/plan_options/$
+                [name='plan-advertisement-plan-options']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/plan_options\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='plan-advertisement-plan-options']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/(?P&lt;pk&gt;[^/.]+)/$
+                [name='plan-advertisement-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='plan-advertisement-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/(?P&lt;pk&gt;[^/.]+)/broadcast/$
+                [name='plan-advertisement-broadcast']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/(?P&lt;pk&gt;[^/.]+)/broadcast\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='plan-advertisement-broadcast']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/(?P&lt;pk&gt;[^/.]+)/end/$
+                [name='plan-advertisement-end']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/(?P&lt;pk&gt;[^/.]+)/end\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='plan-advertisement-end']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/(?P&lt;pk&gt;[^/.]+)/pause/$
+                [name='plan-advertisement-pause']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^plan-advertisements/(?P&lt;pk&gt;[^/.]+)/pause\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='plan-advertisement-pause']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/$
+                [name='platform-broadcast-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/channel_status/$
+                [name='platform-broadcast-channel-status']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/channel_status\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-channel-status']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/preview/$
+                [name='platform-broadcast-preview']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/preview\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-preview']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/$
+                [name='platform-broadcast-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/cancel/$
+                [name='platform-broadcast-cancel']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/cancel\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-cancel']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/delete_broadcast/$
+                [name='platform-broadcast-delete-broadcast']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/delete_broadcast\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-delete-broadcast']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/deliveries/$
+                [name='platform-broadcast-deliveries']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/deliveries\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-deliveries']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/duplicate/$
+                [name='platform-broadcast-duplicate']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/duplicate\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-duplicate']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/schedule/$
+                [name='platform-broadcast-schedule']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/schedule\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-schedule']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/send/$
+                [name='platform-broadcast-send']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/send\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-send']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^health-logs/$
+                [name='health-log-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^health-logs\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='health-log-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^health-logs/(?P&lt;pk&gt;[^/.]+)/$
+                [name='health-log-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^health-logs/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='health-log-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                
+                [name='api-root']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                &lt;drf_format_suffix:format&gt;
+                [name='api-root']
+              
+            
+          
+        
+          
+            
+              
+                ^media/(?P&lt;path&gt;.*)$
+                
+              
+            
+          
+        
+      
+      
+        
+          The current path, api/v1/platform/broadcasts//send/,
+        
+        didn't match any of these.
+      
+    
+  
+  
+    
+      You're seeing this error because you have DEBUG = True in
+      your Django settings file. Change that to False, and Django
+      will display a standard 404 page.
+    
+  
+At line:1 char:603
++ ... te.data.id; Invoke-WebRequest -Uri "http://localhost:8000/api/v1/plat ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-WebRequest], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand

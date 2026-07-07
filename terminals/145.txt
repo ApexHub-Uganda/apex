@@ -1,0 +1,70 @@
+---
+pid: 9068
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_academic_workflows_api.py tests/test_examination_workflow.py tests/test_academic_scoping.py tests/test_role_feature_defaults.py -v --tb=short 2>&1"
+started_at: 2026-07-07T09:34:55.022Z
+running_for_ms: 9395009  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 28 items
+
+tests/test_academic_workflows_api.py::TestAcademicWorkspaceAPI::test_teacher_workspace_returns_scoped_counts PASSED [  3%]
+tests/test_academic_workflows_api.py::TestAcademicWorkspaceAPI::test_hod_workspace_includes_approval_queue PASSED [  7%]
+tests/test_academic_workflows_api.py::TestMarksApprovalQueueAPI::test_queue_lists_submitted_exams_scoped_to_hod PASSED [ 10%]
+tests/test_academic_workflows_api.py::TestMarksApprovalQueueAPI::test_teacher_cannot_access_approval_queue PASSED [ 14%]
+tests/test_academic_workflows_api.py::TestWorkflowBulkAPI::test_hod_bulk_approve PASSED [ 17%]
+tests/test_academic_workflows_api.py::TestWorkflowBulkAPI::test_hod_bulk_publish_draft_assessments FAILED [ 21%]
+tests/test_academic_workflows_api.py::TestWorkflowBulkAPI::test_teacher_cannot_bulk_approve PASSED [ 25%]
+tests/test_academic_workflows_api.py::TestReopenMarksAPI::test_hod_cannot_reopen_locked_marks PASSED [ 28%]
+tests/test_academic_workflows_api.py::TestClassNoticePublishAPI::test_publish_class_notice PASSED [ 32%]
+tests/test_academic_workflows_api.py::TestLessonAttendanceBulkAPI::test_bulk_save_lesson_attendance FAILED [ 35%]
+tests/test_academic_workflows_api.py::TestLessonAttendanceBulkAPI::test_teacher_cannot_mark_other_class PASSED [ 39%]
+tests/test_examination_workflow.py::TestExaminationWorkflow::test_publish_then_submit_approve_lock_cycle PASSED [ 42%]
+tests/test_examination_workflow.py::TestExaminationWorkflow::test_reopen_resets_marks_to_draft PASSED [ 46%]
+tests/test_examination_workflow.py::TestExaminationWorkflow::test_submit_requires_grades PASSED [ 50%]
+tests/test_examination_workflow.py::TestExaminationWorkflow::test_workflow_api_endpoints PASSED [ 53%]
+tests/test_academic_scoping.py::TestAcademicScoping::test_teacher_context_from_timetable PASSED [ 57%]
+tests/test_academic_scoping.py::TestAcademicScoping::test_filter_subjects_and_classes PASSED [ 60%]
+tests/test_academic_scoping.py::TestAcademicScoping::test_filter_exams PASSED [ 64%]
+tests/test_academic_scoping.py::TestAcademicScoping::test_user_can_access_exam PASSED [ 67%]
+tests/test_academic_scoping.py::TestAcademicScoping::test_classes_api_scoped_for_teacher PASSED [ 71%]
+tests/test_academic_scoping.py::TestAcademicScoping::test_marks_entry_options_scoped_for_teacher PASSED [ 75%]
+tests/test_academic_scoping.py::TestAcademicScoping::test_marks_entry_bulk_denied_for_unassigned_exam PASSED [ 78%]
+tests/test_role_feature_defaults.py::TestRoleFeatureDefaults::test_teacher_default_permissions PASSED [ 82%]
+tests/test_role_feature_defaults.py::TestRoleFeatureDefaults::test_hod_default_permissions PASSED [ 85%]
+tests/test_role_feature_defaults.py::TestRoleFeatureDefaults::test_dos_default_permissions PASSED [ 89%]
+tests/test_role_feature_defaults.py::TestRoleFeatureDefaults::test_class_teacher_overlay_elevates_features PASSED [ 92%]
+tests/test_role_feature_defaults.py::TestRoleFeatureDefaults::test_teacher_effective_permissions_use_defaults PASSED [ 96%]
+tests/test_role_feature_defaults.py::TestRoleFeatureDefaults::test_class_teacher_assignment_elevates_features PASSED [100%]
+
+================================== FAILURES ===================================
+_________ TestWorkflowBulkAPI.test_hod_bulk_publish_draft_assessments _________
+tests\test_academic_workflows_api.py:296: in test_hod_bulk_publish_draft_assessments
+    assert response.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response status_code=403, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-07 02:35:34,163 log Forbidden: /api/v1/examinations/workflow/bulk/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Forbidden: /api/v1/examinations/workflow/bulk/
+________ TestLessonAttendanceBulkAPI.test_bulk_save_lesson_attendance _________
+tests\test_academic_workflows_api.py:387: in test_bulk_save_lesson_attendance
+    assert response.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response status_code=403, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-07 02:35:41,317 log Forbidden: /api/v1/attendance/lesson-sessions/bulk/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Forbidden: /api/v1/attendance/lesson-sessions/bulk/
+=========================== short test summary info ===========================
+FAILED tests/test_academic_workflows_api.py::TestWorkflowBulkAPI::test_hod_bulk_publish_draft_assessments - assert 403 == 200
+ +  where 403 = <Response status_code=403, "application/json">.status_code
+FAILED tests/test_academic_workflows_api.py::TestLessonAttendanceBulkAPI::test_bulk_save_lesson_attendance - assert 403 == 200
+ +  where 403 = <Response status_code=403, "application/json">.status_code
+=================== 2 failed, 26 passed in 62.06s (0:01:02) ===================

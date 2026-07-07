@@ -10,6 +10,11 @@ from django.utils import timezone
 from apps.communication.models import Announcement, Broadcast, EmailMessage
 from apps.communication.services import create_user_notification
 from apps.core.constants import UserRole
+from apps.core.email_templates import (
+    build_announcement_email,
+    build_direct_message_email,
+    build_school_broadcast_email,
+)
 from apps.core.email_validation import filter_deliverable_emails, validate_deliverable_email
 from apps.platform.services.integrations import EmailService, SMSService, WhatsAppService
 from apps.staff.models import Staff
@@ -190,13 +195,26 @@ def _priority_to_notification_type(priority: str) -> str:
     return "info"
 
 
-def _format_email_body(*, tenant, title: str, body: str) -> str:
-    school_name = getattr(tenant, "name", "Your School")
-    footer = (
-        f"\n\n—\n{school_name}\n"
-        "Sent via Apex Hub School Communication"
-    )
-    return f"{title}\n{'=' * len(title)}\n\n{body.strip()}{footer}"
+def _build_school_email(
+    *,
+    tenant,
+    title: str,
+    body: str,
+    message_type: str = "direct",
+    priority: str = "normal",
+) -> tuple[str, str]:
+    if message_type == "announcement":
+        branded = build_announcement_email(
+            tenant=tenant,
+            title=title,
+            content=body,
+            priority=priority,
+        )
+    elif message_type == "broadcast":
+        branded = build_school_broadcast_email(tenant=tenant, title=title, message=body)
+    else:
+        branded = build_direct_message_email(tenant=tenant, subject=title, body=body)
+    return branded.text_body, branded.html_body
 
 
 def _dispatch_email(
@@ -205,6 +223,8 @@ def _dispatch_email(
     recipients: list[str],
     subject: str,
     body: str,
+    message_type: str = "direct",
+    priority: str = "normal",
     require_delivery: bool = False,
 ) -> dict[str, Any]:
     if not recipients:
@@ -222,11 +242,18 @@ def _dispatch_email(
             raise MessagingError(result["error"])
         return result
 
-    formatted_body = _format_email_body(tenant=tenant, title=subject, body=body)
+    text_body, html_body = _build_school_email(
+        tenant=tenant,
+        title=subject,
+        body=body,
+        message_type=message_type,
+        priority=priority,
+    )
     mail_result = EmailService.send(
         recipients,
         subject,
-        formatted_body,
+        text_body,
+        html_body=html_body,
         tenant=tenant,
     )
     sent = int(mail_result.metadata.get("sent_count", 0))
@@ -343,6 +370,7 @@ def send_school_broadcast(broadcast: Broadcast, *, actor=None) -> dict[str, Any]
                 recipients=emails,
                 subject=broadcast.title,
                 body=broadcast.message,
+                message_type="broadcast",
                 require_delivery=True,
             )
         elif channel == "sms":
@@ -414,6 +442,8 @@ def publish_announcement(
                 recipients=emails,
                 subject=announcement.title,
                 body=announcement.content,
+                message_type="announcement",
+                priority=announcement.priority,
                 require_delivery=True,
             )
         elif channel == "sms":
@@ -473,15 +503,17 @@ def send_email_message(email_message: EmailMessage) -> dict[str, Any]:
         raise MessagingError("This email has already been sent.")
 
     tenant = email_message.tenant
-    formatted_body = _format_email_body(
+    text_body, html_body = _build_school_email(
         tenant=tenant,
         title=email_message.subject,
         body=email_message.body,
+        message_type="direct",
     )
     result = EmailService.send(
         email_message.recipient_email,
         email_message.subject,
-        formatted_body,
+        text_body,
+        html_body=html_body,
         tenant=tenant,
         log_attempt=False,
     )

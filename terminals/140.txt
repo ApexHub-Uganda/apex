@@ -1,0 +1,36 @@
+---
+pid: 20936
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_examination_workflow.py tests/test_marks_entry.py tests/test_academic_scoping.py tests/test_role_feature_defaults.py tests/test_role_permissions.py -q --tb=short 2>&1"
+started_at: 2026-07-07T09:11:14.544Z
+running_for_ms: 10815002 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 37 items
+
+tests\test_examination_workflow.py ...F                                  [ 10%]
+tests\test_marks_entry.py .......                                        [ 29%]
+tests\test_academic_scoping.py .......                                   [ 48%]
+tests\test_role_feature_defaults.py ......                               [ 64%]
+tests\test_role_permissions.py .............                             [100%]
+
+================================== FAILURES ===================================
+_____________ TestExaminationWorkflow.test_workflow_api_endpoints _____________
+tests\test_examination_workflow.py:242: in test_workflow_api_endpoints
+    assert client.post(f"/api/v1/examinations/exams/{exam.id}/publish/").status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response status_code=403, "application/json">.status_code
+E    +    where <Response status_code=403, "application/json"> = post('/api/v1/examinations/exams/29ef4179-cadd-4f32-88d9-d1abbffe1ca2/publish/')
+E    +      where post = <rest_framework.test.APIClient object at 0x0000018E703170E0>.post
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-07 02:12:06,200 log Forbidden: /api/v1/examinations/exams/29ef4179-cadd-4f32-88d9-d1abbffe1ca2/publish/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Forbidden: /api/v1/examinations/exams/29ef4179-cadd-4f32-88d9-d1abbffe1ca2/publish/
+=========================== short test summary info ===========================
+FAILED tests/test_examination_workflow.py::TestExaminationWorkflow::test_workflow_api_endpoints
+=================== 1 failed, 36 passed in 84.33s (0:01:24) ===================

@@ -1,0 +1,22 @@
+---
+pid: 11640
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -c \"
+import os, django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'apex_hub.settings')
+django.setup()
+from django.contrib.auth import get_user_model
+from apps.platform.models import PlatformBroadcast
+from apps.platform.services.broadcasts import send_platform_broadcast
+from django.utils import timezone
+User = get_user_model()
+sa = User.objects.filter(role='super_admin').first()
+b = PlatformBroadcast.objects.create(title='Dbg', message='Hi', channels=['email'], audience='all', status='draft', severity='info', starts_at=timezone.now())
+result = send_platform_broadcast(b, actor=sa)
+print('OK', result['recipient_count'], result['status'])
+b.delete()
+\""
+started_at: 2026-07-07T11:31:19.303Z
+running_for_ms: 2410002  
+---
+OK 15 sent

@@ -3,7 +3,7 @@ pid: 5908
 cwd: "E:\apex"
 command: "cd E:\\apex\\backend; python -m pytest tests/test_notification_delete.py -q"
 started_at: 2026-07-06T10:08:21.149Z
-running_for_ms: 13140016 
+running_for_ms: 13285009 
 ---
 ============================= test session starts =============================
 platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0

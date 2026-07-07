@@ -1,0 +1,29 @@
+---
+pid: 3048
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_finance_permissions.py tests/test_finance_rbac.py -q --tb=short 2>&1"
+started_at: 2026-07-07T10:36:18.471Z
+running_for_ms: 5710008  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 33 items
+
+tests\test_finance_permissions.py .................F.......              [ 75%]
+tests\test_finance_rbac.py ........                                      [100%]
+
+================================== FAILURES ===================================
+_ TestFinanceEndpointPermissions.test_assistant_cannot_access_analytics_without_grant _
+tests\test_finance_permissions.py:216: in test_assistant_cannot_access_analytics_without_grant
+    assert client.get("/api/v1/finance/analytics/").status_code == 403
+E   assert 200 == 403
+E    +  where 200 = <Response status_code=200, "application/json">.status_code
+E    +    where <Response status_code=200, "application/json"> = get('/api/v1/finance/analytics/')
+E    +      where get = <rest_framework.test.APIClient object at 0x000002A778D47800>.get
+=========================== short test summary info ===========================
+FAILED tests/test_finance_permissions.py::TestFinanceEndpointPermissions::test_assistant_cannot_access_analytics_without_grant
+======================== 1 failed, 32 passed in 56.94s ========================

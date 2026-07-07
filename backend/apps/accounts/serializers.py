@@ -1,8 +1,6 @@
 """Account serializers."""
 from __future__ import annotations
 
-import secrets
-from datetime import timedelta
 from typing import Any
 
 from django.utils import timezone
@@ -240,40 +238,37 @@ class ChangePasswordSerializer(serializers.Serializer):
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = DeliverableEmailField()
 
-    def save(self) -> None:
-        email = self.validated_data["email"]
+    def save(self) -> dict:
+        from apps.accounts.password_reset import PasswordResetError, send_password_reset_otp
+
         try:
-            user = User.objects.get(email=email, is_active=True)
-        except User.DoesNotExist:
-            return
-        user.password_reset_token = secrets.token_urlsafe(32)
-        user.password_reset_expires = timezone.now() + timedelta(hours=24)
-        user.save(update_fields=["password_reset_token", "password_reset_expires", "updated_at"])
-        # Email would be sent via communication app in production
+            return send_password_reset_otp(email=self.validated_data["email"])
+        except PasswordResetError as exc:
+            raise serializers.ValidationError({"email": exc.message}) from exc
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
-    token = serializers.CharField()
-    new_password = serializers.CharField(min_length=8)
-
-    def validate(self, attrs: dict) -> dict:
-        try:
-            user = User.objects.get(
-                password_reset_token=attrs["token"],
-                password_reset_expires__gt=timezone.now(),
-            )
-        except User.DoesNotExist:
-            raise serializers.ValidationError({"token": "Invalid or expired reset token."})
-        attrs["user"] = user
-        return attrs
+    email = DeliverableEmailField()
+    otp = serializers.RegexField(
+        regex=r"^\d{6}$",
+        min_length=6,
+        max_length=6,
+        error_messages={"invalid": "Enter the 6-digit verification code from your email."},
+    )
+    new_password = serializers.CharField(min_length=8, write_only=True)
 
     def save(self) -> User:
-        user = self.validated_data["user"]
-        user.set_password(self.validated_data["new_password"])
-        user.password_reset_token = ""
-        user.password_reset_expires = None
-        user.save()
-        return user
+        from apps.accounts.password_reset import PasswordResetError, confirm_password_reset
+
+        try:
+            return confirm_password_reset(
+                email=self.validated_data["email"],
+                otp=self.validated_data["otp"],
+                new_password=self.validated_data["new_password"],
+            )
+        except PasswordResetError as exc:
+            field = "otp" if exc.code.startswith("otp") else "email"
+            raise serializers.ValidationError({field: exc.message}) from exc
 
 
 class UserSessionSerializer(serializers.ModelSerializer):

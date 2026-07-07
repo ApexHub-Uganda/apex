@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from apps.communication.services import create_user_notification
 from apps.core.constants import PlanSlug, UserRole
+from apps.core.email_templates import build_platform_broadcast_email
 from apps.platform.models import PlatformBroadcast, PlatformBroadcastDelivery
 from apps.platform.services.integrations import EmailService, SMSService, WhatsAppService
 from apps.subscriptions.models import Subscription
@@ -49,13 +50,10 @@ def normalize_channels(channels: list[str] | None) -> list[str]:
 
 def _tenant_ids_for_audience(audience: str) -> list:
     if audience == "all":
-        return list(
-            Tenant.objects.filter(is_deleted=False).values_list("id", flat=True),
-        )
+        return list(Tenant.objects.values_list("id", flat=True))
     if audience == "active":
         return list(
             Tenant.objects.filter(
-                is_deleted=False,
                 status="active",
                 is_suspended=False,
             ).values_list("id", flat=True),
@@ -136,13 +134,25 @@ def _dispatch_channel(
     user,
     title: str,
     message: str,
+    severity: str = "info",
 ) -> tuple[str, str, str]:
     """Return (status, error_message, provider_reference)."""
     if channel == "email":
         address = (user.email or "").strip()
         if not address:
             return "skipped", "No email address on file", ""
-        result = EmailService.send(address, title, message, tenant=user.tenant)
+        branded = build_platform_broadcast_email(
+            title=title,
+            message=message,
+            severity=severity,
+        )
+        result = EmailService.send(
+            address,
+            title,
+            branded.text_body,
+            html_body=branded.html_body,
+            tenant=user.tenant,
+        )
         status = "sent" if result.success else "failed"
         return status, "" if result.success else result.message, result.reference
 
@@ -183,6 +193,7 @@ def send_platform_broadcast(broadcast: PlatformBroadcast, *, actor=None) -> dict
                 user=user,
                 title=broadcast.title,
                 message=broadcast.message,
+                severity=broadcast.severity,
             )
             if status == "sent":
                 delivered_count += 1

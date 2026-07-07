@@ -20,7 +20,7 @@ class MetaWhatsAppProvider(BaseMessagingProvider):
             errors.append("phone_number_id")
         return errors
 
-    def build_request(self, config, *, to: str, subject: str, message: str) -> ProviderRequest:
+    def build_request(self, config, *, to: str, subject: str, message: str, html_body: str = "") -> ProviderRequest:
         to_e164 = normalize_phone_e164(to).lstrip("+")
         endpoint = f"https://graph.facebook.com/v19.0/{config.phone_number_id}/messages"
         return ProviderRequest(
@@ -47,6 +47,7 @@ class MetaWhatsAppProvider(BaseMessagingProvider):
         to: str,
         subject: str,
         message: str,
+        html_body: str = "",
     ) -> ProviderResponse:
         return ProviderResponse(
             success=False,
@@ -71,7 +72,7 @@ class TwilioWhatsAppProvider(BaseMessagingProvider):
             errors.append("whatsapp_from (phone_number_id)")
         return errors
 
-    def build_request(self, config, *, to: str, subject: str, message: str) -> ProviderRequest:
+    def build_request(self, config, *, to: str, subject: str, message: str, html_body: str = "") -> ProviderRequest:
         to_addr = f"whatsapp:{normalize_phone_e164(to)}"
         from_addr = f"whatsapp:{config.phone_number_id}"
         endpoint = f"https://api.twilio.com/2010-04-01/Accounts/{config.api_key}/Messages.json"
@@ -96,6 +97,7 @@ class TwilioWhatsAppProvider(BaseMessagingProvider):
         to: str,
         subject: str,
         message: str,
+        html_body: str = "",
     ) -> ProviderResponse:
         return ProviderResponse(
             success=False,
@@ -118,7 +120,7 @@ class AfricasTalkingWhatsAppProvider(BaseMessagingProvider):
             errors.append("channel_number (phone_number_id)")
         return errors
 
-    def build_request(self, config, *, to: str, subject: str, message: str) -> ProviderRequest:
+    def build_request(self, config, *, to: str, subject: str, message: str, html_body: str = "") -> ProviderRequest:
         return ProviderRequest(
             provider=self.provider_slug,
             endpoint="https://chatapi.africastalking.com/whatsapp/message",
@@ -142,6 +144,7 @@ class AfricasTalkingWhatsAppProvider(BaseMessagingProvider):
         to: str,
         subject: str,
         message: str,
+        html_body: str = "",
     ) -> ProviderResponse:
         return ProviderResponse(
             success=False,

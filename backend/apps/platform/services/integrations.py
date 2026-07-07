@@ -123,7 +123,13 @@ class EmailService:
         failed_count = 0
 
         for recipient in recipients:
-            response = adapter.dispatch(config, to=recipient, subject=subject, message=body)
+            response = adapter.dispatch(
+                config,
+                to=recipient,
+                subject=subject,
+                message=body,
+                html_body=html_body,
+            )
             item = _from_provider_response(response, reference=reference)
             item.metadata = {
                 **(item.metadata or {}),

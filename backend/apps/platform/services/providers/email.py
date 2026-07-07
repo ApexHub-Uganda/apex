@@ -17,7 +17,15 @@ class SmtpEmailProvider(BaseMessagingProvider):
             errors.append("username (recommended for authenticated SMTP)")
         return errors
 
-    def build_request(self, config, *, to: str, subject: str, message: str) -> ProviderRequest:
+    def build_request(
+        self,
+        config,
+        *,
+        to: str,
+        subject: str,
+        message: str,
+        html_body: str = "",
+    ) -> ProviderRequest:
         return ProviderRequest(
             provider=self.provider_slug,
             endpoint=f"smtp://{config.host}:{config.port}",
@@ -27,6 +35,7 @@ class SmtpEmailProvider(BaseMessagingProvider):
                 "to": [to] if isinstance(to, str) else to,
                 "subject": subject,
                 "text": message,
+                "html": html_body,
                 "use_tls": config.use_tls,
             },
         )
@@ -55,19 +64,32 @@ class SmtpEmailProvider(BaseMessagingProvider):
         to: str,
         subject: str,
         message: str,
+        html_body: str = "",
     ) -> ProviderResponse:
-        from django.core.mail import send_mail
+        from django.core.mail import EmailMultiAlternatives, send_mail
 
         try:
             with self._smtp_connection(config) as connection:
-                sent = send_mail(
-                    subject,
-                    message,
-                    request.body["from"],
-                    [to],
-                    fail_silently=False,
-                    connection=connection,
-                )
+                html_content = html_body or request.body.get("html") or ""
+                if html_content:
+                    email = EmailMultiAlternatives(
+                        subject,
+                        message,
+                        request.body["from"],
+                        [to],
+                        connection=connection,
+                    )
+                    email.attach_alternative(html_content, "text/html")
+                    sent = email.send(fail_silently=False)
+                else:
+                    sent = send_mail(
+                        subject,
+                        message,
+                        request.body["from"],
+                        [to],
+                        fail_silently=False,
+                        connection=connection,
+                    )
         except Exception as exc:
             from apps.platform.services.email_config import format_smtp_error
 
@@ -105,7 +127,15 @@ class SendgridEmailProvider(BaseMessagingProvider):
             errors.append("from_email")
         return errors
 
-    def build_request(self, config, *, to: str, subject: str, message: str) -> ProviderRequest:
+    def build_request(
+        self,
+        config,
+        *,
+        to: str,
+        subject: str,
+        message: str,
+        html_body: str = "",
+    ) -> ProviderRequest:
         return ProviderRequest(
             provider=self.provider_slug,
             endpoint="https://api.sendgrid.com/v3/mail/send",
@@ -130,6 +160,7 @@ class SendgridEmailProvider(BaseMessagingProvider):
         to: str,
         subject: str,
         message: str,
+        html_body: str = "",
     ) -> ProviderResponse:
         return ProviderResponse(
             success=False,
@@ -154,7 +185,15 @@ class MailgunEmailProvider(BaseMessagingProvider):
             errors.append("from_email")
         return errors
 
-    def build_request(self, config, *, to: str, subject: str, message: str) -> ProviderRequest:
+    def build_request(
+        self,
+        config,
+        *,
+        to: str,
+        subject: str,
+        message: str,
+        html_body: str = "",
+    ) -> ProviderRequest:
         base = config.host.rstrip("/")
         return ProviderRequest(
             provider=self.provider_slug,
@@ -178,6 +217,7 @@ class MailgunEmailProvider(BaseMessagingProvider):
         to: str,
         subject: str,
         message: str,
+        html_body: str = "",
     ) -> ProviderResponse:
         return ProviderResponse(
             success=False,

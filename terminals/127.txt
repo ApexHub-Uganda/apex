@@ -3,7 +3,7 @@ pid: 17204
 cwd: "E:\apex"
 command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_delete.py -q"
 started_at: 2026-07-06T09:18:52.722Z
-running_for_ms: 16105009 
+running_for_ms: 16255014 
 ---
 ============================= test session starts =============================
 platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0

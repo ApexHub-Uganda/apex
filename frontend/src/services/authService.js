@@ -39,15 +39,16 @@ export const authService = {
     }
   },
 
-  async forgotPassword(email) {
-    const { data } = await api.post('/auth/password/reset/', { email });
+  async requestPasswordResetOtp(email) {
+    const { data } = await api.post('/auth/password-reset/', { email: email.trim() });
     return data;
   },
 
-  async resetPassword(token, password) {
-    const { data } = await api.post('/auth/password/reset/confirm/', {
-      token,
-      password,
+  async confirmPasswordReset({ email, otp, newPassword }) {
+    const { data } = await api.post('/auth/password-reset/confirm/', {
+      email: email.trim(),
+      otp: otp.trim(),
+      new_password: newPassword,
     });
     return data;
   },

@@ -41,7 +41,20 @@ import Staff from './pages/school-admin/Staff';
 import Classes from './pages/school-admin/Classes';
 import Attendance from './pages/school-admin/Attendance';
 import MarksEntry from './pages/school-admin/MarksEntry';
+import MarksApproval from './pages/school-admin/MarksApproval';
+import Assessments from './pages/school-admin/Assessments';
+import LessonAttendance from './pages/school-admin/LessonAttendance';
+import TeacherWorkspace from './pages/school-admin/TeacherWorkspace';
+import HoDWorkspace from './pages/school-admin/HoDWorkspace';
+import DoSWorkspace from './pages/school-admin/DoSWorkspace';
+import ClassTeacherWorkspace from './pages/school-admin/ClassTeacherWorkspace';
 import Finance from './pages/school-admin/Finance';
+import BursarWorkspace from './pages/school-admin/BursarWorkspace';
+import AssistantBursarWorkspace from './pages/school-admin/AssistantBursarWorkspace';
+import FinanceApproval from './pages/school-admin/FinanceApproval';
+import FinanceAnalytics from './pages/school-admin/FinanceAnalytics';
+import FinanceReports from './pages/school-admin/FinanceReports';
+import ParentFeeStatements from './pages/school-admin/ParentFeeStatements';
 import Library from './pages/school-admin/Library';
 import Hostel from './pages/school-admin/Hostel';
 import Transport from './pages/school-admin/Transport';
@@ -147,8 +160,22 @@ function AppRoutes() {
         <Route path="staff" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.staff}><Staff /></Gated>} />
         <Route path="classes" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.classes}><Classes /></Gated>} />
         <Route path="attendance" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.attendance}><Attendance /></Gated>} />
+        <Route path="academics/teacher" element={<Gated featureKey="teacher_workspace"><TeacherWorkspace /></Gated>} />
+        <Route path="academics/hod" element={<Gated featureKey="hod_workspace"><HoDWorkspace /></Gated>} />
+        <Route path="academics/dos" element={<Gated featureKey="dos_workspace"><DoSWorkspace /></Gated>} />
+        <Route path="academics/class-teacher" element={<Gated featureKey="class_teacher_tools"><ClassTeacherWorkspace /></Gated>} />
         <Route path="examinations/marks" element={<Gated featureKey="marks_entry"><MarksEntry /></Gated>} />
+        <Route path="examinations/approval" element={<Gated featureKey="marks_approval"><MarksApproval /></Gated>} />
+        <Route path="examinations/assessments" element={<Gated featureKey="assessment_management"><Assessments /></Gated>} />
+        <Route path="attendance/lessons" element={<Gated featureKey="lesson_attendance"><LessonAttendance /></Gated>} />
         <Route path="finance" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.finance}><Finance /></Gated>} />
+        <Route path="finance/bursar" element={<Gated featureKey="bursar_workspace"><BursarWorkspace /></Gated>} />
+        <Route path="finance/assistant" element={<Gated featureKey="assistant_bursar_workspace"><AssistantBursarWorkspace /></Gated>} />
+        <Route path="finance/approval" element={<Gated featureKey="transaction_approval"><FinanceApproval /></Gated>} />
+        <Route path="finance/payments" element={<Gated featureKey="payment_recording"><Finance /></Gated>} />
+        <Route path="finance/analytics" element={<Gated featureKey="finance_analytics"><FinanceAnalytics /></Gated>} />
+        <Route path="finance/reports" element={<Gated featureKey="financial_reports"><FinanceReports /></Gated>} />
+        <Route path="finance/statements" element={<Gated featureKey="parent_fee_statements"><ParentFeeStatements /></Gated>} />
         <Route path="library" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.library}><Library /></Gated>} />
         <Route path="hostel" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.hostel}><Hostel /></Gated>} />
         <Route path="transport" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.transport}><Transport /></Gated>} />

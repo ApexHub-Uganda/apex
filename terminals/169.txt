@@ -1,0 +1,19 @@
+---
+pid: 13976
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_platform_broadcast.py::TestPlatformBroadcasts::test_send_broadcast_creates_deliveries_and_notifications -v --tb=short 2>&1 | Select-Object -Last 30"
+started_at: 2026-07-07T11:30:30.853Z
+running_for_ms: 2460003  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 1 item
+
+tests/test_platform_broadcast.py::TestPlatformBroadcasts::test_send_broadcast_creates_deliveries_and_notifications PASSED [100%]
+
+============================= 1 passed in 33.09s ==============================

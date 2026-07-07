@@ -3,7 +3,7 @@ pid: 7636
 cwd: "E:\apex"
 command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py::TestRolePermissions::test_reset_role_permissions_requires_password -q"
 started_at: 2026-07-06T10:35:44.217Z
-running_for_ms: 11495006 
+running_for_ms: 11645006 
 ---
 ============================= test session starts =============================
 platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0

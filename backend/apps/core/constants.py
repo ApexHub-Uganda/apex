@@ -33,9 +33,11 @@ class UserRole:
     DIRECTOR_OF_STUDIES = "director_of_studies"
     HEAD_OF_DEPARTMENT = "head_of_department"
     TEACHER = "teacher"
+    CLASS_TEACHER = "class_teacher"
     PARENT = "parent"
     STUDENT = "student"
     BURSAR = "bursar"
+    ASSISTANT_BURSAR = "assistant_bursar"
     LIBRARIAN = "librarian"
     HR_MANAGER = "hr_manager"
     TRANSPORT_MANAGER = "transport_manager"
@@ -59,9 +61,11 @@ class UserRole:
         (DIRECTOR_OF_STUDIES, "Director of Studies"),
         (HEAD_OF_DEPARTMENT, "Head of Department"),
         (TEACHER, "Teacher"),
+        (CLASS_TEACHER, "Class Teacher"),
         (PARENT, "Parent"),
         (STUDENT, "Student"),
         (BURSAR, "Bursar / Accountant"),
+        (ASSISTANT_BURSAR, "Assistant Bursar"),
         (LIBRARIAN, "Librarian"),
         (HR_MANAGER, "Human Resource Manager"),
         (TRANSPORT_MANAGER, "Transport Manager"),
@@ -91,8 +95,10 @@ class UserRole:
         DIRECTOR_OF_STUDIES,
         HEAD_OF_DEPARTMENT,
         TEACHER,
+        CLASS_TEACHER,
         PARENT,
         BURSAR,
+        ASSISTANT_BURSAR,
         LIBRARIAN,
         HR_MANAGER,
         TRANSPORT_MANAGER,
@@ -114,9 +120,11 @@ class UserRole:
         DIRECTOR_OF_STUDIES,
         HEAD_OF_DEPARTMENT,
         TEACHER,
+        CLASS_TEACHER,
         PARENT,
         STUDENT,
         BURSAR,
+        ASSISTANT_BURSAR,
         LIBRARIAN,
         HR_MANAGER,
         TRANSPORT_MANAGER,
@@ -139,7 +147,9 @@ class UserRole:
         DIRECTOR_OF_STUDIES,
         HEAD_OF_DEPARTMENT,
         TEACHER,
+        CLASS_TEACHER,
         BURSAR,
+        ASSISTANT_BURSAR,
         LIBRARIAN,
         HR_MANAGER,
         TRANSPORT_MANAGER,

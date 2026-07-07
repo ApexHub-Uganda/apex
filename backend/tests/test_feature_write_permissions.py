@@ -75,8 +75,11 @@ def academic_year(db, academics_tenant):
 
 @pytest.mark.django_db
 class TestFeatureWritePermissions:
-    def test_teacher_default_can_write_classes(self, academics_tenant, teacher):
-        assert user_can_access_feature(academics_tenant, teacher, "classes", require_write=True)
+    def test_teacher_default_cannot_write_classes(self, academics_tenant, teacher):
+        assert not user_can_access_feature(academics_tenant, teacher, "classes", require_write=True)
+        perms = get_user_feature_permissions(academics_tenant, teacher)
+        assert perms["classes"]["can_read"] is True
+        assert perms["classes"]["can_write"] is False
 
     def test_module_write_denied_blocks_feature_write(self, academics_tenant, teacher):
         save_role_permissions(academics_tenant, [{
@@ -132,7 +135,7 @@ class TestFeatureWritePermissions:
         )
         assert response.status_code == 403
 
-    def test_post_classes_allowed_when_write_granted(
+    def test_post_classes_blocked_by_default_teacher_defaults(
         self, academics_tenant, teacher, academic_year,
     ):
         client = APIClient()
@@ -146,7 +149,7 @@ class TestFeatureWritePermissions:
             },
             format="json",
         )
-        assert response.status_code in (200, 201)
+        assert response.status_code == 403
 
     def test_save_caps_feature_write_when_module_write_denied(self, academics_tenant, teacher):
         save_role_permissions(academics_tenant, [

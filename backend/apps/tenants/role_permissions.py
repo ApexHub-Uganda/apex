@@ -39,6 +39,10 @@ DEFAULT_ROLE_MODULE_PERMISSIONS: dict[str, dict[str, dict[str, bool]]] = {
         "finance": {"can_read": True, "can_write": True},
         "analytics": {"can_read": True, "can_write": False},
     },
+    UserRole.ASSISTANT_BURSAR: {
+        "finance": {"can_read": True, "can_write": True},
+        "analytics": {"can_read": True, "can_write": False},
+    },
     UserRole.DIRECTOR_OF_STUDIES: {
         "academics": {"can_read": True, "can_write": True},
         "examinations": {"can_read": True, "can_write": True},
@@ -61,6 +65,12 @@ DEFAULT_ROLE_MODULE_PERMISSIONS: dict[str, dict[str, dict[str, bool]]] = {
         "analytics": {"can_read": True, "can_write": False},
     },
     UserRole.TEACHER: {
+        "academics": {"can_read": True, "can_write": False},
+        "attendance": {"can_read": True, "can_write": True},
+        "examinations": {"can_read": True, "can_write": False},
+        "communication": {"can_read": True, "can_write": False},
+    },
+    UserRole.CLASS_TEACHER: {
         "academics": {"can_read": True, "can_write": True},
         "attendance": {"can_read": True, "can_write": True},
         "examinations": {"can_read": True, "can_write": False},
@@ -167,6 +177,46 @@ def get_effective_role_permissions(tenant, role: str) -> dict[str, dict[str, boo
     return effective
 
 
+def _resolve_feature_permission(
+    *,
+    canonical: str,
+    feature_key: str,
+    mod_perms: dict[str, bool],
+    granular: bool,
+    stored_features: dict[str, dict[str, bool]],
+) -> dict[str, bool]:
+    from apps.tenants.role_feature_defaults import get_default_feature_permission
+
+    if not mod_perms.get("can_read"):
+        return {"can_read": False, "can_write": False}
+
+    if granular:
+        if feature_key in stored_features:
+            feat = stored_features[feature_key]
+            return {
+                "can_read": bool(feat.get("can_read")),
+                "can_write": bool(feat.get("can_write")) and bool(mod_perms.get("can_read")),
+            }
+        default = get_default_feature_permission(canonical, feature_key)
+        if default is not None:
+            return {
+                "can_read": bool(default.get("can_read")) and bool(mod_perms.get("can_read")),
+                "can_write": bool(default.get("can_write")) and bool(mod_perms.get("can_read")),
+            }
+        return {"can_read": False, "can_write": False}
+
+    default = get_default_feature_permission(canonical, feature_key)
+    if default is not None:
+        return {
+            "can_read": bool(default.get("can_read")) and bool(mod_perms.get("can_read")),
+            "can_write": bool(default.get("can_write")) and bool(mod_perms.get("can_read")),
+        }
+    return {
+        "can_read": bool(mod_perms.get("can_read")),
+        "can_write": bool(mod_perms.get("can_write")),
+    }
+
+
 def get_effective_feature_permissions(tenant, role: str) -> dict[str, dict[str, bool]]:
     """Resolved sub-module permissions for a role (plan ∩ module ∩ feature overrides)."""
     from apps.subscriptions.services import get_tenant_module_menu
@@ -185,24 +235,13 @@ def get_effective_feature_permissions(tenant, role: str) -> dict[str, dict[str, 
 
         for child in children:
             feature_key = child["feature_key"]
-            if not mod_perms.get("can_read"):
-                resolved[feature_key] = {"can_read": False, "can_write": False}
-                continue
-
-            if granular:
-                feat = stored_features.get(
-                    feature_key,
-                    {"can_read": False, "can_write": False},
-                )
-                resolved[feature_key] = {
-                    "can_read": bool(feat.get("can_read")),
-                    "can_write": bool(feat.get("can_write")) and bool(mod_perms.get("can_write")),
-                }
-            else:
-                resolved[feature_key] = {
-                    "can_read": bool(mod_perms.get("can_read")),
-                    "can_write": bool(mod_perms.get("can_write")),
-                }
+            resolved[feature_key] = _resolve_feature_permission(
+                canonical=canonical,
+                feature_key=feature_key,
+                mod_perms=mod_perms,
+                granular=granular,
+                stored_features=stored_features,
+            )
 
     return resolved
 
@@ -258,7 +297,14 @@ def get_user_feature_permissions(tenant, user) -> dict[str, dict[str, bool]]:
             for child in module.get("children", []):
                 result[child["feature_key"]] = {"can_read": True, "can_write": True}
         return result
-    return get_effective_feature_permissions(tenant, user.role)
+    from apps.academics.scoping import get_academic_context
+    from apps.tenants.role_feature_defaults import merge_class_teacher_feature_permissions
+
+    perms = get_effective_feature_permissions(tenant, user.role)
+    ctx = get_academic_context(user)
+    if ctx and ctx.is_class_teacher and normalize_role(user.role) == UserRole.TEACHER:
+        perms = merge_class_teacher_feature_permissions(perms, is_class_teacher=True)
+    return perms
 
 
 def filter_module_menu_by_role(
@@ -443,11 +489,23 @@ def get_role_permission_matrix(tenant) -> dict[str, Any]:
                         "can_write": current.get("can_write", False),
                     }
                 else:
+                    from apps.tenants.role_feature_defaults import get_default_feature_permission
+
                     feat_current = {
                         "can_read": current.get("can_read", False),
                         "can_write": current.get("can_write", False),
                     }
-                    feat_default = feat_current.copy()
+                    feat_default = get_default_feature_permission(canonical, feature_key)
+                    if feat_default is None:
+                        feat_default = {
+                            "can_read": current.get("can_read", False),
+                            "can_write": current.get("can_write", False),
+                        }
+                    else:
+                        feat_default = {
+                            "can_read": bool(feat_default.get("can_read")) and bool(current.get("can_read")),
+                            "can_write": bool(feat_default.get("can_write")) and bool(current.get("can_read")),
+                        }
 
                 feature_cells[feature_key] = {
                     "label": child.get("label", feature_key.replace("_", " ").title()),
@@ -552,14 +610,8 @@ def save_role_permissions(
             if not mod_write:
                 can_write = False
 
-        if not can_read and not can_write:
-            SchoolRoleFeaturePermission.objects.filter(
-                tenant=tenant,
-                role=role,
-                feature_key=feature_key,
-            ).delete()
-            continue
-
+        # Persist explicit feature matrix values (including denials) so role defaults
+        # cannot grant access the school admin turned off in Permission Settings.
         SchoolRoleFeaturePermission.objects.update_or_create(
             tenant=tenant,
             role=role,

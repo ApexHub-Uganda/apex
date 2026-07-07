@@ -1,0 +1,15 @@
+---
+pid: 13572
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_examination_workflow.py tests/test_marks_entry.py tests/test_academic_scoping.py tests/test_role_feature_defaults.py tests/test_role_permissions.py -q --tb=line 2>&1 | Select-Object -Last 8"
+started_at: 2026-07-07T09:20:03.148Z
+running_for_ms: 10285012 
+---
+
+tests\test_examination_workflow.py ....                                  [ 10%]
+tests\test_marks_entry.py .......                                        [ 29%]
+tests\test_academic_scoping.py .......                                   [ 48%]
+tests\test_role_feature_defaults.py ......                               [ 64%]
+tests\test_role_permissions.py .............                             [100%]
+
+============================= 37 passed in 59.58s =============================

@@ -41,6 +41,27 @@ class TestPlatformBroadcasts:
         assert payload["channels"] == ["email", "whatsapp"]
         assert payload["status"] == "draft"
 
+    def test_send_broadcast_all_audience(
+        self, api_client, super_admin, school_admin,
+    ):
+        broadcast = PlatformBroadcast.objects.create(
+            title="All Schools Notice",
+            message="Platform-wide update.",
+            channels=["email"],
+            audience="all",
+            status="draft",
+            severity="info",
+            starts_at=timezone.now(),
+        )
+
+        api_client.force_authenticate(user=super_admin)
+        response = api_client.post(f"/api/v1/platform/broadcasts/{broadcast.id}/send/")
+        assert response.status_code == 200
+
+        broadcast.refresh_from_db()
+        assert broadcast.status == "sent"
+        assert broadcast.recipient_count >= 1
+
     def test_send_broadcast_creates_deliveries_and_notifications(
         self, api_client, super_admin, school_admin,
     ):

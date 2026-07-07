@@ -141,11 +141,17 @@ export const TESTIMONIALS = [
   { name: 'David Kiprop', role: 'IT Director', school: 'Horizon Institute', rating: 5, quote: 'Security, uptime, and support are enterprise-grade. We migrated 3 campuses without a single day of downtime.', avatar: 'DK' },
 ];
 
-export const CASE_STUDIES = [
-  { school: 'Pinnacle Schools', before: 'Manual registers, delayed fee reports', after: '98% on-time fee collection', metric: '+62% efficiency' },
-  { school: 'Nova Training', before: 'Paper-based attendance', after: 'Real-time parent notifications', metric: '85% parent engagement' },
-  { school: 'Unity College', before: 'Disconnected spreadsheets', after: 'Unified academic dashboard', metric: '3× faster reporting' },
+/** Narrative templates for case studies; school names are filled from the database on the landing page. */
+export const CASE_STUDY_TEMPLATES = [
+  { before: 'Manual registers, delayed fee reports', after: '98% on-time fee collection', metric: '+62% efficiency' },
+  { before: 'Paper-based attendance', after: 'Real-time parent notifications', metric: '85% parent engagement' },
+  { before: 'Disconnected spreadsheets', after: 'Unified academic dashboard', metric: '3× faster reporting' },
 ];
+
+export const CASE_STUDIES = CASE_STUDY_TEMPLATES.map((template, index) => ({
+  ...template,
+  school: ['Pinnacle Schools', 'Nova Training', 'Unity College'][index],
+}));
 
 export const SECURITY_ITEMS = [
   { icon: FiLock, title: 'AES-256 Encryption', desc: 'Data encrypted at rest and in transit across all services.' },

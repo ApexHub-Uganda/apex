@@ -25,10 +25,22 @@ import {
   routesService,
   studentTransportService,
   invoicesService,
+  feeCategoriesService,
+  studentFeeBalancesService,
+  feeDiscountsService,
+  refundsService,
+  miscIncomeService,
+  financeNotesService,
+  financialAccountsService,
+  budgetsService,
+  accountingPeriodsService,
   notificationsService,
   booksService,
   assignmentsService,
   attendanceService,
+  classNoticesService,
+  disciplineRemarksService,
+  examinationSessionsService,
   leavesService,
   payrollRunsService,
 } from '../services/moduleService';
@@ -103,7 +115,7 @@ export const ENTITY_REGISTRY_EXTRAS = {
     { to: '/school-admin/finance', label: 'Finance' },
   ),
   financial_reports: redirectEntry(
-    '/school-admin/reports',
+    '/school-admin/finance/reports',
     'Financial summaries and exportable reports',
     { to: '/school-admin/finance', label: 'Finance' },
   ),
@@ -150,11 +162,7 @@ export const ENTITY_REGISTRY_EXTRAS = {
     'Hostel blocks, wardens, and capacity',
     { to: '/school-admin/hostel', label: 'Hostels' },
   ),
-  payment_recording: redirectEntry(
-    '/school-admin/finance',
-    'Record fee payments on the finance workspace',
-    { to: '/school-admin/finance', label: 'Finance' },
-  ),
+
   student_promotion: redirectEntry(
     '/school-admin/students',
     'Promote students to the next class or stream',
@@ -170,16 +178,40 @@ export const ENTITY_REGISTRY_EXTRAS = {
     'Leave types and entitlement policies',
     { to: '/school-admin/hr', label: 'HR' },
   ),
-  fee_categories: redirectEntry(
-    '/school-admin/finance/structures',
-    'Fee categories used in billing structures',
+  parent_fee_statements: redirectEntry(
+    '/school-admin/finance/statements',
+    'Read-only fee statements for linked children',
     { to: '/school-admin/finance', label: 'Finance' },
   ),
-  discounts: redirectEntry(
-    '/school-admin/finance/structures',
-    'Fee discounts and scholarship rules',
+
+  bursar_workspace: redirectEntry(
+    '/school-admin/finance/bursar',
+    'Bursar financial oversight and approvals',
     { to: '/school-admin/finance', label: 'Finance' },
   ),
+  assistant_bursar_workspace: redirectEntry(
+    '/school-admin/finance/assistant',
+    'Assistant bursar daily collections workspace',
+    { to: '/school-admin/finance', label: 'Finance' },
+  ),
+  transaction_approval: redirectEntry(
+    '/school-admin/finance/approval',
+    'Approve or reverse financial transactions',
+    { to: '/school-admin/finance', label: 'Finance' },
+  ),
+
+  payment_recording: redirectEntry(
+    '/school-admin/finance/payments',
+    'Record student fee payments',
+    { to: '/school-admin/finance', label: 'Finance' },
+  ),
+
+  finance_analytics: redirectEntry(
+    '/school-admin/finance/analytics',
+    'Finance dashboards and collection KPIs',
+    { to: '/school-admin/finance', label: 'Finance' },
+  ),
+
   student_documents: redirectEntry(
     '/school-admin/admissions',
     'Student documents and admission files',
@@ -307,6 +339,140 @@ export const ENTITY_REGISTRY_EXTRAS = {
     { to: '/school-admin/examinations', label: 'Examinations' },
   ),
 
+  marks_approval: redirectEntry(
+    '/school-admin/examinations/approval',
+    'Review and approve submitted mark sheets',
+    { to: '/school-admin/examinations', label: 'Examinations' },
+  ),
+
+  assessment_management: redirectEntry(
+    '/school-admin/examinations/assessments',
+    'Publish draft assessments for marks entry',
+    { to: '/school-admin/examinations', label: 'Examinations' },
+  ),
+
+  teacher_workspace: redirectEntry(
+    '/school-admin/academics/teacher',
+    'Personal teaching dashboard',
+    { to: '/school-admin/academics', label: 'Academics' },
+  ),
+
+  hod_workspace: redirectEntry(
+    '/school-admin/academics/hod',
+    'Department academic coordination',
+    { to: '/school-admin/academics', label: 'Academics' },
+  ),
+
+  dos_workspace: redirectEntry(
+    '/school-admin/academics/dos',
+    'School-wide academic oversight',
+    { to: '/school-admin/academics', label: 'Academics' },
+  ),
+
+  class_teacher_tools: redirectEntry(
+    '/school-admin/academics/class-teacher',
+    'Class welfare tools for assigned class teachers',
+    { to: '/school-admin/academics/teacher', label: 'Teacher Workspace' },
+  ),
+
+  lesson_attendance: redirectEntry(
+    '/school-admin/attendance/lessons',
+    'Mark attendance per lesson session',
+    { to: '/school-admin/attendance', label: 'Attendance' },
+  ),
+
+  examination_sessions: {
+    service: examinationSessionsService,
+    queryKey: ['examination-sessions'],
+    createLabel: 'Add Exam Session',
+    subtitle: 'School-wide examination windows and calendars',
+    backLink: { to: '/school-admin/examinations', label: 'Examinations' },
+    columns: [
+      { key: 'name', label: 'Session', accessor: 'name', sortable: true },
+      { key: 'academic_year_name', label: 'Year', accessor: 'academic_year_name' },
+      { key: 'term_name', label: 'Term', accessor: 'term_name' },
+      { key: 'start_date', label: 'Starts', accessor: 'start_date' },
+      { key: 'end_date', label: 'Ends', accessor: 'end_date' },
+      { key: 'status', label: 'Status', accessor: 'status' },
+    ],
+    formFields: [
+      { name: 'name', label: 'Session Name', required: true },
+      { name: 'academic_year', label: 'Academic Year', type: 'select', required: true, optionsFrom: 'academic_years' },
+      { name: 'term', label: 'Term', type: 'select', optionsFrom: 'terms' },
+      { name: 'start_date', label: 'Start Date', type: 'date', required: true },
+      { name: 'end_date', label: 'End Date', type: 'date', required: true },
+      { name: 'status', label: 'Status', type: 'select', options: [
+        { value: 'planned', label: 'Planned' },
+        { value: 'active', label: 'Active' },
+        { value: 'closed', label: 'Closed' },
+      ] },
+      { name: 'description', label: 'Description', type: 'textarea' },
+    ],
+    emptyForm: {
+      name: '', academic_year: '', term: '', start_date: '', end_date: '',
+      status: 'planned', description: '',
+    },
+  },
+
+  class_notices: {
+    service: classNoticesService,
+    queryKey: ['class-notices'],
+    createLabel: 'Add Notice',
+    subtitle: 'Notices for your assigned class',
+    backLink: { to: '/school-admin/academics/class-teacher', label: 'Class Teacher' },
+    columns: [
+      { key: 'title', label: 'Title', accessor: 'title', sortable: true },
+      { key: 'school_class_name', label: 'Class', accessor: 'school_class_name' },
+      {
+        key: 'is_published',
+        label: 'Published',
+        render: (row) => (row.is_published
+          ? <span className="badge text-bg-success-subtle border text-success">Published</span>
+          : 'Draft'),
+      },
+    ],
+    formFields: [
+      { name: 'school_class', label: 'Class', type: 'select', required: true, optionsFrom: 'classes' },
+      { name: 'title', label: 'Title', required: true },
+      { name: 'body', label: 'Body', type: 'textarea', required: true },
+      { name: 'is_published', label: 'Published', type: 'checkbox', checkboxLabel: 'Publish immediately' },
+    ],
+    emptyForm: { school_class: '', title: '', body: '', is_published: false },
+  },
+
+  discipline_remarks: {
+    service: disciplineRemarksService,
+    queryKey: ['discipline-remarks'],
+    createLabel: 'Add Remark',
+    subtitle: 'Student discipline and welfare remarks',
+    backLink: { to: '/school-admin/academics', label: 'Academics' },
+    columns: [
+      { key: 'student_name', label: 'Student', accessor: 'student_name' },
+      { key: 'school_class_name', label: 'Class', accessor: 'school_class_name' },
+      { key: 'remark_type', label: 'Type', accessor: 'remark_type' },
+      { key: 'title', label: 'Title', accessor: 'title' },
+      { key: 'incident_date', label: 'Date', accessor: 'incident_date' },
+    ],
+    formFields: [
+      { name: 'student', label: 'Student', type: 'select', required: true, optionsFrom: 'students' },
+      { name: 'school_class', label: 'Class', type: 'select', required: true, optionsFrom: 'classes' },
+      { name: 'remark_type', label: 'Type', type: 'select', required: true, options: [
+        { value: 'commendation', label: 'Commendation' },
+        { value: 'warning', label: 'Warning' },
+        { value: 'sanction', label: 'Sanction' },
+      ] },
+      { name: 'title', label: 'Title', required: true },
+      { name: 'description', label: 'Description', type: 'textarea', required: true },
+      { name: 'incident_date', label: 'Incident Date', type: 'date', required: true },
+      { name: 'subject', label: 'Subject', type: 'select', optionsFrom: 'subjects' },
+      { name: 'term', label: 'Term', type: 'select', optionsFrom: 'terms' },
+    ],
+    emptyForm: {
+      student: '', school_class: '', remark_type: 'warning', title: '',
+      description: '', incident_date: '', subject: '', term: '',
+    },
+  },
+
   report_cards: {
     service: reportCardsService,
     queryKey: ['report-cards'],
@@ -395,6 +561,206 @@ export const ENTITY_REGISTRY_EXTRAS = {
   },
 
   // ── Finance & payroll ───────────────────────────────────────────────────
+  fee_categories: {
+    service: feeCategoriesService,
+    queryKey: ['fee-categories'],
+    createLabel: 'Add Category',
+    subtitle: 'Fee categories used in billing structures',
+    backLink: { to: '/school-admin/finance', label: 'Finance' },
+    columns: [
+      { key: 'name', label: 'Name', accessor: 'name', sortable: true },
+      { key: 'code', label: 'Code', accessor: 'code' },
+      { key: 'is_active', label: 'Active', render: (row) => yesNo(row.is_active) },
+    ],
+    formFields: [
+      { name: 'name', label: 'Category Name', required: true },
+      { name: 'code', label: 'Code' },
+      { name: 'description', label: 'Description', type: 'textarea' },
+      { name: 'is_active', label: 'Active', type: 'checkbox', checkboxLabel: 'Category is active' },
+    ],
+    emptyForm: { name: '', code: '', description: '', is_active: true },
+  },
+
+  debtor_management: {
+    service: studentFeeBalancesService,
+    queryKey: ['student-fee-balances'],
+    subtitle: 'Outstanding student fee balances by term',
+    backLink: { to: '/school-admin/finance', label: 'Finance' },
+    columns: [
+      { key: 'student_name', label: 'Student', accessor: 'student_name', sortable: true },
+      { key: 'admission_number', label: 'Admission', accessor: 'admission_number' },
+      { key: 'class_name', label: 'Class', accessor: 'class_name' },
+      { key: 'term_name', label: 'Term', accessor: 'term_name' },
+      { key: 'balance', label: 'Balance (UGX)', accessor: 'balance' },
+      { key: 'status', label: 'Status', accessor: 'status' },
+    ],
+    formFields: [],
+    emptyForm: {},
+    readOnly: true,
+  },
+
+  discounts: {
+    service: feeDiscountsService,
+    queryKey: ['fee-discounts'],
+    createLabel: 'Add Discount',
+    subtitle: 'Fee discounts, waivers, and scholarships',
+    backLink: { to: '/school-admin/finance', label: 'Finance' },
+    columns: [
+      { key: 'student_name', label: 'Student', accessor: 'student_name' },
+      { key: 'discount_type', label: 'Type', accessor: 'discount_type' },
+      { key: 'amount', label: 'Amount (UGX)', accessor: 'amount' },
+      { key: 'status', label: 'Status', accessor: 'status' },
+    ],
+    formFields: [
+      { name: 'student', label: 'Student', type: 'select', required: true, optionsFrom: 'students' },
+      { name: 'discount_type', label: 'Type', type: 'select', required: true, options: [
+        { value: 'waiver', label: 'Waiver' },
+        { value: 'scholarship', label: 'Scholarship' },
+        { value: 'sibling', label: 'Sibling' },
+        { value: 'other', label: 'Other' },
+      ] },
+      { name: 'amount', label: 'Amount (UGX)', type: 'number' },
+      { name: 'percent', label: 'Percent', type: 'number' },
+      { name: 'reason', label: 'Reason', type: 'textarea', required: true },
+    ],
+    emptyForm: { student: '', discount_type: 'waiver', amount: '', percent: '', reason: '' },
+  },
+
+  refunds: {
+    service: refundsService,
+    queryKey: ['refunds'],
+    createLabel: 'Request Refund',
+    subtitle: 'Process and track fee refunds',
+    backLink: { to: '/school-admin/finance', label: 'Finance' },
+    columns: [
+      { key: 'student_name', label: 'Student', accessor: 'student_name' },
+      { key: 'amount', label: 'Amount (UGX)', accessor: 'amount' },
+      { key: 'status', label: 'Status', accessor: 'status' },
+    ],
+    formFields: [
+      { name: 'fee_payment', label: 'Payment', type: 'select', required: true, optionsFrom: 'feePayments' },
+      { name: 'amount', label: 'Amount (UGX)', type: 'number', required: true },
+      { name: 'reason', label: 'Reason', type: 'textarea', required: true },
+    ],
+    emptyForm: { fee_payment: '', amount: '', reason: '' },
+  },
+
+  misc_income: {
+    service: miscIncomeService,
+    queryKey: ['misc-income'],
+    createLabel: 'Record Income',
+    subtitle: 'Non-fee school income',
+    backLink: { to: '/school-admin/finance', label: 'Finance' },
+    columns: [
+      { key: 'description', label: 'Description', accessor: 'description', sortable: true },
+      { key: 'amount', label: 'Amount (UGX)', accessor: 'amount' },
+      { key: 'income_date', label: 'Date', accessor: 'income_date' },
+      { key: 'account_name', label: 'Account', accessor: 'account_name' },
+    ],
+    formFields: [
+      { name: 'description', label: 'Description', required: true },
+      { name: 'amount', label: 'Amount (UGX)', type: 'number', required: true },
+      { name: 'income_date', label: 'Date', type: 'date', required: true },
+      { name: 'account', label: 'Account', type: 'select', optionsFrom: 'financialAccounts' },
+      { name: 'reference', label: 'Reference' },
+      { name: 'notes', label: 'Notes', type: 'textarea' },
+    ],
+    emptyForm: {
+      description: '', amount: '',
+      income_date: new Date().toISOString().slice(0, 10),
+      account: '', reference: '', notes: '',
+    },
+  },
+
+  finance_notes: {
+    service: financeNotesService,
+    queryKey: ['finance-notes'],
+    createLabel: 'Add Note',
+    subtitle: 'Notes on student accounts and transactions',
+    backLink: { to: '/school-admin/finance', label: 'Finance' },
+    columns: [
+      { key: 'author_name', label: 'Author', accessor: 'author_name' },
+      { key: 'content', label: 'Note', accessor: 'content' },
+      { key: 'created_at', label: 'Created', accessor: 'created_at' },
+    ],
+    formFields: [
+      { name: 'student', label: 'Student', type: 'select', optionsFrom: 'students' },
+      { name: 'content', label: 'Note', type: 'textarea', required: true },
+    ],
+    emptyForm: { student: '', content: '' },
+  },
+
+  budget_management: {
+    service: budgetsService,
+    queryKey: ['budgets'],
+    createLabel: 'Add Budget',
+    subtitle: 'School budget planning and tracking',
+    backLink: { to: '/school-admin/finance', label: 'Finance' },
+    columns: [
+      { key: 'name', label: 'Budget', accessor: 'name', sortable: true },
+      { key: 'academic_year_name', label: 'Year', accessor: 'academic_year_name' },
+      { key: 'allocated_amount', label: 'Allocated (UGX)', accessor: 'allocated_amount' },
+      { key: 'spent_amount', label: 'Spent (UGX)', accessor: 'spent_amount' },
+    ],
+    formFields: [
+      { name: 'name', label: 'Budget Name', required: true },
+      { name: 'academic_year', label: 'Academic Year', type: 'select', required: true, optionsFrom: 'academic_years' },
+      { name: 'term', label: 'Term', type: 'select', optionsFrom: 'terms' },
+      { name: 'allocated_amount', label: 'Allocated (UGX)', type: 'number', required: true },
+      { name: 'account', label: 'Account', type: 'select', optionsFrom: 'financialAccounts' },
+      { name: 'notes', label: 'Notes', type: 'textarea' },
+    ],
+    emptyForm: { name: '', academic_year: '', term: '', allocated_amount: '', account: '', notes: '' },
+  },
+
+  financial_accounts: {
+    service: financialAccountsService,
+    queryKey: ['financial-accounts'],
+    createLabel: 'Add Account',
+    subtitle: 'Chart of accounts and balances',
+    backLink: { to: '/school-admin/finance', label: 'Finance' },
+    columns: [
+      { key: 'name', label: 'Account', accessor: 'name', sortable: true },
+      { key: 'code', label: 'Code', accessor: 'code' },
+      { key: 'account_type', label: 'Type', accessor: 'account_type' },
+      { key: 'balance', label: 'Balance (UGX)', accessor: 'balance' },
+      { key: 'is_active', label: 'Active', render: (row) => yesNo(row.is_active) },
+    ],
+    formFields: [
+      { name: 'name', label: 'Account Name', required: true },
+      { name: 'code', label: 'Code' },
+      { name: 'account_type', label: 'Type', type: 'select', required: true, options: [
+        { value: 'asset', label: 'Asset' },
+        { value: 'liability', label: 'Liability' },
+        { value: 'income', label: 'Income' },
+        { value: 'expense', label: 'Expense' },
+      ] },
+      { name: 'balance', label: 'Opening Balance (UGX)', type: 'number' },
+      { name: 'is_active', label: 'Active', type: 'checkbox', checkboxLabel: 'Account is active' },
+    ],
+    emptyForm: { name: '', code: '', account_type: 'income', balance: 0, is_active: true },
+  },
+
+  accounting_periods: {
+    service: accountingPeriodsService,
+    queryKey: ['accounting-periods'],
+    createLabel: 'Add Period',
+    subtitle: 'Open and close financial reporting periods',
+    backLink: { to: '/school-admin/finance', label: 'Finance' },
+    columns: [
+      { key: 'name', label: 'Period', accessor: 'name', sortable: true },
+      { key: 'start_date', label: 'Start', accessor: 'start_date' },
+      { key: 'end_date', label: 'End', accessor: 'end_date' },
+      { key: 'status', label: 'Status', accessor: 'status' },
+    ],
+    formFields: [
+      { name: 'name', label: 'Period Name', required: true },
+      { name: 'start_date', label: 'Start Date', type: 'date', required: true },
+      { name: 'end_date', label: 'End Date', type: 'date', required: true },
+    ],
+    emptyForm: { name: '', start_date: '', end_date: '' },
+  },
+
   invoice_generation: {
     service: invoicesService,
     queryKey: ['invoices'],

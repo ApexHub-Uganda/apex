@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FiArrowLeft, FiCheck, FiRefreshCw, FiSave } from 'react-icons/fi';
+import { FiArrowLeft, FiCheck, FiRefreshCw, FiSave, FiSend } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
-import { marksEntryService } from '../../services/moduleService';
+import { examsService, marksEntryService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
 
@@ -40,6 +40,7 @@ export function MarksEntry() {
   const [scores, setScores] = useState({});
   const [remarks, setRemarks] = useState({});
   const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const { data: options, isLoading, isError, refetch } = useQuery({
     queryKey: ['marks-entry-options', selection],
@@ -116,6 +117,27 @@ export function MarksEntry() {
     queryClient.removeQueries({ queryKey: ['marks-entry-options'] });
   };
 
+  const marksStatus = examDetail?.marks_status || 'draft';
+  const marksEditable = marksStatus === 'draft' || marksStatus === 'submitted';
+  const canEditMarks = canManage && marksEditable;
+  const hasSavedGrades = Object.keys(grades).length > 0;
+  const canSubmit = canManage && marksStatus === 'draft' && hasSavedGrades;
+
+  const handleSubmit = async () => {
+    if (!selection.exam || !canSubmit) return;
+    setSubmitting(true);
+    try {
+      const result = await examsService.submitMarks(selection.exam);
+      notify.success(result?.message || 'Marks submitted for approval.');
+      await refetch();
+      await queryClient.invalidateQueries({ queryKey: ['academic-workspace'] });
+    } catch (err) {
+      notify.error(extractApiError(err, 'Unable to submit marks.'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!selection.exam) return;
     setSaving(true);
@@ -175,15 +197,29 @@ export function MarksEntry() {
       <PageHeader
         title="Marks Entry"
         subtitle="Choose subject first, then class and school-defined term before entering scores"
-        actions={canManage && selection.exam && (
-          <button
-            type="button"
-            className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
-            onClick={handleSave}
-            disabled={saving || students.length === 0}
-          >
-            <FiSave size={14} /> {saving ? 'Saving…' : 'Save All Marks'}
-          </button>
+        actions={selection.exam && (canEditMarks || canSubmit) && (
+          <div className="d-flex gap-2">
+            {canEditMarks && (
+              <button
+                type="button"
+                className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+                onClick={handleSave}
+                disabled={saving || students.length === 0}
+              >
+                <FiSave size={14} /> {saving ? 'Saving…' : 'Save All Marks'}
+              </button>
+            )}
+            {canSubmit && (
+              <button
+                type="button"
+                className="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                <FiSend size={14} /> {submitting ? 'Submitting…' : 'Submit for Approval'}
+              </button>
+            )}
+          </div>
         )}
       />
 
@@ -279,13 +315,20 @@ export function MarksEntry() {
         <div className="apex-card p-0 overflow-hidden">
           <div className="p-4 border-bottom bg-light-subtle">
             <h5 className="fw-bold mb-1">{examDetail?.name || 'Enter marks'}</h5>
-            <p className="text-muted small mb-0">
-              {examDetail?.subject_name}
-              {examDetail?.paper_code ? ` · ${examDetail.paper_code}` : ''}
-              {' · '}{examDetail?.school_class_name}
-              {' · '}{examDetail?.term_name}
-              {examDetail?.max_score ? ` · Max score: ${examDetail.max_score}` : ''}
-            </p>
+            <div className="d-flex flex-wrap align-items-center gap-2">
+              <p className="text-muted small mb-0">
+                {examDetail?.subject_name}
+                {examDetail?.paper_code ? ` · ${examDetail.paper_code}` : ''}
+                {' · '}{examDetail?.school_class_name}
+                {' · '}{examDetail?.term_name}
+                {examDetail?.max_score ? ` · Max score: ${examDetail.max_score}` : ''}
+              </p>
+              {marksStatus && (
+                <span className={`badge text-bg-${marksStatus === 'draft' ? 'secondary' : marksStatus === 'submitted' ? 'warning' : marksStatus === 'locked' ? 'dark' : 'success'}-subtle border`}>
+                  {marksStatus.replace('_', ' ')}
+                </span>
+              )}
+            </div>
           </div>
 
           {isLoading ? (
@@ -327,7 +370,7 @@ export function MarksEntry() {
                             min={0}
                             max={examDetail?.max_score || 100}
                             step="0.01"
-                            disabled={!canManage}
+                            disabled={!canEditMarks}
                             value={scoreVal}
                             onChange={(e) => setScores((prev) => ({ ...prev, [student.id]: e.target.value }))}
                             placeholder="—"
@@ -342,7 +385,7 @@ export function MarksEntry() {
                           <input
                             type="text"
                             className="form-control form-control-sm"
-                            disabled={!canManage}
+                            disabled={!canEditMarks}
                             value={mergedRemarks[student.id] || ''}
                             onChange={(e) => setRemarks((prev) => ({ ...prev, [student.id]: e.target.value }))}
                             placeholder="Optional"
@@ -356,16 +399,28 @@ export function MarksEntry() {
             </div>
           )}
 
-          {canManage && students.length > 0 && (
-            <div className="p-3 border-top d-flex justify-content-end">
-              <button
-                type="button"
-                className="btn btn-primary d-inline-flex align-items-center gap-1"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                <FiCheck size={16} /> {saving ? 'Saving…' : 'Save All Marks'}
-              </button>
+          {students.length > 0 && (canEditMarks || canSubmit) && (
+            <div className="p-3 border-top d-flex justify-content-end gap-2">
+              {canEditMarks && (
+                <button
+                  type="button"
+                  className="btn btn-primary d-inline-flex align-items-center gap-1"
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  <FiCheck size={16} /> {saving ? 'Saving…' : 'Save All Marks'}
+                </button>
+              )}
+              {canSubmit && (
+                <button
+                  type="button"
+                  className="btn btn-success d-inline-flex align-items-center gap-1"
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                >
+                  <FiSend size={16} /> {submitting ? 'Submitting…' : 'Submit for Approval'}
+                </button>
+              )}
             </div>
           )}
         </div>

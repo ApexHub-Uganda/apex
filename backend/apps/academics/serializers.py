@@ -4,8 +4,10 @@ from apps.academics.models import (
     AcademicYear,
     Assignment,
     Class,
+    ClassNotice,
     Classroom,
     Department,
+    DisciplineRemark,
     Homework,
     Period,
     Stream,
@@ -161,3 +163,35 @@ class ClassroomSerializer(serializers.ModelSerializer):
         model = Classroom
         fields = "__all__"
         read_only_fields = READ_ONLY
+
+
+class ClassNoticeSerializer(serializers.ModelSerializer):
+    school_class_name = serializers.CharField(source="school_class.name", read_only=True)
+    author_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ClassNotice
+        fields = "__all__"
+        read_only_fields = READ_ONLY
+
+    def get_author_name(self, obj) -> str | None:
+        if obj.author and obj.author.staff:
+            return obj.author.staff.full_name
+        return None
+
+
+class DisciplineRemarkSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source="student.full_name", read_only=True)
+    school_class_name = serializers.CharField(source="school_class.name", read_only=True)
+    subject_name = serializers.CharField(source="subject.name", read_only=True)
+    recorded_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DisciplineRemark
+        fields = "__all__"
+        read_only_fields = READ_ONLY
+
+    def get_recorded_by_name(self, obj) -> str | None:
+        if obj.recorded_by and obj.recorded_by.staff:
+            return obj.recorded_by.staff.full_name
+        return None

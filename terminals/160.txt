@@ -1,0 +1,32 @@
+---
+pid: 20708
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_finance_permissions.py tests/test_finance_rbac.py tests/test_role_permissions.py tests/test_feature_write_permissions.py -q --tb=short 2>&1"
+started_at: 2026-07-07T10:39:08.615Z
+running_for_ms: 5540004  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 53 items
+
+tests\test_finance_permissions.py .........................              [ 47%]
+tests\test_finance_rbac.py ........                                      [ 62%]
+tests\test_role_permissions.py ..F..........                             [ 86%]
+tests\test_feature_write_permissions.py .......                          [100%]
+
+================================== FAILURES ===================================
+____________ TestRolePermissions.test_parent_cannot_write_finance _____________
+tests\test_role_permissions.py:115: in test_parent_cannot_write_finance
+    assert perms.get("finance", {}).get("can_read") is True
+E   AssertionError: assert None is True
+E    +  where None = <built-in method get of dict object at 0x000001C8BC5006C0>('can_read')
+E    +    where <built-in method get of dict object at 0x000001C8BC5006C0> = {}.get
+E    +      where {} = <built-in method get of dict object at 0x000001C8BC559A40>('finance', {})
+E    +        where <built-in method get of dict object at 0x000001C8BC559A40> = {'communication': {'can_read': True, 'can_write': False}, 'analytics': {'can_read': True, 'can_write': False}}.get
+=========================== short test summary info ===========================
+FAILED tests/test_role_permissions.py::TestRolePermissions::test_parent_cannot_write_finance
+=================== 1 failed, 52 passed in 80.07s (0:01:20) ===================

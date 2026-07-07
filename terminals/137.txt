@@ -1,0 +1,18 @@
+---
+pid: 8028
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_academic_scoping.py -q --tb=short 2>&1"
+started_at: 2026-07-07T08:58:50.253Z
+running_for_ms: 11560005 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 7 items
+
+tests\test_academic_scoping.py .......                                   [100%]
+
+============================= 7 passed in 33.02s ==============================

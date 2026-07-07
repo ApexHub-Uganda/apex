@@ -1,0 +1,67 @@
+---
+pid: 12100
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -q --tb=line 2>&1"
+started_at: 2026-07-07T09:51:04.664Z
+running_for_ms: 8440000  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 185 items
+
+tests\test_academic_scoping.py .......                                   [  3%]
+tests\test_academic_workflows_api.py ............                        [ 10%]
+tests\test_admissions.py .....                                           [ 12%]
+tests\test_auth.py ..F..                                                 [ 15%]
+tests\test_avatar_upload.py ...                                          [ 17%]
+tests\test_bulk_import.py ....                                           [ 19%]
+tests\test_departments.py ...                                            [ 21%]
+tests\test_examination_workflow.py ....                                  [ 23%]
+tests\test_feature_write_permissions.py .......                          [ 27%]
+tests\test_integration_providers.py .....                                [ 29%]
+tests\test_maintenance_mode.py ......                                    [ 32%]
+tests\test_marketing_catalog.py ...                                      [ 34%]
+tests\test_marks_entry.py .......                                        [ 38%]
+tests\test_notification_delete.py ......                                 [ 41%]
+tests\test_parent_matching.py .                                          [ 42%]
+tests\test_plan_advertisements.py ....                                   [ 44%]
+tests\test_plan_delete.py .....                                          [ 47%]
+tests\test_plan_inheritance.py ....                                      [ 49%]
+tests\test_plan_upgrade.py .....                                         [ 51%]
+tests\test_platform_broadcast.py .........                               [ 56%]
+tests\test_portal_search.py ......                                       [ 60%]
+tests\test_profile_workspace.py ....                                     [ 62%]
+tests\test_role_feature_defaults.py .......                              [ 65%]
+tests\test_role_permissions.py ......F......                             [ 72%]
+tests\test_school_messaging.py .........                                 [ 77%]
+tests\test_staff_onboarding.py .....                                     [ 80%]
+tests\test_subscription_lifecycle.py ...                                 [ 82%]
+tests\test_subscription_notifications.py ...                             [ 83%]
+tests\test_subscriptions.py ......F                                      [ 87%]
+tests\test_tenant_admin.py ......                                        [ 90%]
+tests\test_tenant_isolation.py ....                                      [ 92%]
+tests\test_tenant_suspension.py ..F.                                     [ 95%]
+tests\test_bulk_import.py ...                                            [ 96%]
+tests\test_email_validation.py ......                                    [100%]
+
+================================== FAILURES ===================================
+E   KeyError: 'email'
+E:\apex\backend\tests\test_auth.py:36: KeyError: 'email'
+E   AssertionError: assert None is True
+     +  where None = <built-in method get of dict object at 0x000002A8827EE2C0>('default_write')
+     +    where <built-in method get of dict object at 0x000002A8827EE2C0> = {}.get
+E:\apex\backend\tests\test_role_permissions.py:158: AssertionError: assert None is True
+E   assert 94 == 93
+E:\apex\backend\tests\test_subscriptions.py:70: assert 94 == 93
+E   KeyError: 'tenant_is_suspended'
+E:\apex\backend\tests\test_tenant_suspension.py:43: KeyError: 'tenant_is_suspended'
+=========================== short test summary info ===========================
+FAILED tests/test_auth.py::TestAuthentication::test_me_endpoint - KeyError: '...
+FAILED tests/test_role_permissions.py::TestRolePermissions::test_role_permission_matrix_school_admin_only
+FAILED tests/test_subscriptions.py::TestSubscriptions::test_feature_catalog_api
+FAILED tests/test_tenant_suspension.py::TestTenantSuspension::test_school_admin_can_still_read_profile_when_suspended
+================== 4 failed, 181 passed in 287.12s (0:04:47) ==================

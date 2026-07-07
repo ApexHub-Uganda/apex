@@ -1,0 +1,35 @@
+---
+pid: 16864
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_auth.py::TestAuthentication::test_me_endpoint tests/test_role_permissions.py::TestRolePermissions::test_role_permission_matrix_school_admin_only tests/test_subscriptions.py::TestSubscriptions::test_feature_catalog_api tests/test_tenant_suspension.py::TestTenantSuspension::test_school_admin_can_still_read_profile_when_suspended -q --tb=short 2>&1"
+started_at: 2026-07-07T09:57:34.565Z
+running_for_ms: 8035001  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 4 items
+
+tests\test_auth.py .                                                     [ 25%]
+tests\test_role_permissions.py .                                         [ 50%]
+tests\test_subscriptions.py F                                            [ 75%]
+tests\test_tenant_suspension.py F                                        [100%]
+
+================================== FAILURES ===================================
+_________________ TestSubscriptions.test_feature_catalog_api __________________
+tests\test_subscriptions.py:72: in test_feature_catalog_api
+    assert response.data["data"]["total_features"] == len(catalog_keys)
+E   AssertionError: assert 94 == 93
+E    +  where 93 = len({'academic_years', 'admission_vacancies', 'admissions', 'admitted_students', 'announcements', 'assessment_management', ...})
+_ TestTenantSuspension.test_school_admin_can_still_read_profile_when_suspended _
+tests\test_tenant_suspension.py:44: in test_school_admin_can_still_read_profile_when_suspended
+    assert payload["tenant_is_suspended"] is True
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'tenant_is_suspended'
+=========================== short test summary info ===========================
+FAILED tests/test_subscriptions.py::TestSubscriptions::test_feature_catalog_api
+FAILED tests/test_tenant_suspension.py::TestTenantSuspension::test_school_admin_can_still_read_profile_when_suspended
+======================== 2 failed, 2 passed in 54.76s =========================

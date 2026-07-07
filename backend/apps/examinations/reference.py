@@ -22,8 +22,12 @@ def current_academic_year(tenant):
     return AcademicYear.objects.filter(tenant=tenant, is_current=True).first()
 
 
-def subject_options(tenant) -> list[dict]:
+def subject_options(tenant, user=None) -> list[dict]:
     rows = Subject.objects.filter(tenant=tenant).prefetch_related("papers").order_by("name")
+    if user is not None:
+        from apps.academics.scoping import filter_queryset_for_user
+
+        rows = filter_queryset_for_user(rows, user)
     return [
         {
             **_option(s.id, f"{s.name} ({s.code})"),
@@ -60,8 +64,12 @@ def class_ids_for_subject(tenant, subject_id) -> set:
     return {cid for cid in linked if cid}
 
 
-def class_options(tenant, *, subject_id=None, academic_year_id=None) -> list[dict]:
+def class_options(tenant, *, subject_id=None, academic_year_id=None, user=None) -> list[dict]:
     qs = Class.objects.filter(tenant=tenant).select_related("academic_year")
+    if user is not None:
+        from apps.academics.scoping import filter_queryset_for_user
+
+        qs = filter_queryset_for_user(qs, user)
     year = None
     if academic_year_id:
         year = AcademicYear.objects.filter(tenant=tenant, pk=academic_year_id).first()

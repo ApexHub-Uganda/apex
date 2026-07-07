@@ -139,6 +139,8 @@ class MeProfileSerializer(AvatarFieldsMixin, serializers.ModelSerializer):
     has_avatar = serializers.SerializerMethodField()
     full_name = serializers.CharField(read_only=True)
     effective_role = serializers.SerializerMethodField()
+    tenant_is_suspended = serializers.BooleanField(source="tenant.is_suspended", read_only=True, allow_null=True)
+    tenant_is_verified = serializers.BooleanField(source="tenant.is_verified", read_only=True, allow_null=True)
     staff_profile = serializers.SerializerMethodField()
     parent_profile = serializers.SerializerMethodField()
     profile_completion = serializers.SerializerMethodField()
@@ -151,6 +153,7 @@ class MeProfileSerializer(AvatarFieldsMixin, serializers.ModelSerializer):
             "id", "email", "first_name", "last_name", "full_name", "phone",
             "avatar", "avatar_url", "has_avatar",
             "role", "effective_role", "tenant", "is_email_verified",
+            "tenant_is_verified", "tenant_is_suspended",
             "staff_profile", "parent_profile", "profile_completion",
             "editable_fields", "admin_only_fields",
         ]

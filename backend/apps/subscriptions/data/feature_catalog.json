@@ -104,6 +104,58 @@
       "sort_order": 1,
       "features": [
         {
+          "feature_key": "teacher_workspace",
+          "feature_name": "Teacher Workspace",
+          "description": "Personal teaching dashboard for assigned classes and subjects.",
+          "nav_key": "academics",
+          "route_path": "/school-admin/academics/teacher",
+          "icon": "FiBookOpen",
+          "show_in_nav": true,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 0
+        },
+        {
+          "feature_key": "class_teacher_tools",
+          "feature_name": "Class Teacher Tools",
+          "description": "Class welfare tools for assigned class teachers.",
+          "nav_key": "academics",
+          "route_path": "/school-admin/academics/class-teacher",
+          "icon": "FiUsers",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 1
+        },
+        {
+          "feature_key": "hod_workspace",
+          "feature_name": "HoD Workspace",
+          "description": "Department-scoped academic coordination workspace.",
+          "nav_key": "academics",
+          "route_path": "/school-admin/academics/hod",
+          "icon": "FiLayers",
+          "show_in_nav": true,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 2
+        },
+        {
+          "feature_key": "dos_workspace",
+          "feature_name": "DoS Workspace",
+          "description": "School-wide academic oversight workspace.",
+          "nav_key": "academics",
+          "route_path": "/school-admin/academics/dos",
+          "icon": "FiAward",
+          "show_in_nav": true,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 3
+        },
+        {
           "feature_key": "academic_years",
           "feature_name": "Academic Years",
           "description": "Define and manage academic year cycles.",
@@ -114,7 +166,7 @@
           "show_on_dashboard": false,
           "widget_key": "",
           "dashboard_label": "",
-          "sort_order": 0
+          "sort_order": 4
         },
         {
           "feature_key": "terms",
@@ -245,6 +297,45 @@
           "widget_key": "",
           "dashboard_label": "",
           "sort_order": 10
+        },
+        {
+          "feature_key": "teacher_assignments",
+          "feature_name": "Teacher Assignments",
+          "description": "Assign teachers to subjects, classes, and timetables.",
+          "nav_key": "academics",
+          "route_path": "/school-admin/academics/teacher-assignments",
+          "icon": "FiUserCheck",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 11
+        },
+        {
+          "feature_key": "class_notices",
+          "feature_name": "Class Notices",
+          "description": "Publish notices to a specific class.",
+          "nav_key": "academics",
+          "route_path": "/school-admin/academics/class-notices",
+          "icon": "FiBell",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 12
+        },
+        {
+          "feature_key": "discipline_remarks",
+          "feature_name": "Discipline Remarks",
+          "description": "Record and review student discipline remarks.",
+          "nav_key": "academics",
+          "route_path": "/school-admin/academics/discipline",
+          "icon": "FiAlertCircle",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 13
         }
       ]
     },
@@ -339,6 +430,19 @@
           "sort_order": 0
         },
         {
+          "feature_key": "lesson_attendance",
+          "feature_name": "Lesson Attendance",
+          "description": "Mark attendance per lesson or subject session.",
+          "nav_key": "attendance",
+          "route_path": "/school-admin/attendance/lessons",
+          "icon": "FiCheckSquare",
+          "show_in_nav": true,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 1
+        },
+        {
           "feature_key": "staff_attendance",
           "feature_name": "Staff Attendance",
           "description": "Track staff check-in, check-out, and attendance records.",
@@ -385,6 +489,19 @@
           "sort_order": 0
         },
         {
+          "feature_key": "assessment_management",
+          "feature_name": "Assessment Management",
+          "description": "Create, publish, and manage subject assessments.",
+          "nav_key": "examinations",
+          "route_path": "/school-admin/examinations/assessments",
+          "icon": "FiClipboard",
+          "show_in_nav": true,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 1
+        },
+        {
           "feature_key": "marks_entry",
           "feature_name": "Marks Entry",
           "description": "Enter and validate student marks for assessments and exams.",
@@ -395,7 +512,20 @@
           "show_on_dashboard": false,
           "widget_key": "",
           "dashboard_label": "",
-          "sort_order": 1
+          "sort_order": 2
+        },
+        {
+          "feature_key": "marks_approval",
+          "feature_name": "Marks Approval",
+          "description": "Review, approve, and lock submitted marks.",
+          "nav_key": "examinations",
+          "route_path": "/school-admin/examinations/approval",
+          "icon": "FiCheckCircle",
+          "show_in_nav": true,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 3
         },
         {
           "feature_key": "result_processing",
@@ -408,7 +538,7 @@
           "show_on_dashboard": false,
           "widget_key": "",
           "dashboard_label": "",
-          "sort_order": 2
+          "sort_order": 4
         },
         {
           "feature_key": "report_cards",
@@ -421,7 +551,20 @@
           "show_on_dashboard": false,
           "widget_key": "",
           "dashboard_label": "",
-          "sort_order": 3
+          "sort_order": 5
+        },
+        {
+          "feature_key": "class_report_cards",
+          "feature_name": "Class Report Cards",
+          "description": "Manage report cards and comments for an assigned class.",
+          "nav_key": "examinations",
+          "route_path": "/school-admin/examinations/class-report-cards",
+          "icon": "FiFileText",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 6
         },
         {
           "feature_key": "grade_calculation",
@@ -434,7 +577,20 @@
           "show_on_dashboard": false,
           "widget_key": "",
           "dashboard_label": "",
-          "sort_order": 4
+          "sort_order": 7
+        },
+        {
+          "feature_key": "examination_sessions",
+          "feature_name": "Examination Sessions",
+          "description": "Configure school-wide examination sessions and calendars.",
+          "nav_key": "examinations",
+          "route_path": "/school-admin/examinations/sessions",
+          "icon": "FiCalendar",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 8
         }
       ]
     },
@@ -546,6 +702,162 @@
           "widget_key": "",
           "dashboard_label": "",
           "sort_order": 7
+        },
+        {
+          "feature_key": "bursar_workspace",
+          "feature_name": "Bursar Workspace",
+          "description": "School-wide financial oversight and approval dashboard.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/bursar",
+          "icon": "FiDollarSign",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 8
+        },
+        {
+          "feature_key": "assistant_bursar_workspace",
+          "feature_name": "Assistant Bursar Workspace",
+          "description": "Daily fee collection and billing operations.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/assistant",
+          "icon": "FiCreditCard",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 9
+        },
+        {
+          "feature_key": "misc_income",
+          "feature_name": "Miscellaneous Income",
+          "description": "Record non-fee school income.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/income",
+          "icon": "FiTrendingUp",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 10
+        },
+        {
+          "feature_key": "refunds",
+          "feature_name": "Refunds",
+          "description": "Process and track fee refunds.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/refunds",
+          "icon": "FiRotateCcw",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 11
+        },
+        {
+          "feature_key": "debtor_management",
+          "feature_name": "Debtor Management",
+          "description": "Track outstanding student fee balances.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/debtors",
+          "icon": "FiUsers",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 12
+        },
+        {
+          "feature_key": "finance_notes",
+          "feature_name": "Finance Notes",
+          "description": "Add comments on student accounts and transactions.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/notes",
+          "icon": "FiMessageSquare",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 13
+        },
+        {
+          "feature_key": "transaction_approval",
+          "feature_name": "Transaction Approval",
+          "description": "Approve, reject, or reverse financial transactions.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/approval",
+          "icon": "FiCheckCircle",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 14
+        },
+        {
+          "feature_key": "budget_management",
+          "feature_name": "Budget Management",
+          "description": "Plan and monitor school budgets.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/budgets",
+          "icon": "FiPieChart",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 15
+        },
+        {
+          "feature_key": "financial_accounts",
+          "feature_name": "Financial Accounts",
+          "description": "Manage chart of accounts and balances.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/accounts",
+          "icon": "FiBook",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 16
+        },
+        {
+          "feature_key": "accounting_periods",
+          "feature_name": "Accounting Periods",
+          "description": "Open and close financial reporting periods.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/periods",
+          "icon": "FiCalendar",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 17
+        },
+        {
+          "feature_key": "finance_analytics",
+          "feature_name": "Finance Analytics",
+          "description": "School-wide finance dashboards and collection KPIs.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/analytics",
+          "icon": "FiActivity",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 18
+        },
+        {
+          "feature_key": "parent_fee_statements",
+          "feature_name": "Parent Fee Statements",
+          "description": "Read-only fee statements for linked children in the parent portal.",
+          "nav_key": "finance",
+          "route_path": "/school-admin/finance/statements",
+          "icon": "FiFileText",
+          "show_in_nav": false,
+          "show_on_dashboard": false,
+          "widget_key": "",
+          "dashboard_label": "",
+          "sort_order": 19
         }
       ]
     },
@@ -1261,7 +1573,10 @@
       "admission_vacancies",
       "student_documents",
       "student_attendance",
+      "lesson_attendance",
       "staff_attendance",
+      "teacher_workspace",
+      "assessment_management",
       "marks_entry",
       "fee_structures",
       "fee_categories",
@@ -1300,13 +1615,25 @@
       "student_documents",
       "medical_records",
       "student_attendance",
+      "lesson_attendance",
       "staff_attendance",
       "attendance_sessions",
+      "teacher_workspace",
+      "class_teacher_tools",
+      "hod_workspace",
+      "dos_workspace",
+      "teacher_assignments",
+      "class_notices",
+      "discipline_remarks",
       "examination_management",
+      "assessment_management",
       "marks_entry",
+      "marks_approval",
       "result_processing",
       "report_cards",
+      "class_report_cards",
       "grade_calculation",
+      "examination_sessions",
       "fee_structures",
       "fee_categories",
       "discounts",

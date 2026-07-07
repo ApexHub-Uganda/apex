@@ -3,7 +3,7 @@ pid: 20560
 cwd: "E:\apex"
 command: "cd E:\\apex\\frontend; npm run build"
 started_at: 2026-07-06T11:32:41.364Z
-running_for_ms: 8080006  
+running_for_ms: 8225013  
 ---
 
 > apex-hub-frontend@1.0.0 build

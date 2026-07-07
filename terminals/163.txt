@@ -1,0 +1,21 @@
+---
+pid: 16152
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_finance_permissions.py tests/test_finance_rbac.py tests/test_role_permissions.py tests/test_feature_write_permissions.py -q --tb=short 2>&1"
+started_at: 2026-07-07T10:52:57.402Z
+running_for_ms: 4710003  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 53 items
+
+tests\test_finance_permissions.py .........................              [ 47%]
+tests\test_finance_rbac.py ........                                      [ 62%]
+tests\test_role_permissions.py .............                             [ 86%]
+tests\test_feature_write_permissions.py .......                          [100%]
+
+======================== 53 passed in 77.55s (0:01:17) ========================

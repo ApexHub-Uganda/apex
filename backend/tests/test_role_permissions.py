@@ -24,6 +24,7 @@ def premium_plan(db):
     assign_plan_features(plan, [
         "student_management", "staff_management", "classes",
         "academic_years", "student_attendance", "student_billing",
+        "parent_fee_statements",
         "library_management", "hostel_management", "vehicles",
         "inventory_items", "hr_departments", "dashboard_analytics",
         "announcements", "examination_management",
@@ -114,6 +115,9 @@ class TestRolePermissions:
         perms = get_user_module_permissions(premium_tenant, parent_user)
         assert perms.get("finance", {}).get("can_read") is True
         assert perms.get("finance", {}).get("can_write") is False
+        feature_perms = get_user_feature_permissions(premium_tenant, parent_user)
+        assert feature_perms.get("parent_fee_statements", {}).get("can_read") is True
+        assert feature_perms.get("payment_recording", {}).get("can_write") in (None, False)
 
     def test_school_admin_has_full_plan_access(self, premium_tenant, school_admin):
         menu = get_user_module_menu(premium_tenant, school_admin)
@@ -146,7 +150,20 @@ class TestRolePermissions:
     def test_role_permission_matrix_school_admin_only(self, premium_tenant, school_admin, librarian):
         admin_client = APIClient()
         admin_client.force_authenticate(user=school_admin)
-        assert admin_client.get("/api/v1/tenants/role-permissions/").status_code == 200
+        response = admin_client.get("/api/v1/tenants/role-permissions/")
+        assert response.status_code == 200
+        role_keys = {row["key"] for row in response.data["data"]["roles"]}
+        assert UserRole.CLASS_TEACHER in role_keys
+        assert UserRole.TEACHER in role_keys
+        from apps.tenants.role_feature_defaults import get_default_feature_permission
+
+        class_teacher_row = response.data["data"]["matrix"].get(UserRole.CLASS_TEACHER, {})
+        academics = class_teacher_row.get("academics", {})
+        assert academics.get("default_read") is True
+        assert get_default_feature_permission(UserRole.CLASS_TEACHER, "class_teacher_tools") == {
+            "can_read": True,
+            "can_write": True,
+        }
 
         lib_client = APIClient()
         lib_client.force_authenticate(user=librarian)

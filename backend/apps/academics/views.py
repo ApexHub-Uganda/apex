@@ -2,8 +2,10 @@ from apps.academics.models import (
     AcademicYear,
     Assignment,
     Class,
+    ClassNotice,
     Classroom,
     Department,
+    DisciplineRemark,
     Homework,
     Period,
     Stream,
@@ -15,9 +17,11 @@ from apps.academics.models import (
 from apps.academics.serializers import (
     AcademicYearSerializer,
     AssignmentSerializer,
+    ClassNoticeSerializer,
     ClassSerializer,
     ClassroomSerializer,
     DepartmentSerializer,
+    DisciplineRemarkSerializer,
     HomeworkSerializer,
     PeriodSerializer,
     StreamSerializer,
@@ -26,11 +30,20 @@ from apps.academics.serializers import (
     TermSerializer,
     TimetableSerializer,
 )
+from django.utils import timezone
+from rest_framework import status
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.academics.mixins import AcademicScopeMixin
+from apps.academics.workspaces import build_academic_workspace
 from apps.core.permissions import IsStaffMember, RequiresAnyFeature, RequiresFeature, TenantActivePermission
 from apps.core.views import BaseModelViewSet
 
 
-class AcademicYearViewSet(BaseModelViewSet):
+class AcademicYearViewSet(AcademicScopeMixin, BaseModelViewSet):
     required_feature_key = "academic_years"
     queryset = AcademicYear.objects.all()
     serializer_class = AcademicYearSerializer
@@ -74,7 +87,7 @@ class DepartmentViewSet(BaseModelViewSet):
         return perms
 
 
-class ClassViewSet(BaseModelViewSet):
+class ClassViewSet(AcademicScopeMixin, BaseModelViewSet):
     required_feature_key = "classes"
     queryset = Class.objects.select_related("academic_year", "class_teacher")
     serializer_class = ClassSerializer
@@ -96,7 +109,7 @@ class ClassViewSet(BaseModelViewSet):
         return perms
 
 
-class StreamViewSet(BaseModelViewSet):
+class StreamViewSet(AcademicScopeMixin, BaseModelViewSet):
     required_feature_key = "streams"
     queryset = Stream.objects.select_related("school_class")
     serializer_class = StreamSerializer
@@ -104,7 +117,7 @@ class StreamViewSet(BaseModelViewSet):
     filterset_fields = ["school_class"]
 
 
-class SubjectViewSet(BaseModelViewSet):
+class SubjectViewSet(AcademicScopeMixin, BaseModelViewSet):
     required_feature_key = "subjects"
     queryset = Subject.objects.select_related("department").prefetch_related("papers")
     serializer_class = SubjectSerializer
@@ -126,7 +139,7 @@ class SubjectViewSet(BaseModelViewSet):
         return perms
 
 
-class SubjectPaperViewSet(BaseModelViewSet):
+class SubjectPaperViewSet(AcademicScopeMixin, BaseModelViewSet):
     required_feature_key = "subjects"
     queryset = SubjectPaper.objects.select_related("subject")
     serializer_class = SubjectPaperSerializer
@@ -145,7 +158,7 @@ class SubjectPaperViewSet(BaseModelViewSet):
         return perms
 
 
-class TimetableViewSet(BaseModelViewSet):
+class TimetableViewSet(AcademicScopeMixin, BaseModelViewSet):
     required_feature_key = "timetables"
     queryset = Timetable.objects.select_related("school_class", "subject", "teacher")
     serializer_class = TimetableSerializer
@@ -153,7 +166,7 @@ class TimetableViewSet(BaseModelViewSet):
     filterset_fields = ["school_class", "day_of_week", "subject"]
 
 
-class AssignmentViewSet(BaseModelViewSet):
+class AssignmentViewSet(AcademicScopeMixin, BaseModelViewSet):
     required_feature_key = "subject_assignment"
     queryset = Assignment.objects.select_related("subject", "school_class", "teacher")
     serializer_class = AssignmentSerializer
@@ -162,7 +175,7 @@ class AssignmentViewSet(BaseModelViewSet):
     search_fields = ["title"]
 
 
-class HomeworkViewSet(BaseModelViewSet):
+class HomeworkViewSet(AcademicScopeMixin, BaseModelViewSet):
     required_feature_key = "homework"
     queryset = Homework.objects.select_related("subject", "school_class", "teacher")
     serializer_class = HomeworkSerializer
@@ -186,3 +199,66 @@ class ClassroomViewSet(BaseModelViewSet):
     permission_classes = [IsStaffMember, TenantActivePermission]
     search_fields = ["name", "code", "building"]
     filterset_fields = ["room_type", "is_available"]
+
+
+class AcademicWorkspaceView(APIView):
+    """Role workspace summary for teacher, HoD, DoS, and class teacher."""
+
+    permission_classes = [IsAuthenticated, IsStaffMember, TenantActivePermission]
+
+    def get_permissions(self):
+        perms = super().get_permissions()
+        perms.append(RequiresAnyFeature(
+            "teacher_workspace", "hod_workspace", "dos_workspace", "class_teacher_tools",
+        )())
+        return perms
+
+    def get(self, request):
+        tenant = request.user.tenant
+        if tenant is None:
+            return Response({"success": True, "data": {}})
+        return Response({
+            "success": True,
+            "data": build_academic_workspace(tenant=tenant, user=request.user),
+        })
+
+
+class ClassNoticeViewSet(AcademicScopeMixin, BaseModelViewSet):
+    required_feature_key = "class_notices"
+    queryset = ClassNotice.objects.select_related("school_class", "author", "author__staff")
+    serializer_class = ClassNoticeSerializer
+    permission_classes = [IsStaffMember, TenantActivePermission]
+    filterset_fields = ["school_class", "is_published"]
+    search_fields = ["title", "body"]
+
+    def perform_create(self, serializer):
+        teacher = getattr(getattr(self.request.user, "staff_profile", None), "teacher_profile", None)
+        serializer.save(author=teacher, created_by=self.request.user, updated_by=self.request.user)
+
+    @action(detail=True, methods=["post"], url_path="publish")
+    def publish(self, request, pk=None):
+        notice = self.get_object()
+        notice.is_published = True
+        notice.published_at = timezone.now()
+        notice.updated_by = request.user
+        notice.save(update_fields=["is_published", "published_at", "updated_by", "updated_at"])
+        return Response({
+            "success": True,
+            "message": "Notice published.",
+            "data": ClassNoticeSerializer(notice).data,
+        })
+
+
+class DisciplineRemarkViewSet(AcademicScopeMixin, BaseModelViewSet):
+    required_feature_key = "discipline_remarks"
+    queryset = DisciplineRemark.objects.select_related(
+        "student", "school_class", "subject", "term", "recorded_by", "recorded_by__staff",
+    )
+    serializer_class = DisciplineRemarkSerializer
+    permission_classes = [IsStaffMember, TenantActivePermission]
+    filterset_fields = ["school_class", "student", "subject", "term", "remark_type"]
+    search_fields = ["title", "description", "student__first_name", "student__last_name"]
+
+    def perform_create(self, serializer):
+        teacher = getattr(getattr(self.request.user, "staff_profile", None), "teacher_profile", None)
+        serializer.save(recorded_by=teacher, created_by=self.request.user, updated_by=self.request.user)

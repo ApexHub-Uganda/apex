@@ -6,6 +6,7 @@ from typing import Any, Optional
 from django.utils import timezone
 
 from apps.core.constants import RegistrationType
+from apps.core.email_templates import build_account_notification_email
 from apps.platform.models import PlatformNotification
 from apps.platform.services.integrations import EmailService
 from apps.tenants.models import Tenant
@@ -119,11 +120,22 @@ def approve_school_registration(tenant: Tenant, *, actor) -> Tenant:
             notification_type="success",
             action_url="/school-admin",
         )
+        branded = build_account_notification_email(
+            first_name=admin.first_name,
+            title="Your school account is approved",
+            message=(
+                f"Your school account for {tenant.name} has been approved. "
+                "You can now sign in and access your dashboard."
+            ),
+            tone="success",
+            scope="platform",
+            tenant=tenant,
+        )
         EmailService.send(
             admin.email,
             "Your Apex Hub school account is approved",
-            f"Hello {admin.first_name},\n\nYour school account for {tenant.name} has been approved. "
-            "You can now sign in and access your dashboard.",
+            branded.text_body,
+            html_body=branded.html_body,
         )
 
     return tenant

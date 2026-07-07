@@ -200,3 +200,70 @@ class Classroom(BaseModel):
     class Meta:
         ordering = ["name"]
         unique_together = [("tenant", "code")]
+
+
+class ClassNotice(BaseModel):
+    """Notices published to a specific class (class teacher tools)."""
+
+    school_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="notices")
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    author = models.ForeignKey(
+        "staff.Teacher",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="class_notices",
+    )
+    is_published = models.BooleanField(default=False)
+    published_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-published_at", "-created_at"]
+        indexes = [models.Index(fields=["tenant", "school_class", "is_published"])]
+
+
+class DisciplineRemark(BaseModel):
+    """Student discipline or welfare remarks."""
+
+    REMARK_TYPES = [
+        ("commendation", "Commendation"),
+        ("warning", "Warning"),
+        ("sanction", "Sanction"),
+    ]
+
+    student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="discipline_remarks")
+    school_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="discipline_remarks")
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="discipline_remarks",
+    )
+    term = models.ForeignKey(
+        Term,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="discipline_remarks",
+    )
+    remark_type = models.CharField(max_length=20, choices=REMARK_TYPES, default="warning")
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    incident_date = models.DateField()
+    recorded_by = models.ForeignKey(
+        "staff.Teacher",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="discipline_remarks",
+    )
+
+    class Meta:
+        ordering = ["-incident_date", "-created_at"]
+        indexes = [
+            models.Index(fields=["tenant", "school_class", "incident_date"]),
+            models.Index(fields=["tenant", "student"]),
+        ]

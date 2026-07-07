@@ -22,7 +22,7 @@ class TwilioSmsProvider(BaseMessagingProvider):
             errors.append("from_number (sender_id)")
         return errors
 
-    def build_request(self, config, *, to: str, subject: str, message: str) -> ProviderRequest:
+    def build_request(self, config, *, to: str, subject: str, message: str, html_body: str = "") -> ProviderRequest:
         to_e164 = normalize_phone_e164(to)
         endpoint = f"https://api.twilio.com/2010-04-01/Accounts/{config.api_key}/Messages.json"
         return ProviderRequest(
@@ -46,6 +46,7 @@ class TwilioSmsProvider(BaseMessagingProvider):
         to: str,
         subject: str,
         message: str,
+        html_body: str = "",
     ) -> ProviderResponse:
         return ProviderResponse(
             success=False,
@@ -68,7 +69,7 @@ class AfricasTalkingSmsProvider(BaseMessagingProvider):
             errors.append("sender_id")
         return errors
 
-    def build_request(self, config, *, to: str, subject: str, message: str) -> ProviderRequest:
+    def build_request(self, config, *, to: str, subject: str, message: str, html_body: str = "") -> ProviderRequest:
         return ProviderRequest(
             provider=self.provider_slug,
             endpoint="https://api.africastalking.com/version1/messaging",
@@ -94,6 +95,7 @@ class AfricasTalkingSmsProvider(BaseMessagingProvider):
         to: str,
         subject: str,
         message: str,
+        html_body: str = "",
     ) -> ProviderResponse:
         return ProviderResponse(
             success=False,
@@ -118,7 +120,7 @@ class NexmoSmsProvider(BaseMessagingProvider):
             errors.append("sender_id")
         return errors
 
-    def build_request(self, config, *, to: str, subject: str, message: str) -> ProviderRequest:
+    def build_request(self, config, *, to: str, subject: str, message: str, html_body: str = "") -> ProviderRequest:
         return ProviderRequest(
             provider=self.provider_slug,
             endpoint="https://rest.nexmo.com/sms/json",
@@ -141,6 +143,7 @@ class NexmoSmsProvider(BaseMessagingProvider):
         to: str,
         subject: str,
         message: str,
+        html_body: str = "",
     ) -> ProviderResponse:
         return ProviderResponse(
             success=False,

@@ -24,6 +24,9 @@ import {
   supportTicketsService,
   eventsService,
   booksService,
+  academicYearsService,
+  feePaymentsService,
+  financialAccountsService,
 } from '../services/moduleService';
 import { validateDeliverableEmail } from '../utils/emailValidation';
 import { formatTableCellValue, inferOptionsFromKey } from '../utils/tableDisplay';
@@ -67,6 +70,16 @@ const OPTION_LOADERS = {
   }))),
   payrollRuns: () => payrollRunsService.list().then((rows) => rows.map((p) => ({
     value: p.id, label: p.title || p.period,
+  }))),
+  academic_years: () => academicYearsService.list().then((rows) => rows.map((y) => ({
+    value: y.id, label: y.name,
+  }))),
+  feePayments: () => feePaymentsService.list().then((rows) => rows.map((p) => ({
+    value: p.id,
+    label: `${p.student_name || 'Payment'} — ${p.amount_paid} (${p.payment_date || ''})`,
+  }))),
+  financialAccounts: () => financialAccountsService.list().then((rows) => rows.map((a) => ({
+    value: a.id, label: a.name,
   }))),
   tickets: () => supportTicketsService.list().then((rows) => rows.map((t) => ({
     value: t.id, label: `${t.ticket_number} — ${t.subject}`,

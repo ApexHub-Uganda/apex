@@ -34,6 +34,10 @@ class LoginThrottle(AnonRateThrottle):
     scope = "login"
 
 
+class PasswordResetThrottle(AnonRateThrottle):
+    scope = "password_reset"
+
+
 class CustomTokenObtainPairView(TokenObtainPairView):
     """Login must ignore any stale Bearer token sent by the client."""
     serializer_class = CustomTokenObtainPairSerializer
@@ -62,7 +66,26 @@ class LogoutView(generics.GenericAPIView):
 class PasswordResetRequestView(generics.GenericAPIView):
     serializer_class = PasswordResetRequestSerializer
     permission_classes = [AllowAny]
-    throttle_scope = "password_reset"
+    throttle_classes = [PasswordResetThrottle]
+
+    def post(self, request: Request) -> Response:
+        ser = self.get_serializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        result = ser.save()
+        return Response({
+            "success": True,
+            "message": (
+                f"A 6-digit verification code has been sent to {result['email']}. "
+                f"It expires in {result['expires_in_minutes']} minutes."
+            ),
+            "data": result,
+        })
+
+
+class PasswordResetConfirmView(generics.GenericAPIView):
+    serializer_class = PasswordResetConfirmSerializer
+    permission_classes = [AllowAny]
+    throttle_classes = [PasswordResetThrottle]
 
     def post(self, request: Request) -> Response:
         ser = self.get_serializer(data=request.data)
@@ -70,19 +93,8 @@ class PasswordResetRequestView(generics.GenericAPIView):
         ser.save()
         return Response({
             "success": True,
-            "message": "If the email exists, a reset link has been sent.",
+            "message": "Your password has been reset. You can sign in with your new password.",
         })
-
-
-class PasswordResetConfirmView(generics.GenericAPIView):
-    serializer_class = PasswordResetConfirmSerializer
-    permission_classes = [AllowAny]
-
-    def post(self, request: Request) -> Response:
-        ser = self.get_serializer(data=request.data)
-        ser.is_valid(raise_exception=True)
-        ser.save()
-        return Response({"success": True, "message": "Password reset successfully."})
 
 
 class MeAvatarView(APIView):

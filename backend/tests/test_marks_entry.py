@@ -59,6 +59,7 @@ def marks_entry_setup(tenant, plan):
         exam_date=date(2026, 3, 1),
         max_score=100,
         exam_type="midterm",
+        lifecycle_status="published",
     )
     student = Student.objects.create(
         tenant=tenant,

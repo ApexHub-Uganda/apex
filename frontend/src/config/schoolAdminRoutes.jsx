@@ -15,7 +15,11 @@ const DEDICATED_SEGMENTS = new Set([
   'academics/terms', 'attendance', 'finance', 'library',
   'hostel', 'transport', 'inventory', 'hr', 'hr/staffs', 'hr/staffs/new', 'payroll', 'reports',
   'communication', 'settings', 'settings/plans', 'notifications',
-  'examinations/marks',
+  'examinations/marks', 'examinations/approval', 'examinations/assessments',
+  'academics/teacher', 'academics/hod', 'academics/dos', 'academics/class-teacher',
+  'attendance/lessons',
+  'finance/bursar', 'finance/assistant', 'finance/approval',
+  'finance/payments', 'finance/analytics', 'finance/reports', 'finance/statements',
 ]);
 
 /** Modules that use ModuleHub as their landing page. */

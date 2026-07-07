@@ -40,7 +40,8 @@ class TestTenantSuspension:
         response = api_client.get("/api/v1/auth/me/")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["tenant_is_suspended"] is True
+        payload = response.data.get("data", response.data)
+        assert payload["tenant_is_suspended"] is True
 
     def test_unsuspend_restores_dashboard_access(self, api_client, school_admin, tenant):
         tenant.suspend()

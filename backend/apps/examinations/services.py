@@ -7,6 +7,7 @@ from typing import Any
 from django.db import transaction
 
 from apps.examinations.models import Exam, Grade, GradingScale
+from apps.examinations.workflow import MarksWorkflowError, exam_allows_mark_entry, sync_grade_entry_status
 
 
 def resolve_letter_grade(tenant, score: Decimal, *, max_score: Decimal | None = None) -> str:
@@ -36,6 +37,12 @@ def bulk_upsert_grades(
     entries: list[dict[str, Any]],
     user,
 ) -> dict[str, Any]:
+    if not exam_allows_mark_entry(exam):
+        raise MarksWorkflowError(
+            "Marks cannot be edited for this assessment in its current status.",
+            code="marks_locked",
+        )
+
     saved = 0
     skipped = 0
     errors: list[dict[str, str]] = []
@@ -83,9 +90,12 @@ def bulk_upsert_grades(
                 "updated_by": user,
             },
         )
+        sync_grade_entry_status(grade=grade, exam=exam)
         if _created:
             grade.created_by = user
-            grade.save(update_fields=["created_by"])
+            grade.save(update_fields=["created_by", "entry_status"])
+        else:
+            grade.save(update_fields=["entry_status"])
         saved += 1
 
     return {"saved": saved, "skipped": skipped, "errors": errors}

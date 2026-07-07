@@ -33,7 +33,8 @@ class TestAuthentication:
         api_client.force_authenticate(user=school_admin)
         response = api_client.get("/api/v1/auth/me/")
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["email"] == school_admin.email
+        payload = response.data.get("data", response.data)
+        assert payload["email"] == school_admin.email
 
     def test_logout(self, api_client, school_admin):
         login_resp = api_client.post("/api/v1/auth/login/", {

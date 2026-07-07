@@ -38,10 +38,26 @@ class BaseMessagingProvider(ABC):
         """Return a list of missing/invalid configuration field messages."""
 
     @abstractmethod
-    def build_request(self, config, *, to: str, subject: str, message: str) -> ProviderRequest:
+    def build_request(
+        self,
+        config,
+        *,
+        to: str,
+        subject: str,
+        message: str,
+        html_body: str = "",
+    ) -> ProviderRequest:
         """Build the exact outbound request that will be sent in production."""
 
-    def dispatch(self, config, *, to: str, subject: str, message: str) -> ProviderResponse:
+    def dispatch(
+        self,
+        config,
+        *,
+        to: str,
+        subject: str,
+        message: str,
+        html_body: str = "",
+    ) -> ProviderResponse:
         errors = self.validate_config(config)
         if errors:
             return ProviderResponse(
@@ -50,7 +66,9 @@ class BaseMessagingProvider(ABC):
                 metadata={"validation_errors": errors, "provider": self.provider_slug},
             )
 
-        request = self.build_request(config, to=to, subject=subject, message=message)
+        request = self.build_request(
+            config, to=to, subject=subject, message=message, html_body=html_body,
+        )
         metadata = {
             "provider": self.provider_slug,
             "endpoint": request.endpoint,
@@ -73,7 +91,9 @@ class BaseMessagingProvider(ABC):
                 },
             )
 
-        return self.dispatch_live(config, request, to=to, subject=subject, message=message)
+        return self.dispatch_live(
+            config, request, to=to, subject=subject, message=message, html_body=html_body,
+        )
 
     @abstractmethod
     def dispatch_live(
@@ -84,6 +104,7 @@ class BaseMessagingProvider(ABC):
         to: str,
         subject: str,
         message: str,
+        html_body: str = "",
     ) -> ProviderResponse:
         """Execute the provider API call. Only invoked when INTEGRATION_LIVE_DISPATCH=true."""
 

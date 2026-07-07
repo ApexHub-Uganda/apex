@@ -2,11 +2,14 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from apps.academics.views import (
+    AcademicWorkspaceView,
     AcademicYearViewSet,
     AssignmentViewSet,
+    ClassNoticeViewSet,
     ClassViewSet,
     ClassroomViewSet,
     DepartmentViewSet,
+    DisciplineRemarkViewSet,
     HomeworkViewSet,
     PeriodViewSet,
     StreamViewSet,
@@ -29,5 +32,10 @@ router.register("assignments", AssignmentViewSet, basename="assignment")
 router.register("homework", HomeworkViewSet, basename="homework")
 router.register("periods", PeriodViewSet, basename="period")
 router.register("classrooms", ClassroomViewSet, basename="classroom")
+router.register("class-notices", ClassNoticeViewSet, basename="class-notice")
+router.register("discipline-remarks", DisciplineRemarkViewSet, basename="discipline-remark")
 
-urlpatterns = [path("", include(router.urls))]
+urlpatterns = [
+    path("workspace/", AcademicWorkspaceView.as_view(), name="academic-workspace"),
+    path("", include(router.urls)),
+]

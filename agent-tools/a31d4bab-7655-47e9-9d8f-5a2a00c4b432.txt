@@ -1,0 +1,1009 @@
+{
+    "id":  "742d56d1-88b7-49ab-b6bd-0e21b3a15dba",
+    "title":  "API Test3",
+    "message":  "Hello",
+    "channels":  [
+                     "email"
+                 ],
+    "channels_display":  [
+                             "Email"
+                         ],
+    "audience":  "all",
+    "audience_display":  "All Schools",
+    "status":  "draft",
+    "severity":  "info",
+    "is_active":  true,
+    "starts_at":  "2026-07-07T12:00:00Z",
+    "ends_at":  null,
+    "sent_at":  null,
+    "sent_at_display":  "�??",
+    "cancelled_at":  null,
+    "recipient_count":  0,
+    "delivered_count":  0,
+    "failed_count":  0,
+    "skipped_count":  0,
+    "created_by":  "c2f6d1b2-ab3d-4da3-ab65-6cff240ecbd6",
+    "created_by_name":  "Emmie Super Admin",
+    "created_at":  "2026-07-07T11:30:08.820001Z",
+    "updated_at":  "2026-07-07T11:30:08.820012Z"
+}
+ID=
+Invoke-WebRequest : 
+  
+  Page not found at /api/v1/platform/broadcasts//send/
+  
+  
+    html * { padding:0; margin:0; }
+    body * { padding:10px 20px; }
+    body * * { padding:0; }
+    body { font-family: sans-serif; background:#eee; color:#000; }
+    body > :where(header, main, footer) { border-bottom:1px solid #ddd; }
+    h1 { font-weight:normal; margin-bottom:.4em; }
+    h1 small { font-size:60%; color:#666; font-weight:normal; }
+    table { border:none; border-collapse: collapse; width:100%; }
+    td, th { vertical-align:top; padding:2px 3px; }
+    th { width:12em; text-align:right; color:#666; padding-right:.5em; }
+    #info { background:#f6f6f6; }
+    #info ol { margin: 0.5em 4em; }
+    #info ol li { font-family: monospace; }
+    #summary { background: #ffc; }
+    #explanation { background:#eee; border-bottom: 0px none; }
+    pre.exception_value { font-family: sans-serif; color: #575757; font-size: 1.5em; margin: 10px 0 10px 0; }
+  
+  
+    Page not found (404)
+    
+    
+      
+        Request Method:
+        POST
+      
+      
+        Request URL:
+        http://localhost:8000/api/v1/platform/broadcasts//send/
+      
+      
+    
+  
+  
+    
+      
+      Using the URLconf defined in apex_hub.urls,
+      Django tried these URL patterns, in this order:
+      
+      
+        
+          
+            
+              
+                admin/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/schema/
+                [name='schema']
+              
+            
+          
+        
+          
+            
+              
+                api/docs/
+                [name='swagger-ui']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                search/
+                [name='portal-search']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                auth/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                tenants/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                subscriptions/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                academics/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                students/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                admissions/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                staff/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                attendance/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                examinations/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                finance/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                library/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+OK                
+            
+              
+                hostel/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                transport/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                inventory/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                hr/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                payroll/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                communication/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                events/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                analytics/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                audit/
+                
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                integrations/test/
+                [name='integration-test']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                settings/public/
+                [name='platform-settings-public']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                settings/general/
+                [name='platform-settings']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                schools/
+                [name='schools-management']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                health/
+                [name='health-check']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                maintenance/
+                [name='maintenance-mode']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^settings/$
+                [name='global-setting-list']
+
+... (output truncated) ...
+
+^broadcasts/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/cancel/$
+                [name='platform-broadcast-cancel']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/cancel\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-cancel']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/delete_broadcast/$
+                [name='platform-broadcast-delete-broadcast']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/delete_broadcast\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-delete-broadcast']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/deliveries/$
+                [name='platform-broadcast-deliveries']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/deliveries\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-deliveries']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/duplicate/$
+                [name='platform-broadcast-duplicate']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/duplicate\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-duplicate']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/schedule/$
+                [name='platform-broadcast-schedule']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/schedule\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-schedule']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/send/$
+                [name='platform-broadcast-send']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^broadcasts/(?P&lt;pk&gt;[^/.]+)/send\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='platform-broadcast-send']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^health-logs/$
+                [name='health-log-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^health-logs\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='health-log-list']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^health-logs/(?P&lt;pk&gt;[^/.]+)/$
+                [name='health-log-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                ^health-logs/(?P&lt;pk&gt;[^/.]+)\.(?P&lt;format&gt;[a-z0-9]+)/?$
+                [name='health-log-detail']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                
+                [name='api-root']
+              
+            
+          
+        
+          
+            
+              
+                api/v1/
+                
+              
+            
+              
+                platform/
+                
+              
+            
+              
+                
+                
+              
+            
+              
+                &lt;drf_format_suffix:format&gt;
+                [name='api-root']
+              
+            
+          
+        
+          
+            
+              
+                ^media/(?P&lt;path&gt;.*)$
+                
+              
+            
+          
+        
+      
+      
+        
+          The current path, api/v1/platform/broadcasts//send/,
+        
+        didn't match any of these.
+      
+    
+  
+  
+    
+      You're seeing this error because you have DEBUG = True in
+      your Django settings file. Change that to False, and Django
+      will display a standard 404 page.
+    
+  
+At line:1 char:667
++ ... d"; $resp = Invoke-WebRequest -Uri "http://localhost:8000/api/v1/plat ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (System.Net.HttpWebRequest:HttpWebRequest) [Invoke-WebRequest], WebExc 
+   eption
+    + FullyQualifiedErrorId : WebCmdletWebResponseException,Microsoft.PowerShell.Commands.InvokeWebRequestCommand
+Cannot index into a null array.
+At line:1 char:880
++ ...  Write-Host "OK $($resp.StatusCode) $($resp.Headers['Content-Type'])"
++                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidOperation: (:) [], RuntimeException
+    + FullyQualifiedErrorId : NullArray
+ 

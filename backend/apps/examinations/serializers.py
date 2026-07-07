@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from apps.examinations.models import Exam, Grade, GradingScale, ReportCard
+from apps.examinations.models import Exam, ExaminationSession, Grade, GradingScale, ReportCard
 
 READ_ONLY = ["id", "tenant", "created_at", "updated_at", "created_by", "updated_by", "is_deleted"]
 
@@ -14,21 +14,47 @@ class GradingScaleSerializer(serializers.ModelSerializer):
         read_only_fields = READ_ONLY
 
 
+WORKFLOW_READ_ONLY = [
+    "lifecycle_status", "published_at", "published_by",
+    "marks_status", "marks_submitted_at", "marks_submitted_by",
+    "marks_approved_at", "marks_approved_by",
+    "marks_locked_at", "marks_locked_by",
+    "marks_reopened_at", "marks_reopened_by", "marks_reopen_reason",
+]
+
+
+class ExaminationSessionSerializer(serializers.ModelSerializer):
+    academic_year_name = serializers.CharField(source="academic_year.name", read_only=True)
+    term_name = serializers.CharField(source="term.name", read_only=True)
+
+    class Meta:
+        model = ExaminationSession
+        fields = "__all__"
+        read_only_fields = READ_ONLY
+
+
 class ExamSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source="subject.name", read_only=True)
     paper_code = serializers.CharField(source="paper.code", read_only=True)
     school_class_name = serializers.CharField(source="school_class.name", read_only=True)
     term_name = serializers.CharField(source="term.name", read_only=True)
+    examination_session_name = serializers.CharField(source="examination_session.name", read_only=True)
 
     class Meta:
         model = Exam
         fields = [
             "id", "name", "subject", "subject_name", "paper", "paper_code",
             "school_class", "school_class_name", "term", "term_name",
+            "examination_session", "examination_session_name",
             "exam_date", "max_score", "weight", "exam_type",
+            "lifecycle_status", "published_at", "published_by",
+            "marks_status", "marks_submitted_at", "marks_submitted_by",
+            "marks_approved_at", "marks_approved_by",
+            "marks_locked_at", "marks_locked_by",
+            "marks_reopened_at", "marks_reopened_by", "marks_reopen_reason",
             "created_at", "updated_at",
         ]
-        read_only_fields = READ_ONLY
+        read_only_fields = READ_ONLY + WORKFLOW_READ_ONLY
 
     def validate(self, attrs):
         paper = attrs.get("paper", getattr(self.instance, "paper", None))
@@ -49,10 +75,10 @@ class GradeSerializer(serializers.ModelSerializer):
         model = Grade
         fields = [
             "id", "exam", "exam_name", "subject_name", "student", "student_name",
-            "student_admission_number", "score", "grade", "remarks", "max_score",
-            "graded_by", "created_at", "updated_at",
+            "student_admission_number", "score", "grade", "remarks", "entry_status",
+            "max_score", "graded_by", "created_at", "updated_at",
         ]
-        read_only_fields = READ_ONLY + ["grade"]
+        read_only_fields = READ_ONLY + ["grade", "entry_status"]
 
 
 class ReportCardSerializer(serializers.ModelSerializer):
@@ -77,3 +103,7 @@ class MarksEntryBulkSerializer(serializers.Serializer):
         child=serializers.DictField(),
         allow_empty=False,
     )
+
+
+class ExamWorkflowActionSerializer(serializers.Serializer):
+    reason = serializers.CharField(required=False, allow_blank=True, default="")

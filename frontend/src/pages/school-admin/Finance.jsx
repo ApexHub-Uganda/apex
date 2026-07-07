@@ -34,8 +34,9 @@ const EMPTY_FORM = {
 
 export function Finance() {
   const queryClient = useQueryClient();
-  const { canWriteModule } = usePermissions();
-  const canManage = canWriteModule('payment_recording') || canWriteModule('student_billing');
+  const { canReadFeature, canWriteFeature } = usePermissions();
+  const canView = canReadFeature('payment_recording') || canReadFeature('student_billing');
+  const canManage = canWriteFeature('payment_recording');
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -43,6 +44,7 @@ export function Finance() {
   const { data: payments = [], isLoading, isError } = useQuery({
     queryKey: ['fee-payments'],
     queryFn: () => feePaymentsService.list(),
+    enabled: canView,
   });
 
   const { data: structures = [] } = useQuery({
@@ -61,7 +63,6 @@ export function Finance() {
       await feePaymentsService.create({
         ...form,
         amount_paid: form.amount_paid,
-        status: 'completed',
       });
       notify.success('Payment recorded.');
       await queryClient.invalidateQueries({ queryKey: ['fee-payments'] });
@@ -92,8 +93,17 @@ export function Finance() {
     },
     { key: 'receipt_number', label: 'Receipt', accessor: 'receipt_number' },
     { key: 'mpesa_transaction_id', label: 'M-Pesa ID', accessor: 'mpesa_transaction_id' },
+    { key: 'approval_status', label: 'Approval', render: (row) => <StatusBadge status={row.approval_status || row.status} /> },
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
   ];
+
+  if (!canView) {
+    return (
+      <div className="apex-card p-5">
+        <ModuleEmptyState title="Payments unavailable" message="Payment recording has not been enabled for your role in Permission Settings." />
+      </div>
+    );
+  }
 
   return (
     <div>
