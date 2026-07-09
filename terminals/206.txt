@@ -1,0 +1,23 @@
+---
+pid: 11184
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_library_workflows_api.py tests/test_hr_workflows_api.py tests/test_hostel_workflows_api.py tests/test_hr_rbac.py tests/test_library_rbac.py tests/test_hostel_rbac.py -q --tb=short"
+started_at: 2026-07-08T07:11:05.719Z
+running_for_ms: 9695012  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 36 items
+
+tests\test_library_workflows_api.py ....                                 [ 11%]
+tests\test_hr_workflows_api.py .......                                   [ 30%]
+tests\test_hostel_workflows_api.py ....                                  [ 41%]
+tests\test_hr_rbac.py ....                                               [ 52%]
+tests\test_library_rbac.py ........                                      [ 75%]
+tests\test_hostel_rbac.py .........                                      [100%]
+
+======================== 36 passed in 74.06s (0:01:14) ========================

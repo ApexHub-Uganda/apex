@@ -1,0 +1,32 @@
+---
+pid: 13932
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_email_templates.py tests/test_password_reset.py -q --tb=short 2>&1"
+started_at: 2026-07-08T08:41:23.125Z
+running_for_ms: 4280002  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 21 items
+
+tests\test_email_templates.py ........                                   [ 38%]
+tests\test_password_reset.py ....F........                               [100%]
+
+================================== FAILURES ===================================
+_____ TestPasswordResetOtp.test_copy_link_html_page_shows_copied_message ______
+tests\test_password_reset.py:127: in test_copy_link_html_page_shows_copied_message
+    assert copy_response.status_code == status.HTTP_200_OK
+E   assert 406 == 200
+E    +  where 406 = <Response status_code=406, "application/json">.status_code
+E    +  and   200 = status.HTTP_200_OK
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-08 01:42:11,587 log Not Acceptable: /api/v1/auth/password-reset/copy/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Not Acceptable: /api/v1/auth/password-reset/copy/
+=========================== short test summary info ===========================
+FAILED tests/test_password_reset.py::TestPasswordResetOtp::test_copy_link_html_page_shows_copied_message
+======================== 1 failed, 20 passed in 52.39s ========================

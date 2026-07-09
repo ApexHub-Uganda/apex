@@ -1,0 +1,26 @@
+---
+pid: 18300
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_library_rbac.py -v --tb=short 2>&1"
+started_at: 2026-07-08T05:52:25.256Z
+running_for_ms: 84997    
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 8 items
+
+tests/test_library_rbac.py::TestLibraryRoleDefaults::test_librarian_has_full_library_write PASSED [ 12%]
+tests/test_library_rbac.py::TestLibraryRoleDefaults::test_librarian_effective_permissions PASSED [ 25%]
+tests/test_library_rbac.py::TestLibraryWorkflowAPI::test_issue_and_return_book PASSED [ 37%]
+tests/test_library_rbac.py::TestLibraryWorkflowAPI::test_renew_active_loan PASSED [ 50%]
+tests/test_library_rbac.py::TestLibraryWorkflowAPI::test_librarian_workspace_api PASSED [ 62%]
+tests/test_library_rbac.py::TestLibraryWorkflowAPI::test_teacher_cannot_access_library_borrows PASSED [ 75%]
+tests/test_library_rbac.py::TestLibraryWorkflowAPI::test_teacher_cannot_access_library_workspace PASSED [ 87%]
+tests/test_library_rbac.py::TestLibraryWorkflowAPI::test_permission_matrix_includes_librarian_role PASSED [100%]
+
+======================== 8 passed in 73.84s (0:01:13) =========================

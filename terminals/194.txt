@@ -1,0 +1,22 @@
+---
+pid: 11236
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hr_rbac.py -v --tb=short"
+started_at: 2026-07-08T05:54:40.324Z
+running_for_ms: 500008   
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 4 items
+
+tests/test_hr_rbac.py::TestHRRbac::test_hr_manager_default_permissions PASSED [ 25%]
+tests/test_hr_rbac.py::TestHRRbac::test_hr_manager_workspace_api PASSED  [ 50%]
+tests/test_hr_rbac.py::TestHRRbac::test_leave_approval_workflow PASSED   [ 75%]
+tests/test_hr_rbac.py::TestHRRbac::test_leave_write_denied_when_revoked PASSED [100%]
+
+============================= 4 passed in 57.98s ==============================

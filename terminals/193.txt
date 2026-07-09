@@ -1,0 +1,46 @@
+---
+pid: 8528
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hr_rbac.py tests/test_library_rbac.py tests/test_hostel_rbac.py -q --tb=line 2>&1"
+started_at: 2026-07-08T05:54:23.958Z
+running_for_ms: 14300001 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 21 items
+
+tests\test_hr_rbac.py ...F                                               [ 19%]
+tests\test_library_rbac.py F.......                                      [ 57%]
+tests\test_hostel_rbac.py ....F....                                      [100%]
+
+================================== FAILURES ===================================
+E   assert 403 == 400
+     +  where 403 = <Response status_code=403, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-07 22:55:27,034 log Forbidden: /api/v1/hr/leaves/6fd31b07-e9ce-4757-9440-7f95aaa51d9a/approve/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Forbidden: /api/v1/hr/leaves/6fd31b07-e9ce-4757-9440-7f95aaa51d9a/approve/
+E:\apex\backend\tests\test_hr_rbac.py:133: assert 403 == 400
+E   AssertionError: assert {'can_read': ...write': False} == {'can_read': ..._write': True}
+      
+      Omitting 1 identical items, use -vv to show
+      Differing items:
+      {'can_write': False} != {'can_write': True}
+      Use -v to get more diff
+E:\apex\backend\tests\test_library_rbac.py:123: AssertionError: assert {'can_read': ...write': False} == {'can_read': ..._write': True}
+E   assert 404 == 200
+     +  where 404 = <Response status_code=404, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-07 22:55:43,955 log Not Found: /api/v1/hostel/allocations/cc887129-002b-4dcc-bc37-2f504cf6d1b2/check-in/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/hostel/allocations/cc887129-002b-4dcc-bc37-2f504cf6d1b2/check-in/
+E:\apex\backend\tests\test_hostel_rbac.py:231: assert 404 == 200
+=========================== short test summary info ===========================
+FAILED tests/test_hr_rbac.py::TestHRRbac::test_leave_write_denied_when_revoked
+FAILED tests/test_library_rbac.py::TestLibraryRoleDefaults::test_librarian_has_full_library_write
+FAILED tests/test_hostel_rbac.py::TestHostelWorkflowAPI::test_allocate_check_in_vacate_syncs_room_occupied
+=================== 3 failed, 18 passed in 82.25s (0:01:22) ===================

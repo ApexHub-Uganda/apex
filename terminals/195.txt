@@ -1,0 +1,40 @@
+---
+pid: 22272
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hostel_rbac.py -v --tb=short"
+started_at: 2026-07-08T05:55:38.914Z
+running_for_ms: 270005   
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 9 items
+
+tests/test_hostel_rbac.py::TestHostelRoleDefaults::test_hostel_manager_has_workspace_and_reports_read PASSED [ 11%]
+tests/test_hostel_rbac.py::TestHostelRoleDefaults::test_hostel_manager_effective_permissions PASSED [ 22%]
+tests/test_hostel_rbac.py::TestHostelScopingAPI::test_warden_sees_only_assigned_hostel PASSED [ 33%]
+tests/test_hostel_rbac.py::TestHostelScopingAPI::test_school_admin_sees_all_hostels PASSED [ 44%]
+tests/test_hostel_rbac.py::TestHostelWorkflowAPI::test_allocate_check_in_vacate_syncs_room_occupied FAILED [ 55%]
+tests/test_hostel_rbac.py::TestHostelWorkflowAPI::test_warden_cannot_allocate_outside_assigned_hostel PASSED [ 66%]
+tests/test_hostel_rbac.py::TestHostelWorkflowAPI::test_hostel_workspace_api PASSED [ 77%]
+tests/test_hostel_rbac.py::TestHostelWorkflowAPI::test_hostel_reports_api PASSED [ 88%]
+tests/test_hostel_rbac.py::TestHostelWorkflowAPI::test_permission_matrix_includes_hostel_manager PASSED [100%]
+
+================================== FAILURES ===================================
+___ TestHostelWorkflowAPI.test_allocate_check_in_vacate_syncs_room_occupied ___
+tests\test_hostel_rbac.py:231: in test_allocate_check_in_vacate_syncs_room_occupied
+    assert check_in.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <Response status_code=404, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-07 22:56:28,345 log Not Found: /api/v1/hostel/allocations/30010a7b-d8d2-4396-b653-ef0ad0ee4e53/check-in/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/hostel/allocations/30010a7b-d8d2-4396-b653-ef0ad0ee4e53/check-in/
+=========================== short test summary info ===========================
+FAILED tests/test_hostel_rbac.py::TestHostelWorkflowAPI::test_allocate_check_in_vacate_syncs_room_occupied - assert 404 == 200
+ +  where 404 = <Response status_code=404, "application/json">.status_code
+======================== 1 failed, 8 passed in 51.52s =========================

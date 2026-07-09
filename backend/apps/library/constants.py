@@ -1,0 +1,49 @@
+"""Library circulation and reservation constants."""
+from __future__ import annotations
+
+BORROW_BORROWED = "borrowed"
+BORROW_RETURNED = "returned"
+BORROW_OVERDUE = "overdue"
+BORROW_LOST = "lost"
+
+BORROW_STATUSES = frozenset({
+    BORROW_BORROWED,
+    BORROW_RETURNED,
+    BORROW_OVERDUE,
+    BORROW_LOST,
+})
+
+RESERVATION_PENDING = "pending"
+RESERVATION_FULFILLED = "fulfilled"
+RESERVATION_CANCELLED = "cancelled"
+RESERVATION_EXPIRED = "expired"
+
+RESERVATION_STATUSES = frozenset({
+    RESERVATION_PENDING,
+    RESERVATION_FULFILLED,
+    RESERVATION_CANCELLED,
+    RESERVATION_EXPIRED,
+})
+
+BORROWER_STUDENT = "student"
+BORROWER_STAFF = "staff"
+
+BORROWER_TYPES = frozenset({
+    BORROWER_STUDENT,
+    BORROWER_STAFF,
+})
+
+FINE_PENDING = "pending"
+FINE_PAID = "paid"
+FINE_WAIVED = "waived"
+
+FINE_STATUSES = frozenset({
+    FINE_PENDING,
+    FINE_PAID,
+    FINE_WAIVED,
+})
+
+DEFAULT_LOAN_DAYS = 14
+DEFAULT_RENEWAL_DAYS = 14
+MAX_RENEWALS = 2
+DEFAULT_DAILY_FINE_RATE = "500.00"

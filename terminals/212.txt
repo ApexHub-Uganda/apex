@@ -1,0 +1,10 @@
+---
+pid: 21004
+cwd: "E:\apex"
+command: "pip show playwright 2>$null; if (-not $?) { pip install playwright -q }; python -c \"import playwright; print('playwright ok')\""
+started_at: 2026-07-08T07:26:20.007Z
+running_for_ms: 8780003  
+---
+  WARNING: The script playwright.exe is installed in 'C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Scripts' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+playwright ok

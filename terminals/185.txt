@@ -1,0 +1,184 @@
+---
+pid: 18408
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python manage.py migrate --noinput 2>&1; python -m pytest tests/test_hr_rbac.py tests/test_library_rbac.py tests/test_hostel_rbac.py tests/test_role_feature_defaults.py -q --tb=short 2>&1"
+started_at: 2026-07-08T05:51:12.995Z
+running_for_ms: 14489998 
+---
+Operations to perform:
+  Apply all migrations: academics, accounts, admin, admissions, analytics, attendance, audit, auth, communication, contenttypes, examinations, finance, hostel, hr, inventory, library, payroll, platform, sessions, staff, students, subscriptions, tenants, token_blacklist, transport
+Running migrations:
+  Applying staff.0003_phase1_phase2_hostel_rbac... OK
+  Applying hostel.0003_phase1_phase2_hostel_rbac... OK
+  Applying hr.0003_phase1_phase2_rbac... OK
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 23 items
+
+tests\test_hr_rbac.py ...F                                               [ 17%]
+tests\test_library_rbac.py F..                                           [ 30%]
+tests\test_hostel_rbac.py ....FFFF.                                      [ 69%]
+tests\test_role_feature_defaults.py .......                              [100%]
+
+================================== FAILURES ===================================
+_______________ TestHRRbac.test_leave_write_denied_when_revoked _______________
+tests\test_hr_rbac.py:106: in test_leave_write_denied_when_revoked
+    SchoolRoleFeaturePermission.objects.create(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\query.py:663: in create
+    obj = self.model(**kwargs)
+          ^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\db\models\base.py:569: in __init__
+    raise TypeError(
+E   TypeError: SchoolRoleFeaturePermission() got unexpected keyword arguments: 'module_key'
+_____________ TestLibraryRbac.test_librarian_default_permissions ______________
+tests\test_library_rbac.py:84: in test_librarian_default_permissions
+    assert get_default_feature_permission(UserRole.LIBRARIAN, "library_reports") == {
+E   AssertionError: assert {'can_read': ..._write': True} == {'can_read': ...write': False}
+E     
+E     Omitting 1 identical items, use -vv to show
+E     Differing items:
+E     {'can_write': True} != {'can_write': False}
+E     Use -v to get more diff
+___ TestHostelWorkflowAPI.test_allocate_check_in_vacate_syncs_room_occupied ___
+tests\test_hostel_rbac.py:223: in test_allocate_check_in_vacate_syncs_room_occupied
+    assert allocate.status_code == 201
+E   assert 200 == 201
+E    +  where 200 = <Response status_code=200, "application/json">.status_code
+__ TestHostelWorkflowAPI.test_warden_cannot_allocate_outside_assigned_hostel __
+tests\test_hostel_rbac.py:254: in test_warden_cannot_allocate_outside_assigned_hostel
+    assert response.status_code == 404
+E   assert 200 == 404
+E    +  where 200 = <Response status_code=200, "application/json">.status_code
+_______________ TestHostelWorkflowAPI.test_hostel_workspace_api _______________
+tests\test_hostel_rbac.py:259: in test_hostel_workspace_api
+    response = client.get("/api/v1/hostel/workspace/")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:276: in get
+    response = super().get(path, data=data, **extra)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:193: in get
+    return self.generic('GET', path, **r)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\hostel\views.py:227: in get
+    "data": build_hostel_workspace(tenant=tenant, user=request.user),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+apps\hostel\workspaces.py:61: in build_hostel_workspace
+    rooms.aggregate(total=Sum("capacity"))["total"] or 0
+E   TypeError: unsupported operand type(s) for -: 'int' and 'NoneType'
+---------------------------- Captured stderr call -----------------------------
+ERROR 2026-07-07 22:52:40,111 log Internal Server Error: /api/v1/hostel/workspace/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "E:\apex\backend\apps\hostel\views.py", line 227, in get
+    "data": build_hostel_workspace(tenant=tenant, user=request.user),
+            ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\apex\backend\apps\hostel\workspaces.py", line 61, in build_hostel_workspace
+    rooms.aggregate(total=Sum("capacity"))["total"] or 0
+                                                       ~
+    - rooms.aggregate(occ=Sum("occupied"))["occ"] or 0,
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for -: 'int' and 'NoneType'
+------------------------------ Captured log call ------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/hostel/workspace/
+Traceback (most recent call last):
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "E:\apex\backend\apps\hostel\views.py", line 227, in get
+    "data": build_hostel_workspace(tenant=tenant, user=request.user),
+            ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\apex\backend\apps\hostel\workspaces.py", line 61, in build_hostel_workspace
+    rooms.aggregate(total=Sum("capacity"))["total"] or 0
+                                                       ~
+    - rooms.aggregate(occ=Sum("occupied"))["occ"] or 0,
+    ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for -: 'int' and 'NoneType'
+________________ TestHostelWorkflowAPI.test_hostel_reports_api ________________
+tests\test_hostel_rbac.py:269: in test_hostel_reports_api
+    assert len(response.data["data"]["rows"]) == 1
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: 'rows'
+=========================== short test summary info ===========================
+FAILED tests/test_hr_rbac.py::TestHRRbac::test_leave_write_denied_when_revoked
+FAILED tests/test_library_rbac.py::TestLibraryRbac::test_librarian_default_permissions
+FAILED tests/test_hostel_rbac.py::TestHostelWorkflowAPI::test_allocate_check_in_vacate_syncs_room_occupied
+FAILED tests/test_hostel_rbac.py::TestHostelWorkflowAPI::test_warden_cannot_allocate_outside_assigned_hostel
+FAILED tests/test_hostel_rbac.py::TestHostelWorkflowAPI::test_hostel_workspace_api
+FAILED tests/test_hostel_rbac.py::TestHostelWorkflowAPI::test_hostel_reports_api
+=================== 6 failed, 17 passed in 83.20s (0:01:23) ===================

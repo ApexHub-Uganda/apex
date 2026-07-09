@@ -1,0 +1,30 @@
+---
+pid: 17700
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python scripts/browser_otp_smoke.py 2>&1"
+started_at: 2026-07-08T08:21:50.794Z
+running_for_ms: 5450013  
+---
+{
+  "fatal": "Page.wait_for_selector: Timeout 15000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text(\\\"Copied\\\")\") to be visible\n",
+  "results": [
+    {
+      "test": "copy_button_copies_all_digits",
+      "expected": "847291",
+      "actual": "847291",
+      "ok": true
+    },
+    {
+      "test": "copy_page_prefills_reset_form",
+      "expected": "847291",
+      "actual": "847291",
+      "ok": true
+    },
+    {
+      "test": "paste_spaced_otp_strips_non_digits",
+      "expected": "847291",
+      "actual": "847291",
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+---
+pid: 1180
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python scripts/browser_otp_smoke.py"
+started_at: 2026-07-08T07:57:14.408Z
+running_for_ms: 6930005  
+---
+{
+  "fatal": "Page.wait_for_selector: Timeout 15000ms exceeded.\nCall log:\n  - waiting for locator(\"text=Enter verification code\") to be visible\n",
+  "results": []
+}

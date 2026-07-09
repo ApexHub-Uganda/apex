@@ -1,0 +1,53 @@
+---
+pid: 19540
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hr_rbac.py -v"
+started_at: 2026-07-08T05:50:00.942Z
+running_for_ms: 780009   
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 20 items
+
+tests/test_hr_rbac.py::TestHRManagerFeatureDefaults::test_hr_manager_has_expected_default_grants PASSED [  5%]
+tests/test_hr_rbac.py::TestHRManagerFeatureDefaults::test_hr_manager_effective_permissions_match_defaults FAILED [ 10%]
+tests/test_hr_rbac.py::TestHRWorkspaceAPI::test_hr_manager_can_access_workspace PASSED [ 15%]
+tests/test_hr_rbac.py::TestHRWorkspaceAPI::test_teacher_denied_workspace_without_hr_grant PASSED [ 20%]
+tests/test_hr_rbac.py::TestLeaveApprovalWorkflow::test_hr_manager_can_approve_pending_leave PASSED [ 25%]
+tests/test_hr_rbac.py::TestLeaveApprovalWorkflow::test_hr_manager_can_reject_pending_leave PASSED [ 30%]
+tests/test_hr_rbac.py::TestLeaveApprovalWorkflow::test_read_only_leave_grant_cannot_approve PASSED [ 35%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_teacher_blocked_without_hr_grants[GET-/api/v1/hr/positions/] PASSED [ 40%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_teacher_blocked_without_hr_grants[GET-/api/v1/hr/leave-types/] PASSED [ 45%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_teacher_blocked_without_hr_grants[GET-/api/v1/hr/leaves/] PASSED [ 50%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_teacher_blocked_without_hr_grants[GET-/api/v1/hr/performance-reviews/] PASSED [ 55%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_teacher_blocked_without_hr_grants[GET-/api/v1/hr/staff-contracts/] PASSED [ 60%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_teacher_blocked_without_hr_grants[GET-/api/v1/hr/staff-discipline/] PASSED [ 65%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_teacher_blocked_without_hr_grants[GET-/api/v1/hr/staff-qualifications/] PASSED [ 70%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_teacher_blocked_without_hr_grants[GET-/api/v1/hr/staff-documents/] PASSED [ 75%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_teacher_blocked_without_hr_grants[GET-/api/v1/hr/work-schedules/] PASSED [ 80%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_teacher_blocked_without_hr_grants[GET-/api/v1/hr/workspace/] PASSED [ 85%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_teacher_blocked_without_hr_grants[GET-/api/v1/hr/reports/] PASSED [ 90%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_hr_manager_can_access_reports PASSED [ 95%]
+tests/test_hr_rbac.py::TestHRWritePermissionDenial::test_performance_review_submit_workflow PASSED [100%]
+
+================================== FAILURES ===================================
+_ TestHRManagerFeatureDefaults.test_hr_manager_effective_permissions_match_defaults _
+tests\test_hr_rbac.py:127: in test_hr_manager_effective_permissions_match_defaults
+    assert perms.get("salary_structures", {}).get("can_read")
+E   AssertionError: assert None
+E    +  where None = <built-in method get of dict object at 0x000001F4467579C0>('can_read')
+E    +    where <built-in method get of dict object at 0x000001F4467579C0> = {}.get
+E    +      where {} = <built-in method get of dict object at 0x000001F442FDC8C0>('salary_structures', {})
+E    +        where <built-in method get of dict object at 0x000001F442FDC8C0> = {'staff_management': {'can_read': True, 'can_write': True}, 'staff_attendance': {'can_read': True, 'can_write': True}, 'hr_manager_workspace': {'can_read': True, 'can_write': True}, 'hr_departments': {'can_read': True, 'can_write': True}, 'positions': {'can_read': True, 'can_write': True}, 'leave_types': {'can_read': True, 'can_write': True}, 'leave_requests': {'can_read': True, 'can_write': True}, 'performance_reviews': {'can_read': True, 'can_write': True}, 'staff_contracts': {'can_read': True, 'can_write': True}, 'staff_discipline': {'can_read': True, 'can_write': True}, 'staff_qualifications': {'can_read': True, 'can_write': True}, 'staff_documents': {'can_read': True, 'can_write': True}, 'work_schedules': {'can_read': True, 'can_write': True}, 'hr_reports': {'can_read': True, 'can_write': True}, 'hr_analytics': {'can_read': True, 'can_write': False}, 'dashboard_analytics': {'can_read': True, 'can_write': False}}.get
+=========================== short test summary info ===========================
+FAILED tests/test_hr_rbac.py::TestHRManagerFeatureDefaults::test_hr_manager_effective_permissions_match_defaults - AssertionError: assert None
+ +  where None = <built-in method get of dict object at 0x000001F4467579C0>('can_read')
+ +    where <built-in method get of dict object at 0x000001F4467579C0> = {}.get
+ +      where {} = <built-in method get of dict object at 0x000001F442FDC8C0>('salary_structures', {})
+ +        where <built-in method get of dict object at 0x000001F442FDC8C0> = {'staff_management': {'can_read': True, 'can_write': True}, 'staff_attendance': {'can_read': True, 'can_write': True}, 'hr_manager_workspace': {'can_read': True, 'can_write': True}, 'hr_departments': {'can_read': True, 'can_write': True}, 'positions': {'can_read': True, 'can_write': True}, 'leave_types': {'can_read': True, 'can_write': True}, 'leave_requests': {'can_read': True, 'can_write': True}, 'performance_reviews': {'can_read': True, 'can_write': True}, 'staff_contracts': {'can_read': True, 'can_write': True}, 'staff_discipline': {'can_read': True, 'can_write': True}, 'staff_qualifications': {'can_read': True, 'can_write': True}, 'staff_documents': {'can_read': True, 'can_write': True}, 'work_schedules': {'can_read': True, 'can_write': True}, 'hr_reports': {'can_read': True, 'can_write': True}, 'hr_analytics': {'can_read': True, 'can_write': False}, 'dashboard_analytics': {'can_read': True, 'can_write': False}}.get
+=================== 1 failed, 19 passed in 64.08s (0:01:04) ===================

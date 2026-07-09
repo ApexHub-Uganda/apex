@@ -1,0 +1,140 @@
+---
+pid: 5780
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python manage.py runserver 0.0.0.0:8000"
+started_at: 2026-07-08T07:25:56.878Z
+running_for_ms: 8820002  
+---
+Performing system checks...
+
+INFO 2026-07-08 00:26:05,644 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+July 08, 2026 - 00:26:10
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+INFO 2026-07-08 00:26:13,368 autoreload E:\apex\backend\apps\core\email_templates.py changed, reloading.
+Performing system checks...
+
+INFO 2026-07-08 00:26:15,911 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+July 08, 2026 - 00:26:17
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+INFO 2026-07-08 01:04:23,186 autoreload E:\apex\backend\apps\core\email_templates.py changed, reloading.
+Performing system checks...
+
+INFO 2026-07-08 01:04:27,387 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+July 08, 2026 - 01:04:34
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+INFO 2026-07-08 01:04:41,585 basehttp "POST /api/v1/auth/login/ HTTP/1.1" 200 7494
+INFO 2026-07-08 01:11:32,282 autoreload E:\apex\backend\apps\core\email_templates.py changed, reloading.
+Performing system checks...
+
+INFO 2026-07-08 01:11:38,323 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+July 08, 2026 - 01:11:43
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+INFO 2026-07-08 01:11:49,538 autoreload E:\apex\backend\apps\accounts\urls.py changed, reloading.
+Performing system checks...
+
+INFO 2026-07-08 01:11:55,067 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+July 08, 2026 - 01:11:58
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+INFO 2026-07-08 01:28:06,060 autoreload E:\apex\backend\apps\accounts\views.py changed, reloading.
+Performing system checks...
+
+INFO 2026-07-08 01:28:09,146 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+July 08, 2026 - 01:28:13
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+INFO 2026-07-08 01:28:14,185 basehttp "GET /api/v1/platform/health/ HTTP/1.1" 200 206
+INFO 2026-07-08 01:40:22,805 autoreload E:\apex\backend\apps\core\email_templates.py changed, reloading.
+Performing system checks...
+
+INFO 2026-07-08 01:40:26,242 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+July 08, 2026 - 01:40:30
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+INFO 2026-07-08 01:43:53,289 autoreload E:\apex\backend\apps\accounts\views.py changed, reloading.
+Performing system checks...
+
+INFO 2026-07-08 01:43:55,569 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+July 08, 2026 - 01:43:57
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+INFO 2026-07-08 01:44:04,491 autoreload E:\apex\backend\apps\accounts\views.py changed, reloading.
+Performing system checks...
+
+INFO 2026-07-08 01:44:06,636 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+July 08, 2026 - 01:44:08
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+INFO 2026-07-08 01:44:26,572 autoreload E:\apex\backend\apps\accounts\views.py changed, reloading.
+Performing system checks...
+
+INFO 2026-07-08 01:44:28,662 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+July 08, 2026 - 01:44:30
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
+INFO 2026-07-08 02:03:52,023 autoreload E:\apex\backend\apps\accounts\urls.py changed, reloading.
+Performing system checks...
+
+INFO 2026-07-08 02:03:55,148 autoreload Watching for file changes with StatReloader
+System check identified no issues (0 silenced).
+July 08, 2026 - 02:03:59
+Django version 5.2.15, using settings 'apex_hub.settings'
+Starting development server at http://0.0.0.0:8000/
+Quit the server with CTRL-BREAK.
+
+WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/

@@ -1,0 +1,19 @@
+---
+pid: 11556
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_password_reset.py tests/test_email_templates.py::TestEmailTemplates::test_password_reset_template_includes_otp_and_html -q --tb=short"
+started_at: 2026-07-08T07:45:28.415Z
+running_for_ms: 7635007  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 12 items
+
+tests\test_password_reset.py ...........                                 [ 91%]
+tests\test_email_templates.py .                                          [100%]
+
+============================= 12 passed in 49.08s =============================

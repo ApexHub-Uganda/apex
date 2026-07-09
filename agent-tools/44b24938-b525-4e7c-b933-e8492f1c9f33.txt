@@ -1,0 +1,1661 @@
+---
+pid: 13100
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm install"
+started_at: 2026-06-30T21:22:51.469Z
+running_for_ms: 345000   
+---
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, rename 'E:\apex\frontend\node_modules\is-weakset\.editorconfig' -> 'E:\apex\frontend\node_modules\is-weakset\.editorconfig.DELETE.2f52287ddb758df5d0166b21f87484f4'
+---
+pid: 12948
+cwd: "E:\apex"
+command: "Push-Location E:\\apex\\frontend; npm install; Pop-Location"
+started_at: 2026-06-30T21:25:03.698Z
+running_for_ms: 215015   
+---
+npm error code ENOTEMPTY
+---
+pid: 5224
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_bulk_import.py -v --tb=long 2>&1"
+started_at: 2026-07-04T06:04:55.068Z
+running_for_ms: 7840002  
+---
+============================= test session starts =============================
+---
+pid: 6876
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_bulk_import.py -v --tb=short 2>&1"
+started_at: 2026-07-04T06:14:33.390Z
+running_for_ms: 7260011  
+---
+============================= test session starts =============================
+---
+pid: 16332
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_parent_matching.py tests/test_bulk_import.py -q 2>&1"
+started_at: 2026-07-04T06:32:08.586Z
+running_for_ms: 6205002  
+---
+============================= test session starts =============================
+---
+pid: 11188
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_parent_matching.py -q 2>&1"
+started_at: 2026-07-04T06:34:53.382Z
+running_for_ms: 6040010  
+---
+============================= test session starts =============================
+---
+pid: 15440
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_parent_matching.py tests/test_bulk_import.py -q 2>&1"
+started_at: 2026-07-04T06:36:26.928Z
+running_for_ms: 5945003  
+---
+============================= test session starts =============================
+---
+pid: 8180
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend ; npm run dev -- --port 5173 2>&1"
+started_at: 2026-07-04T06:43:53.983Z
+running_for_ms: 5505004  
+---
+
+---
+pid: 3568
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend ; npm run preview -- --port 4173 2>&1"
+started_at: 2026-07-04T06:44:49.621Z
+running_for_ms: 5449998  
+---
+
+---
+pid: 1752
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_parent_matching.py tests/test_bulk_import.py -q 2>&1"
+started_at: 2026-07-04T06:58:10.442Z
+running_for_ms: 4645012  
+---
+============================= test session starts =============================
+---
+pid: 8152
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py tests/test_integration_providers.py tests/test_platform_broadcast.py -q 2>&1"
+started_at: 2026-07-04T07:17:28.673Z
+running_for_ms: 3485009  
+---
+============================= test session starts =============================
+---
+pid: 11952
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py tests/test_integration_providers.py -q 2>&1"
+started_at: 2026-07-04T07:20:23.653Z
+running_for_ms: 3310006  
+---
+============================= test session starts =============================
+---
+pid: 4636
+cwd: "E:\apex"
+command: "Remove-Item -Recurse -Force E:\\apex\\frontend\\node_modules -ErrorAction SilentlyContinue; Push-Location E:\\apex\\frontend; npm install; npm run build; Pop-Location"
+started_at: 2026-06-30T21:25:22.764Z
+running_for_ms: 195004   
+---
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'E:\apex\frontend\node_modules\resolve\lib'
+---
+pid: 9304
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py tests/test_integration_providers.py tests/test_platform_broadcast.py -q 2>&1"
+started_at: 2026-07-04T07:22:16.401Z
+running_for_ms: 3200000  
+---
+============================= test session starts =============================
+---
+pid: 16108
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py tests/test_integration_providers.py tests/test_platform_broadcast.py -q 2>&1"
+started_at: 2026-07-04T07:24:12.162Z
+running_for_ms: 3080002  
+---
+============================= test session starts =============================
+---
+pid: 7056
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py tests/test_integration_providers.py tests/test_platform_broadcast.py -q 2>&1"
+started_at: 2026-07-04T07:26:49.931Z
+running_for_ms: 2925016  
+---
+============================= test session starts =============================
+---
+pid: 1388
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py tests/test_integration_providers.py -q 2>&1"
+started_at: 2026-07-04T07:29:18.030Z
+running_for_ms: 2775005  
+---
+============================= test session starts =============================
+---
+pid: 15960
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py tests/test_integration_providers.py tests/test_platform_broadcast.py -v 2>&1"
+started_at: 2026-07-04T07:31:48.258Z
+running_for_ms: 2625010  
+---
+============================= test session starts =============================
+---
+pid: 15204
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py -q 2>&1"
+started_at: 2026-07-04T07:36:28.503Z
+running_for_ms: 2345001  
+---
+============================= test session starts =============================
+---
+pid: 13504
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py::TestSchoolMessaging::test_publish_without_email_addresses_raises -q 2>&1"
+started_at: 2026-07-04T07:38:25.913Z
+running_for_ms: 2230014  
+---
+============================= test session starts =============================
+---
+pid: 17364
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_school_messaging.py -q 2>&1"
+started_at: 2026-07-04T07:39:56.832Z
+running_for_ms: 2140007  
+---
+============================= test session starts =============================
+---
+pid: 17096
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend ; python -m pytest tests/test_email_validation.py tests/test_school_messaging.py -q 2>&1"
+started_at: 2026-07-04T08:00:00.487Z
+running_for_ms: 935010   
+---
+============================= test session starts =============================
+---
+pid: 15824
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_email_validation.py tests/test_school_messaging.py tests/test_bulk_import.py -q --tb=short 2>&1"
+started_at: 2026-07-04T08:02:24.450Z
+running_for_ms: 790014   
+---
+============================= test session starts =============================
+---
+pid: 13112
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; $env:DATABASE_URL=\"sqlite:///E:/apex/backend/test_db.sqlite3\"; $env:SECRET_KEY=\"test-key\"; python manage.py migrate 2>&1"
+started_at: 2026-06-30T21:25:30.141Z
+running_for_ms: 185002   
+---
+Operations to perform:
+---
+pid: 304
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -c \"import os,django; os.environ.setdefault('DJANGO_SETTINGS_MODULE','apex_hub.settings'); django.setup(); from apps.core.email_validation import validate_deliverable_email; tests=['client.apex@gmail.com','parent@realschool.org','teacher@greenwoodacademy.ug','staff1@kra.ug','admin@test.edu']; [print(t, '->', validate_deliverable_email(t)) for t in tests]\"; python -m pytest tests/test_email_validation.py tests/test_school_messaging.py -q --tb=short"
+started_at: 2026-07-04T08:06:09.560Z
+running_for_ms: 565009   
+---
+client.apex@gmail.com -> None
+---
+pid: 6676
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_departments.py -q --tb=short 2>&1"
+started_at: 2026-07-04T10:10:42.511Z
+running_for_ms: 5334999  
+---
+============================= test session starts =============================
+---
+pid: 12980
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_admissions.py -v --tb=short"
+started_at: 2026-07-04T10:34:47.602Z
+running_for_ms: 3890001  
+---
+============================= test session starts =============================
+---
+pid: 15384
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_marks_entry.py -v --tb=short"
+started_at: 2026-07-04T10:45:15.304Z
+running_for_ms: 3265014  
+---
+============================= test session starts =============================
+---
+pid: 9296
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_marks_entry.py -v --tb=short"
+started_at: 2026-07-04T10:57:56.207Z
+running_for_ms: 2505012  
+---
+============================= test session starts =============================
+---
+pid: 18092
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_delete.py -q"
+started_at: 2026-07-06T08:41:42.908Z
+running_for_ms: 18485006 
+---
+============================= test session starts =============================
+---
+pid: 15756
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_delete.py -q"
+started_at: 2026-07-06T09:17:20.078Z
+running_for_ms: 16345004 
+---
+============================= test session starts =============================
+---
+pid: 17204
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_delete.py -q"
+started_at: 2026-07-06T09:18:52.722Z
+running_for_ms: 16255014 
+---
+============================= test session starts =============================
+---
+pid: 5908
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_notification_delete.py -q"
+started_at: 2026-07-06T10:08:21.149Z
+running_for_ms: 13285009 
+---
+============================= test session starts =============================
+---
+pid: 7636
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py::TestRolePermissions::test_reset_role_permissions_requires_password -q"
+started_at: 2026-07-06T10:35:44.217Z
+running_for_ms: 11645006 
+---
+============================= test session starts =============================
+---
+pid: 13848
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; $env:DATABASE_URL=\"sqlite:///E:/apex/backend/test_db.sqlite3\"; $env:SECRET_KEY=\"test-key\"; python -m pytest tests/ -x 2>&1"
+started_at: 2026-06-30T21:26:51.438Z
+running_for_ms: 100002   
+---
+============================= test session starts =============================
+---
+pid: 10568
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build"
+started_at: 2026-07-06T11:19:59.262Z
+running_for_ms: 8990004  
+---
+
+---
+pid: 10148
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py -q"
+started_at: 2026-07-06T11:19:59.262Z
+running_for_ms: 8990004  
+---
+============================= test session starts =============================
+---
+pid: 20560
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build"
+started_at: 2026-07-06T11:32:41.364Z
+running_for_ms: 8225013  
+---
+
+---
+pid: 18292
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py -q"
+started_at: 2026-07-06T11:32:41.364Z
+running_for_ms: 8225013  
+---
+============================= test session starts =============================
+---
+pid: 14344
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build 2>&1"
+started_at: 2026-07-07T08:10:41.353Z
+running_for_ms: 14445006 
+---
+
+---
+pid: 2960
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_feature_defaults.py tests/test_academic_scoping.py tests/test_feature_write_permissions.py tests/test_role_permissions.py -q --tb=short 2>&1"
+started_at: 2026-07-07T08:52:30.406Z
+running_for_ms: 11940002 
+---
+============================= test session starts =============================
+---
+pid: 15748
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_feature_defaults.py tests/test_academic_scoping.py tests/test_feature_write_permissions.py tests/test_role_permissions.py -q --tb=line 2>&1"
+started_at: 2026-07-07T08:55:03.880Z
+running_for_ms: 11785008 
+---
+============================= test session starts =============================
+---
+pid: 8028
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_academic_scoping.py -q --tb=short 2>&1"
+started_at: 2026-07-07T08:58:50.253Z
+running_for_ms: 11560005 
+---
+============================= test session starts =============================
+---
+pid: 20128
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_feature_defaults.py tests/test_academic_scoping.py tests/test_feature_write_permissions.py tests/test_role_permissions.py -q --tb=line 2>&1"
+started_at: 2026-07-07T09:01:11.704Z
+running_for_ms: 11415006 
+---
+============================= test session starts =============================
+---
+pid: 22012
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_feature_defaults.py tests/test_academic_scoping.py tests/test_feature_write_permissions.py tests/test_role_permissions.py -q --tb=line 2>&1 | Select-Object -Last 15"
+started_at: 2026-07-07T09:03:48.084Z
+running_for_ms: 11260001 
+---
+============================= test session starts =============================
+---
+pid: 10584
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; $env:DATABASE_URL=\"sqlite:///E:/apex/backend/test_db.sqlite3\"; $env:SECRET_KEY=\"test-key\"; python -m pytest tests/ 2>&1"
+started_at: 2026-06-30T21:27:18.146Z
+running_for_ms: 75014    
+---
+============================= test session starts =============================
+---
+pid: 20936
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_examination_workflow.py tests/test_marks_entry.py tests/test_academic_scoping.py tests/test_role_feature_defaults.py tests/test_role_permissions.py -q --tb=short 2>&1"
+started_at: 2026-07-07T09:11:14.544Z
+running_for_ms: 10815002 
+---
+============================= test session starts =============================
+---
+pid: 13928
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_examination_workflow.py -q --tb=short 2>&1"
+started_at: 2026-07-07T09:14:05.850Z
+running_for_ms: 10645008 
+---
+============================= test session starts =============================
+---
+pid: 6200
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_examination_workflow.py::TestExaminationWorkflow::test_workflow_api_endpoints -q --tb=short 2>&1"
+started_at: 2026-07-07T09:16:00.073Z
+running_for_ms: 10530011 
+---
+============================= test session starts =============================
+---
+pid: 14056
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_examination_workflow.py -q --tb=line 2>&1"
+started_at: 2026-07-07T09:17:30.943Z
+running_for_ms: 10440010 
+---
+============================= test session starts =============================
+---
+pid: 13572
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_examination_workflow.py tests/test_marks_entry.py tests/test_academic_scoping.py tests/test_role_feature_defaults.py tests/test_role_permissions.py -q --tb=line 2>&1 | Select-Object -Last 8"
+started_at: 2026-07-07T09:20:03.148Z
+running_for_ms: 10285012 
+---
+
+---
+pid: 9068
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_academic_workflows_api.py tests/test_examination_workflow.py tests/test_academic_scoping.py tests/test_role_feature_defaults.py -v --tb=short 2>&1"
+started_at: 2026-07-07T09:34:55.022Z
+running_for_ms: 9395009  
+---
+============================= test session starts =============================
+---
+pid: 13560
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_academic_workflows_api.py::TestWorkflowBulkAPI tests/test_academic_workflows_api.py::TestLessonAttendanceBulkAPI -v --tb=short 2>&1"
+started_at: 2026-07-07T09:37:40.906Z
+running_for_ms: 9230008  
+---
+============================= test session starts =============================
+---
+pid: 21352
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_academic_workflows_api.py tests/test_examination_workflow.py tests/test_academic_scoping.py tests/test_role_feature_defaults.py -q --tb=line 2>&1"
+started_at: 2026-07-07T09:40:27.623Z
+running_for_ms: 9060004  
+---
+============================= test session starts =============================
+---
+pid: 13720
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -q --tb=line 2>&1"
+started_at: 2026-07-07T09:44:52.951Z
+running_for_ms: 8810014  
+---
+============================= test session starts =============================
+---
+pid: 12100
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -q --tb=line 2>&1"
+started_at: 2026-07-07T09:51:04.664Z
+running_for_ms: 8440000  
+---
+============================= test session starts =============================
+---
+pid: 6012
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; $env:DATABASE_URL=\"sqlite:///E:/apex/backend/test_db.sqlite3\"; $env:SECRET_KEY=\"test-key\"; python -m pytest tests/ -q 2>&1"
+started_at: 2026-06-30T21:27:52.513Z
+running_for_ms: 39990    
+---
+============================= test session starts =============================
+---
+pid: 20164
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_subscriptions.py::TestSubscriptions::test_feature_catalog_api -v --tb=short 2>&1 | Select-Object -Last 25"
+started_at: 2026-07-07T09:56:34.266Z
+running_for_ms: 8095009  
+---
+  Applying subscriptions.0002_enterprise_feature_catalog... OK
+---
+pid: 16864
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_auth.py::TestAuthentication::test_me_endpoint tests/test_role_permissions.py::TestRolePermissions::test_role_permission_matrix_school_admin_only tests/test_subscriptions.py::TestSubscriptions::test_feature_catalog_api tests/test_tenant_suspension.py::TestTenantSuspension::test_school_admin_can_still_read_profile_when_suspended -q --tb=short 2>&1"
+started_at: 2026-07-07T09:57:34.565Z
+running_for_ms: 8035001  
+---
+============================= test session starts =============================
+---
+pid: 1248
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_tenant_suspension.py::TestTenantSuspension::test_school_admin_can_still_read_profile_when_suspended -v --tb=long 2>&1 | Select-Object -Last 40"
+started_at: 2026-07-07T10:00:05.558Z
+running_for_ms: 7885011  
+---
+============================= test session starts =============================
+---
+pid: 21164
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -q --tb=line 2>&1"
+started_at: 2026-07-07T10:00:30.368Z
+running_for_ms: 7875013  
+---
+============================= test session starts =============================
+---
+pid: 14680
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -q --tb=line 2>&1"
+started_at: 2026-07-07T10:06:00.409Z
+running_for_ms: 7545005  
+---
+============================= test session starts =============================
+---
+pid: 20308
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_finance_rbac.py tests/test_role_feature_defaults.py tests/test_role_permissions.py -v --tb=short 2>&1"
+started_at: 2026-07-07T10:17:52.985Z
+running_for_ms: 6815007  
+---
+============================= test session starts =============================
+---
+pid: 5536
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_finance_rbac.py -v --tb=short 2>&1"
+started_at: 2026-07-07T10:21:42.276Z
+running_for_ms: 6585002  
+---
+============================= test session starts =============================
+---
+pid: 14576
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -q --tb=line 2>&1"
+started_at: 2026-07-07T10:24:06.046Z
+running_for_ms: 6460013  
+---
+============================= test session starts =============================
+---
+pid: 4280
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_finance_rbac.py -q --tb=line 2>&1"
+started_at: 2026-07-07T10:27:59.777Z
+running_for_ms: 6210008  
+---
+============================= test session starts =============================
+---
+pid: 3048
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_finance_permissions.py tests/test_finance_rbac.py -q --tb=short 2>&1"
+started_at: 2026-07-07T10:36:18.471Z
+running_for_ms: 5710008  
+---
+============================= test session starts =============================
+---
+pid: 12896
+cwd: "E:\apex"
+command: "Push-Location E:\\apex\\frontend; npm install --prefer-offline 2>&1 | Select-Object -Last 20; Pop-Location"
+started_at: 2026-06-30T21:28:11.259Z
+running_for_ms: 24988    
+---
+node.exe : npm error code ENOTEMPTY
+---
+pid: 20708
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_finance_permissions.py tests/test_finance_rbac.py tests/test_role_permissions.py tests/test_feature_write_permissions.py -q --tb=short 2>&1"
+started_at: 2026-07-07T10:39:08.615Z
+running_for_ms: 5540004  
+---
+============================= test session starts =============================
+---
+pid: 1656
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest -q --tb=line 2>&1"
+started_at: 2026-07-07T10:42:45.300Z
+running_for_ms: 5325013  
+---
+============================= test session starts =============================
+---
+pid: 16716
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_finance_permissions.py tests/test_finance_rbac.py -q --tb=short 2>&1"
+started_at: 2026-07-07T10:49:48.349Z
+running_for_ms: 4900014  
+---
+============================= test session starts =============================
+---
+pid: 16152
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_finance_permissions.py tests/test_finance_rbac.py tests/test_role_permissions.py tests/test_feature_write_permissions.py -q --tb=short 2>&1"
+started_at: 2026-07-07T10:52:57.402Z
+running_for_ms: 4710003  
+---
+============================= test session starts =============================
+---
+pid: 12476
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_finance_permissions.py tests/test_finance_rbac.py -q --tb=short 2>&1"
+started_at: 2026-07-07T11:01:12.670Z
+running_for_ms: 4215000  
+---
+============================= test session starts =============================
+---
+pid: 19672
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_finance_permissions.py -v --tb=short 2>&1"
+started_at: 2026-07-07T11:04:59.862Z
+running_for_ms: 3990081  
+---
+============================= test session starts =============================
+---
+pid: 16156
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_finance_permissions.py tests/test_finance_rbac.py -q --tb=line 2>&1"
+started_at: 2026-07-07T11:08:40.801Z
+running_for_ms: 3770002  
+---
+============================= test session starts =============================
+---
+pid: 15980
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest -q --tb=line 2>&1"
+started_at: 2026-07-07T11:14:54.277Z
+running_for_ms: 3395012  
+---
+============================= test session starts =============================
+---
+pid: 8044
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -q --tb=no"
+started_at: 2026-07-07T11:22:26.807Z
+running_for_ms: 2940002  
+---
+============================= test session starts =============================
+---
+pid: 13976
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_platform_broadcast.py::TestPlatformBroadcasts::test_send_broadcast_creates_deliveries_and_notifications -v --tb=short 2>&1 | Select-Object -Last 30"
+started_at: 2026-07-07T11:30:30.853Z
+running_for_ms: 2460003  
+---
+============================= test session starts =============================
+---
+pid: 9164
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -v --tb=short 2>&1"
+started_at: 2026-06-30T21:29:30.133Z
+running_for_ms: 5435005  
+---
+============================= test session starts =============================
+---
+pid: 17540
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_platform_broadcast.py -q --tb=short"
+started_at: 2026-07-07T11:31:19.303Z
+running_for_ms: 2410002  
+---
+============================= test session starts =============================
+---
+pid: 11640
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -c \"
+import os, django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'apex_hub.settings')
+django.setup()
+from django.contrib.auth import get_user_model
+---
+pid: 2124
+cwd: "E:\apex"
+command: "$login = Invoke-RestMethod -Uri \"http://localhost:8000/api/v1/auth/login/\" -Method POST -ContentType \"application/json\" -Body '{\"email\":\"superadmin@apexhub.io\",\"password\":\"ApexHub@2026\"}'; $token = $login.access; $headers = @{ Authorization = \"Bearer $token\"; Accept = \"application/json\" }; $create = Invoke-RestMethod -Uri \"http://localhost:8000/api/v1/platform/broadcasts/\" -Method POST -Headers $headers -ContentType \"application/json\" -Body '{\"title\":\"HTTP Test\",\"message\":\"Hello all\",\"channels\":[\"email\"],\"audience\":\"all\",\"severity\":\"info\",\"starts_at\":\"2026-07-07T12:00:00Z\"}'; $id = $create.id; $resp = Invoke-RestMethod -Uri \"http://localhost:8000/api/v1/platform/broadcasts/$id/send/\" -Method POST -Headers $headers -ContentType \"application/json\" -Body '{}'; $resp.success; $resp.message"
+started_at: 2026-07-07T11:32:12.668Z
+running_for_ms: 2355009  
+---
+True
+---
+pid: 3568
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -q --tb=no"
+started_at: 2026-07-07T11:33:21.962Z
+running_for_ms: 2285001  
+---
+============================= test session starts =============================
+---
+pid: 4576
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_password_reset.py -q --tb=short"
+started_at: 2026-07-07T11:45:44.310Z
+running_for_ms: 1545004  
+---
+============================= test session starts =============================
+---
+pid: 10604
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_password_reset.py -q --tb=short"
+started_at: 2026-07-07T11:46:54.724Z
+running_for_ms: 1475008  
+---
+============================= test session starts =============================
+---
+pid: 320
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -q --tb=no"
+started_at: 2026-07-07T11:47:38.551Z
+running_for_ms: 1430003  
+---
+============================= test session starts =============================
+---
+pid: 16520
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_password_reset.py tests/test_email_templates.py tests/test_school_messaging.py tests/test_platform_broadcast.py -q --tb=short 2>&1"
+started_at: 2026-07-07T11:59:09.971Z
+running_for_ms: 740008   
+---
+============================= test session starts =============================
+---
+pid: 15448
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_email_templates.py tests/test_password_reset.py -q --tb=short 2>&1"
+started_at: 2026-07-07T12:01:34.672Z
+running_for_ms: 595002   
+---
+============================= test session starts =============================
+---
+pid: 6860
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest -q --tb=line 2>&1"
+started_at: 2026-07-07T12:03:37.110Z
+running_for_ms: 470011   
+---
+============================= test session starts =============================
+---
+pid: 10564
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm install 2>&1"
+started_at: 2026-06-30T21:29:49.282Z
+running_for_ms: 5415003  
+---
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, lstat 'E:\apex\frontend\node_modules\@react-aria\ssr\node_modules\react-aria\dist\private\intl\steplist'
+---
+pid: 19540
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hr_rbac.py -v"
+started_at: 2026-07-08T05:50:00.942Z
+running_for_ms: 780009   
+---
+============================= test session starts =============================
+---
+pid: 15880
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 60"
+started_at: 2026-07-08T05:50:22.242Z
+running_for_ms: 755005   
+---
+---
+pid: 22340
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 90"
+started_at: 2026-07-08T05:50:45.035Z
+running_for_ms: 735001   
+---
+---
+pid: 8848
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_library_rbac.py -v 2>&1"
+started_at: 2026-07-08T05:50:45.473Z
+running_for_ms: 185005   
+---
+============================= test session starts =============================
+---
+pid: 8796
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 60"
+started_at: 2026-07-08T05:51:04.862Z
+running_for_ms: 165002   
+---
+---
+pid: 18408
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python manage.py migrate --noinput 2>&1; python -m pytest tests/test_hr_rbac.py tests/test_library_rbac.py tests/test_hostel_rbac.py tests/test_role_feature_defaults.py -q --tb=short 2>&1"
+started_at: 2026-07-08T05:51:12.995Z
+running_for_ms: 5614994  
+---
+Operations to perform:
+---
+pid: 8572
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 90"
+started_at: 2026-07-08T05:51:32.428Z
+running_for_ms: 140007   
+---
+---
+pid: 21652
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hostel_rbac.py -v"
+started_at: 2026-07-08T05:51:41.793Z
+running_for_ms: 510008   
+---
+============================= test session starts =============================
+---
+pid: 5344
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 60"
+started_at: 2026-07-08T05:52:02.178Z
+running_for_ms: 485007   
+---
+---
+pid: 18300
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_library_rbac.py -v --tb=short 2>&1"
+started_at: 2026-07-08T05:52:25.256Z
+running_for_ms: 84997    
+---
+============================= test session starts =============================
+---
+pid: 2852
+cwd: "E:\apex"
+command: "Remove-Item -Recurse -Force E:\\apex\\frontend\\node_modules -ErrorAction SilentlyContinue; cd E:\\apex\\frontend; npm install"
+started_at: 2026-06-30T21:35:02.040Z
+running_for_ms: 5104998  
+---
+
+---
+pid: 5708
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hr_rbac.py -v --tb=short"
+started_at: 2026-07-08T05:52:44.289Z
+running_for_ms: 615002   
+---
+============================= test session starts =============================
+---
+pid: 20856
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 70"
+started_at: 2026-07-08T05:53:13.561Z
+running_for_ms: 40007    
+---
+---
+pid: 4028
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 45"
+started_at: 2026-07-08T05:53:41.292Z
+running_for_ms: 555001   
+---
+---
+pid: 8528
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hr_rbac.py tests/test_library_rbac.py tests/test_hostel_rbac.py -q --tb=line 2>&1"
+started_at: 2026-07-08T05:54:23.958Z
+running_for_ms: 5420008  
+---
+============================= test session starts =============================
+---
+pid: 11236
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hr_rbac.py -v --tb=short"
+started_at: 2026-07-08T05:54:40.324Z
+running_for_ms: 500008   
+---
+============================= test session starts =============================
+---
+pid: 22272
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hostel_rbac.py -v --tb=short"
+started_at: 2026-07-08T05:55:38.914Z
+running_for_ms: 270005   
+---
+============================= test session starts =============================
+---
+pid: 10508
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hr_rbac.py -v --tb=short"
+started_at: 2026-07-08T05:57:23.534Z
+running_for_ms: 335014   
+---
+============================= test session starts =============================
+---
+pid: 19996
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hostel_rbac.py -v --tb=line"
+started_at: 2026-07-08T05:57:36.497Z
+running_for_ms: 155002   
+---
+============================= test session starts =============================
+---
+pid: 14432
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hr_rbac.py tests/test_library_rbac.py tests/test_hostel_rbac.py -q --tb=line 2>&1"
+started_at: 2026-07-08T05:59:50.905Z
+running_for_ms: 5095640  
+---
+============================= test session starts =============================
+---
+pid: 16392
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hostel_rbac.py -v --tb=short"
+started_at: 2026-07-08T05:59:56.730Z
+running_for_ms: 14999    
+---
+============================= test session starts =============================
+---
+pid: 12672
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 30"
+started_at: 2026-06-30T21:23:11.409Z
+running_for_ms: 325015   
+---
+---
+pid: 6332
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m venv venv; .\\venv\\Scripts\\pip install -r requirements.txt"
+started_at: 2026-06-30T22:08:14.372Z
+running_for_ms: 3109999  
+---
+Collecting Django<6.0,>=5.1 (from -r requirements.txt (line 1))
+---
+pid: 20096
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest -q --tb=line 2>&1"
+started_at: 2026-07-08T06:02:05.349Z
+running_for_ms: 4961232  
+---
+============================= test session starts =============================
+---
+pid: 16608
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py::TestRolePermissions::test_custom_permissions_override_defaults -q --tb=short 2>&1"
+started_at: 2026-07-08T06:30:25.332Z
+running_for_ms: 3261045  
+---
+============================= test session starts =============================
+---
+pid: 16516
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hr_rbac.py tests/test_library_rbac.py tests/test_hostel_rbac.py -q --tb=line 2>&1"
+started_at: 2026-07-08T06:33:14.813Z
+running_for_ms: 3090008  
+---
+============================= test session starts =============================
+---
+pid: 17364
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest -q --tb=line 2>&1"
+started_at: 2026-07-08T06:36:03.440Z
+running_for_ms: 2920009  
+---
+============================= test session starts =============================
+---
+pid: 7172
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_feature_defaults.py::TestRoleFeatureDefaults::test_teacher_effective_permissions_use_defaults tests/test_examination_workflow.py::TestExaminationWorkflow::test_workflow_api_endpoints tests/test_role_permissions.py::TestRolePermissions::test_custom_permissions_override_defaults -q --tb=short 2>&1"
+started_at: 2026-07-08T06:43:58.638Z
+running_for_ms: 2445000  
+---
+============================= test session starts =============================
+---
+pid: 6212
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/ -q --tb=short"
+started_at: 2026-07-08T07:05:22.810Z
+running_for_ms: 1165012  
+---
+============================= test session starts =============================
+---
+pid: 11184
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_library_workflows_api.py tests/test_hr_workflows_api.py tests/test_hostel_workflows_api.py tests/test_hr_rbac.py tests/test_library_rbac.py tests/test_hostel_rbac.py -q --tb=short"
+started_at: 2026-07-08T07:11:05.719Z
+running_for_ms: 820944   
+---
+============================= test session starts =============================
+---
+pid: 11920
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/ -q --tb=line"
+started_at: 2026-07-08T07:12:32.888Z
+running_for_ms: 735010   
+---
+============================= test session starts =============================
+---
+pid: 12696
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_examination_workflow.py::TestExaminationWorkflow::test_workflow_api_endpoints tests/test_role_feature_defaults.py::TestRoleFeatureDefaults::test_teacher_effective_permissions_use_defaults -q --tb=short"
+started_at: 2026-07-08T07:18:57.341Z
+running_for_ms: 350006   
+---
+============================= test session starts =============================
+---
+pid: 16080
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_library_workflows_api.py::TestLibraryWorkflowAPI::test_mark_fine_paid -q --tb=short"
+started_at: 2026-07-08T07:20:43.963Z
+running_for_ms: 240005   
+---
+============================= test session starts =============================
+---
+pid: 7616
+cwd: "E:\apex"
+command: "E:\\apex\\backend\\venv\\Scripts\\python.exe E:\\apex\\backend\\manage.py runserver 0.0.0.0:8000"
+started_at: 2026-06-30T22:20:48.404Z
+running_for_ms: 2374919  
+---
+Performing system checks...
+---
+pid: 4736
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run dev -- --host 0.0.0.0"
+started_at: 2026-06-30T22:20:48.411Z
+running_for_ms: 2375007  
+---
+
+---
+pid: 10036
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build"
+started_at: 2026-06-30T22:48:52.709Z
+running_for_ms: 675003   
+---
+
+---
+pid: 14876
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; .\\venv\\Scripts\\python.exe manage.py migrate; .\\venv\\Scripts\\python.exe manage.py seed_platform --force 2>&1"
+started_at: 2026-07-01T06:55:40.473Z
+running_for_ms: 19825004 
+---
+Operations to perform:
+---
+pid: 4492
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py -q 2>&1"
+started_at: 2026-07-01T08:29:41.595Z
+running_for_ms: 14185002 
+---
+============================= test session starts =============================
+---
+pid: 5876
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py -q 2>&1"
+started_at: 2026-07-01T08:47:01.075Z
+running_for_ms: 13145012 
+---
+============================= test session starts =============================
+---
+pid: 14960
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py -q 2>&1"
+started_at: 2026-07-01T08:48:25.098Z
+running_for_ms: 13060003 
+---
+============================= test session starts =============================
+---
+pid: 10256
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py -q 2>&1"
+started_at: 2026-07-01T08:50:16.333Z
+running_for_ms: 12949999 
+---
+============================= test session starts =============================
+---
+pid: 10076
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/ -q --tb=short"
+started_at: 2026-07-01T08:55:47.978Z
+running_for_ms: 12620001 
+---
+============================= test session starts =============================
+---
+pid: 13020
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 60"
+started_at: 2026-06-30T21:23:35.992Z
+running_for_ms: 305005   
+---
+---
+pid: 7292
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py -q --tb=short"
+started_at: 2026-07-01T09:30:47.746Z
+running_for_ms: 10520009 
+---
+============================= test session starts =============================
+---
+pid: 4004
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py -q --tb=short"
+started_at: 2026-07-01T10:54:07.639Z
+running_for_ms: 5520005  
+---
+============================= test session starts =============================
+---
+pid: 12700
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py -q --tb=short"
+started_at: 2026-07-01T11:22:58.366Z
+running_for_ms: 3790012  
+---
+============================= test session starts =============================
+---
+pid: 12696
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py -q --tb=line"
+started_at: 2026-07-01T11:33:27.885Z
+running_for_ms: 3160003  
+---
+============================= test session starts =============================
+---
+pid: 8876
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; .\\venv\\Scripts\\python.exe -m pytest tests/test_subscriptions.py::TestSubscriptions::test_current_subscription_endpoint -q --tb=short"
+started_at: 2026-07-01T11:34:01.933Z
+running_for_ms: 3124999  
+---
+============================= test session starts =============================
+---
+pid: 2196
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/ -q -k \"subscription or tenant or context\" --tb=short 2>&1 | Select-Object -First 40"
+started_at: 2026-07-02T07:06:22.070Z
+running_for_ms: 28520011 
+---
+============================= test session starts =============================
+---
+pid: 2340
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_subscriptions.py tests/test_tenant_isolation.py -q --tb=short"
+started_at: 2026-07-02T07:09:29.833Z
+running_for_ms: 28330010 
+---
+============================= test session starts =============================
+---
+pid: 14832
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_tenant_admin.py -q --tb=short"
+started_at: 2026-07-02T07:31:49.635Z
+running_for_ms: 26989995 
+---
+============================= test session starts =============================
+---
+pid: 9240
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build"
+started_at: 2026-07-02T07:52:54.437Z
+running_for_ms: 25730007 
+---
+
+---
+pid: 9188
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_tenant_admin.py -q --tb=line 2>&1 | Select-Object -Last 8"
+started_at: 2026-07-02T08:05:14.356Z
+running_for_ms: 24990005 
+---
+  File "E:\apex\backend\apps\tenants\views.py", line 245, in change_plan
+---
+pid: 1164
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; pip install -q -r requirements.txt 2>&1 | Select-Object -Last 5"
+started_at: 2026-06-30T21:23:39.974Z
+running_for_ms: 295005   
+---
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+---
+pid: 19044
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run dev"
+started_at: 2026-07-02T08:06:42.343Z
+running_for_ms: 24914997 
+---
+
+---
+pid: 1992
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_tenant_admin.py::TestTenantAdministration::test_change_plan -q --tb=short"
+started_at: 2026-07-02T08:06:42.343Z
+running_for_ms: 24900013 
+---
+============================= test session starts =============================
+---
+pid: 19932
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build"
+started_at: 2026-07-02T09:55:48.037Z
+running_for_ms: 18355002 
+---
+
+---
+pid: 16196
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_advertisements.py -q"
+started_at: 2026-07-02T09:58:42.250Z
+running_for_ms: 18180000 
+---
+============================= test session starts =============================
+---
+pid: 14436
+cwd: "E:\apex"
+command: "E:; Set-Location E:\\apex\\backend; python -m pytest tests/test_notification_delete.py -v"
+started_at: 2026-07-02T10:14:23.043Z
+running_for_ms: 17240011 
+---
+============================= test session starts =============================
+---
+pid: 15368
+cwd: "E:\apex"
+command: "E:; Set-Location E:\\apex\\backend; python -m pytest tests/test_notification_delete.py -v"
+started_at: 2026-07-02T10:16:52.527Z
+running_for_ms: 17090003 
+---
+============================= test session starts =============================
+---
+pid: 7260
+cwd: "E:\apex"
+command: "E:; Set-Location E:\\apex\\backend; python -m pytest tests/test_notification_delete.py -v"
+started_at: 2026-07-02T10:18:52.976Z
+running_for_ms: 16970013 
+---
+============================= test session starts =============================
+---
+pid: 18868
+cwd: "E:\apex"
+command: "E:; Set-Location E:\\apex\\backend; python -m pytest tests/test_notification_delete.py -v --tb=short"
+started_at: 2026-07-02T10:21:28.818Z
+running_for_ms: 16815003 
+---
+============================= test session starts =============================
+---
+pid: 12488
+cwd: "E:\apex"
+command: "E:; Set-Location E:\\apex\\backend; python -m pytest tests/test_tenant_suspension.py -v --tb=short"
+started_at: 2026-07-02T11:18:37.261Z
+running_for_ms: 13385010 
+---
+============================= test session starts =============================
+---
+pid: 756
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_tenant_admin.py tests/test_subscription_notifications.py -v --tb=short 2>&1"
+started_at: 2026-07-02T13:18:13.547Z
+running_for_ms: 6210000  
+---
+============================= test session starts =============================
+---
+pid: 1064
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm install"
+started_at: 2026-06-30T21:23:56.145Z
+running_for_ms: 285003   
+---
+npm warn tar TAR_ENTRY_ERROR UNKNOWN: unknown error, open 'E:\apex\frontend\node_modules\esquery\dist\esquery.esm.js'
+---
+pid: 6768
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_upgrade.py tests/test_plan_advertisements.py -v --tb=short 2>&1"
+started_at: 2026-07-02T14:04:15.973Z
+running_for_ms: 3445005  
+---
+============================= test session starts =============================
+---
+pid: 21908
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_upgrade.py -v --tb=short 2>&1"
+started_at: 2026-07-02T14:06:38.380Z
+running_for_ms: 3305006  
+---
+============================= test session starts =============================
+---
+pid: 16960
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_upgrade.py -v --tb=short 2>&1"
+started_at: 2026-07-02T14:08:07.605Z
+running_for_ms: 3215009  
+---
+============================= test session starts =============================
+---
+pid: 12896
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_upgrade.py -v --tb=short 2>&1"
+started_at: 2026-07-02T14:22:42.191Z
+running_for_ms: 2340004  
+---
+============================= test session starts =============================
+---
+pid: 16024
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_upgrade.py tests/test_plan_advertisements.py -q"
+started_at: 2026-07-02T14:48:53.903Z
+running_for_ms: 770009   
+---
+============================= test session starts =============================
+---
+pid: 7556
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_upgrade.py tests/test_plan_advertisements.py -q"
+started_at: 2026-07-02T14:51:51.696Z
+running_for_ms: 590002   
+---
+============================= test session starts =============================
+---
+pid: 19316
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_upgrade.py -q"
+started_at: 2026-07-02T14:58:03.680Z
+running_for_ms: 215002   
+---
+============================= test session starts =============================
+---
+pid: 15768
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_maintenance_mode.py -q"
+started_at: 2026-07-02T16:12:28.883Z
+running_for_ms: 155494   
+---
+============================= test session starts =============================
+---
+pid: 15316
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_maintenance_mode.py -q"
+started_at: 2026-07-02T16:14:45.825Z
+running_for_ms: 0        
+---
+============================= test session starts =============================
+---
+pid: 3192
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_maintenance_mode.py -q"
+started_at: 2026-07-02T16:18:31.472Z
+running_for_ms: 1290005  
+---
+============================= test session starts =============================
+---
+pid: 7260
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 30"
+started_at: 2026-06-30T21:23:59.985Z
+running_for_ms: 275006   
+---
+---
+pid: 2404
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_maintenance_mode.py -q"
+started_at: 2026-07-02T16:20:32.307Z
+running_for_ms: 1170003  
+---
+============================= test session starts =============================
+---
+pid: 7204
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_maintenance_mode.py::TestMaintenanceMode::test_school_admin_login_blocked -q"
+started_at: 2026-07-02T16:31:41.699Z
+running_for_ms: 500013   
+---
+============================= test session starts =============================
+---
+pid: 17140
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_inheritance.py tests/test_subscription_lifecycle.py tests/test_subscriptions.py -q"
+started_at: 2026-07-03T05:45:49.314Z
+running_for_ms: 11855006 
+---
+============================= test session starts =============================
+---
+pid: 7504
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_plan_inheritance.py tests/test_subscription_lifecycle.py tests/test_subscriptions.py -q"
+started_at: 2026-07-03T05:48:40.437Z
+running_for_ms: 11685009 
+---
+============================= test session starts =============================
+---
+pid: 708
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_platform_broadcast.py -v 2>&1"
+started_at: 2026-07-03T06:25:18.111Z
+running_for_ms: 9485008  
+---
+============================= test session starts =============================
+---
+pid: 9312
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_platform_broadcast.py -v 2>&1"
+started_at: 2026-07-03T06:28:07.121Z
+running_for_ms: 9315009  
+---
+============================= test session starts =============================
+---
+pid: 4548
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_platform_broadcast.py -v 2>&1"
+started_at: 2026-07-03T06:30:32.854Z
+running_for_ms: 9170006  
+---
+============================= test session starts =============================
+---
+pid: 4708
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_platform_broadcast.py tests/test_integration_providers.py -v 2>&1"
+started_at: 2026-07-03T06:44:43.119Z
+running_for_ms: 8320007  
+---
+============================= test session starts =============================
+---
+pid: 10884
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_platform_broadcast.py -v -k delete 2>&1"
+started_at: 2026-07-03T06:55:05.488Z
+running_for_ms: 7700020  
+---
+============================= test session starts =============================
+---
+pid: 15084
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py -v 2>&1"
+started_at: 2026-07-03T07:49:51.821Z
+running_for_ms: 4410001  
+---
+============================= test session starts =============================
+---
+pid: 13720
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm install 2>&1"
+started_at: 2026-06-30T21:24:22.995Z
+running_for_ms: 255015   
+---
+npm warn tar TAR_ENTRY_ERROR ENOENT: no such file or directory, rename 'E:\apex\frontend\node_modules\react-lifecycles-compat\package.json' -> 'E:\apex\frontend\node_modules\react-lifecycles-compat\package.json.DELETE.abf9febb3d7eb8881351525243ca88de'
+---
+pid: 9092
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py -v 2>&1"
+started_at: 2026-07-03T07:52:40.901Z
+running_for_ms: 4240001  
+---
+============================= test session starts =============================
+---
+pid: 3844
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py -v 2>&1"
+started_at: 2026-07-03T07:54:11.314Z
+running_for_ms: 4150008  
+---
+============================= test session starts =============================
+---
+pid: 6132
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py -q 2>&1"
+started_at: 2026-07-03T07:56:34.844Z
+running_for_ms: 4010003  
+---
+============================= test session starts =============================
+---
+pid: 14284
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py -v --tb=short 2>&1"
+started_at: 2026-07-03T07:58:06.199Z
+running_for_ms: 3915008  
+---
+============================= test session starts =============================
+---
+pid: 14928
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_staff_onboarding.py -v --tb=short 2>&1"
+started_at: 2026-07-03T08:56:29.213Z
+running_for_ms: 415014   
+---
+============================= test session starts =============================
+---
+pid: 2460
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_profile_workspace.py tests/test_staff_onboarding.py -q --tb=short 2>&1"
+started_at: 2026-07-03T18:28:22.956Z
+running_for_ms: 11985013 
+---
+============================= test session starts =============================
+---
+pid: 19180
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_avatar_upload.py tests/test_portal_search.py tests/test_profile_workspace.py -q"
+started_at: 2026-07-03T18:44:17.180Z
+running_for_ms: 11030012 
+---
+============================= test session starts =============================
+---
+pid: 3160
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_avatar_upload.py tests/test_portal_search.py tests/test_profile_workspace.py -q"
+started_at: 2026-07-03T18:47:17.830Z
+running_for_ms: 10850007 
+---
+============================= test session starts =============================
+---
+pid: 7072
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_avatar_upload.py tests/test_portal_search.py tests/test_profile_workspace.py -q"
+started_at: 2026-07-03T18:48:53.580Z
+running_for_ms: 10755003 
+---
+============================= test session starts =============================
+---
+pid: 12564
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_avatar_upload.py tests/test_portal_search.py tests/test_profile_workspace.py -q"
+started_at: 2026-07-03T18:50:51.975Z
+running_for_ms: 10640014 
+---
+============================= test session starts =============================
+---
+pid: 8976
+cwd: "E:\apex"
+command: "Set-Location E:\\apex\\backend; $env:DATABASE_URL=\"sqlite:///E:/apex/backend/db.sqlite3\"; $env:SECRET_KEY=\"test-key\"; python manage.py migrate --run-syncdb 2>&1 | Select-Object -Last 15"
+started_at: 2026-06-30T21:24:41.275Z
+running_for_ms: 229990   
+---
+  Applying sessions.0001_initial... OK
+---
+pid: 11896
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_avatar_upload.py tests/test_portal_search.py tests/test_profile_workspace.py -q; echo EXIT:$LASTEXITCODE"
+started_at: 2026-07-03T18:52:56.932Z
+running_for_ms: 10515008 
+---
+============================= test session starts =============================
+---
+pid: 10048
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py tests/test_portal_search.py -q"
+started_at: 2026-07-03T19:04:22.303Z
+running_for_ms: 9825000  
+---
+============================= test session starts =============================
+---
+pid: 12668
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_permissions.py -v --tb=short 2>&1"
+started_at: 2026-07-03T19:25:27.736Z
+running_for_ms: 8560010  
+---
+============================= test session starts =============================
+---
+pid: 11332
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_feature_write_permissions.py -v --tb=short 2>&1"
+started_at: 2026-07-03T19:28:09.032Z
+running_for_ms: 8400010  
+---
+============================= test session starts =============================
+---
+pid: 14860
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_feature_write_permissions.py tests/test_role_permissions.py -v --tb=short 2>&1"
+started_at: 2026-07-03T19:34:05.596Z
+running_for_ms: 8045011  
+---
+============================= test session starts =============================
+---
+pid: 18560
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_marketing_catalog.py -v --tb=short 2>&1"
+started_at: 2026-07-03T20:45:07.784Z
+running_for_ms: 3780002  
+---
+============================= test session starts =============================
+---
+pid: 16776
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build 2>&1"
+started_at: 2026-07-03T20:45:07.784Z
+running_for_ms: 3780002  
+---
+
+---
+pid: 14880
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_marketing_catalog.py -q"
+started_at: 2026-07-03T21:08:59.956Z
+running_for_ms: 2350006  
+---
+============================= test session starts =============================
+---
+pid: 19308
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build"
+started_at: 2026-07-03T21:08:59.956Z
+running_for_ms: 2350006  
+---
+
+---
+pid: 9652
+cwd: "E:\apex"
+command: "$ids = @(
+'1522202176988-66273c2fd55f',
+'1517486808906-6ca8b3f04846',
+'1588072432836-e265f6c0f0c7',
+'1509062526006-2295a5198c76',
+---
+pid: 6620
+cwd: "E:\apex"
+command: "Start-Sleep -Seconds 20"
+started_at: 2026-06-30T21:25:03.382Z
+running_for_ms: 210002   
+---
+---
+pid: 2384
+cwd: "E:\apex"
+command: "$ids = @('1522202176988-66273c2fd55f','1509062526006-2295a5198c76','1529390079861-591de354faf5'); foreach ($id in $ids) { $u = \"https://images.unsplash.com/photo-$id?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80\"; $code = (curl.exe -s -o NUL -w \"%{http_code}\" $u); Write-Output \"$code $id\" }"
+started_at: 2026-07-03T21:32:02.188Z
+running_for_ms: 965007   
+---
+404 1522202176988-66273c2fd55f
+---
+pid: 1788
+cwd: "E:\apex"
+command: "python -c \"
+import urllib.request
+from pathlib import Path
+# try more recent education unsplash ids from web search slugs / common patterns
+candidates = [
+---
+pid: 10320
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build"
+started_at: 2026-07-03T21:34:56.954Z
+running_for_ms: 795008   
+---
+
+---
+pid: 11292
+cwd: "E:\apex"
+command: "python -c \"
+import urllib.request, shutil
+from pathlib import Path
+u = 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1920&q=85'
+req = urllib.request.Request(u, headers={'User-Agent':'Mozilla/5.0'})
+---
+pid: 11308
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build"
+started_at: 2026-07-03T21:43:58.501Z
+running_for_ms: 250015   
+---
+
+---
+pid: 9416
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend; npm run build"
+started_at: 2026-07-04T05:30:41.659Z
+running_for_ms: 9895011  
+---
+
+---
+pid: 2696
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_bulk_import.py -v --tb=short 2>&1"
+started_at: 2026-07-04T05:56:33.628Z
+running_for_ms: 8340013  
+---
+============================= test session starts =============================
+---
+pid: 11224
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_bulk_import.py -v --tb=short 2>&1"
+started_at: 2026-07-04T05:59:18.774Z
+running_for_ms: 8175001  
+---
+============================= test session starts =============================
+---
+pid: 16312
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_bulk_import.py -v --tb=short 2>&1"
+started_at: 2026-07-04T06:01:15.590Z
+running_for_ms: 8060014  
+---
+============================= test session starts =============================
+---
+pid: 14444
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_bulk_import.py -v --tb=short 2>&1"
+started_at: 2026-07-04T06:03:25.662Z
+running_for_ms: 7930012  
+---
+============================= test session starts =============================

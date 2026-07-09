@@ -1,0 +1,17 @@
+---
+pid: 16392
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_hostel_rbac.py -v --tb=short"
+started_at: 2026-07-08T05:59:56.730Z
+running_for_ms: 14999    
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 9 items
+
+tests/test_hostel_rbac.py::TestHostelRoleDefaults::test_hostel_manager_has_workspace_and_reports_read 

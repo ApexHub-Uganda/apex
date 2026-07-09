@@ -1,0 +1,96 @@
+---
+pid: 18232
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python scripts/browser_smoke.py"
+started_at: 2026-07-08T07:43:56.272Z
+running_for_ms: 7725001  
+---
+{
+  "results": [
+    {
+      "route": "/login",
+      "label": "Login",
+      "status": "ok"
+    },
+    {
+      "route": "/forgot-password",
+      "label": "Forgot password",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/hr/manager",
+      "label": "HR Manager workspace",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/hr/approval",
+      "label": "HR Leave approval",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/hr/analytics",
+      "label": "HR Analytics",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/hr/reports",
+      "label": "HR Reports",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/hr/leave",
+      "label": "HR Leave requests",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/library/librarian",
+      "label": "Librarian workspace",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/library/reports",
+      "label": "Library Reports",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/library/borrowing",
+      "label": "Library Borrowing",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/hostel/manager",
+      "label": "Hostel Manager workspace",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/hostel/reports",
+      "label": "Hostel Reports",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/hostel/allocations",
+      "label": "Hostel Allocations",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "route": "/school-admin/finance/reports",
+      "label": "Finance Reports",
+      "status": "ok",
+      "detail": ""
+    }
+  ],
+  "passed": 14,
+  "failed": 0
+}

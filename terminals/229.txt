@@ -1,0 +1,40 @@
+---
+pid: 19660
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python scripts/browser_otp_smoke.py 2>&1"
+started_at: 2026-07-08T08:31:08.198Z
+running_for_ms: 4895000  
+---
+{
+  "results": [
+    {
+      "test": "copy_button_copies_all_digits",
+      "expected": "847291",
+      "actual": "847291",
+      "ok": true
+    },
+    {
+      "test": "copy_page_prefills_reset_form",
+      "expected": "847291",
+      "actual": "847291",
+      "ok": true
+    },
+    {
+      "test": "paste_spaced_otp_strips_non_digits",
+      "expected": "847291",
+      "actual": "847291",
+      "ok": true
+    },
+    {
+      "test": "submit_reset_redirects_to_login",
+      "ok": true
+    },
+    {
+      "test": "login_with_reset_password",
+      "ok": true
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "copy_page_url": "http://localhost:5173/copy-reset-code?token=e4281aad-7588-4d8d-a889-4e18da8e2c69:847291:1whNgU:Es-jQSPSypHnUQQMB7MfexIvHEyBVrXgdxTL2nOvqFE"
+}

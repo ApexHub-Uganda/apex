@@ -1,0 +1,44 @@
+"""HR workflow and status constants."""
+from __future__ import annotations
+
+LEAVE_PENDING = "pending"
+LEAVE_APPROVED = "approved"
+LEAVE_REJECTED = "rejected"
+LEAVE_CANCELLED = "cancelled"
+
+LEAVE_STATUSES = frozenset({
+    LEAVE_PENDING,
+    LEAVE_APPROVED,
+    LEAVE_REJECTED,
+    LEAVE_CANCELLED,
+})
+
+REVIEW_DRAFT = "draft"
+REVIEW_SUBMITTED = "submitted"
+REVIEW_ACKNOWLEDGED = "acknowledged"
+
+REVIEW_STATUSES = frozenset({
+    REVIEW_DRAFT,
+    REVIEW_SUBMITTED,
+    REVIEW_ACKNOWLEDGED,
+})
+
+CONTRACT_ACTIVE = "active"
+CONTRACT_EXPIRED = "expired"
+CONTRACT_TERMINATED = "terminated"
+
+CONTRACT_STATUSES = frozenset({
+    CONTRACT_ACTIVE,
+    CONTRACT_EXPIRED,
+    CONTRACT_TERMINATED,
+})
+
+DISCIPLINE_OPEN = "open"
+DISCIPLINE_RESOLVED = "resolved"
+DISCIPLINE_CLOSED = "closed"
+
+DISCIPLINE_STATUSES = frozenset({
+    DISCIPLINE_OPEN,
+    DISCIPLINE_RESOLVED,
+    DISCIPLINE_CLOSED,
+})

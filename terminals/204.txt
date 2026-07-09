@@ -1,0 +1,20 @@
+---
+pid: 7172
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_role_feature_defaults.py::TestRoleFeatureDefaults::test_teacher_effective_permissions_use_defaults tests/test_examination_workflow.py::TestExaminationWorkflow::test_workflow_api_endpoints tests/test_role_permissions.py::TestRolePermissions::test_custom_permissions_override_defaults -q --tb=short 2>&1"
+started_at: 2026-07-08T06:43:58.638Z
+running_for_ms: 11325008 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 3 items
+
+tests\test_role_feature_defaults.py .                                    [ 33%]
+tests\test_examination_workflow.py .                                     [ 66%]
+tests\test_role_permissions.py .                                         [100%]
+
+============================= 3 passed in 44.55s ==============================

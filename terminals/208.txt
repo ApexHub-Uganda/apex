@@ -1,0 +1,19 @@
+---
+pid: 12696
+cwd: "E:\apex"
+command: "cd E:/apex/backend; python -m pytest tests/test_examination_workflow.py::TestExaminationWorkflow::test_workflow_api_endpoints tests/test_role_feature_defaults.py::TestRoleFeatureDefaults::test_teacher_effective_permissions_use_defaults -q --tb=short"
+started_at: 2026-07-08T07:18:57.341Z
+running_for_ms: 9225012  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 2 items
+
+tests\test_examination_workflow.py .                                     [ 50%]
+tests\test_role_feature_defaults.py .                                    [100%]
+
+============================= 2 passed in 46.26s ==============================

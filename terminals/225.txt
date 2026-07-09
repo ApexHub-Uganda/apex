@@ -1,0 +1,11 @@
+---
+pid: 13148
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python scripts/browser_otp_smoke.py 2>&1"
+started_at: 2026-07-08T08:18:58.916Z
+running_for_ms: 5625013  
+---
+{
+  "fatal": "Page.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text(\\\"Copy code\\\")\")\n",
+  "results": []
+}

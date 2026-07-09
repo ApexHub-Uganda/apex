@@ -1,0 +1,26 @@
+---
+pid: 19972
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend; python -m pytest tests/test_password_reset.py::TestPasswordResetOtp::test_copy_link_html_page_shows_copied_message tests/test_password_reset.py::TestPasswordResetOtp::test_copy_link_returns_otp -q --tb=short 2>&1"
+started_at: 2026-07-08T08:44:37.646Z
+running_for_ms: 4085013  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 2 items
+
+tests\test_password_reset.py .F                                          [100%]
+
+================================== FAILURES ===================================
+_______________ TestPasswordResetOtp.test_copy_link_returns_otp _______________
+tests\test_password_reset.py:107: in test_copy_link_returns_otp
+    assert copy_response.data["success"] is True
+           ^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'JsonResponse' object has no attribute 'data'
+=========================== short test summary info ===========================
+FAILED tests/test_password_reset.py::TestPasswordResetOtp::test_copy_link_returns_otp
+======================== 1 failed, 1 passed in 43.51s =========================
