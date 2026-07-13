@@ -1,6 +1,13 @@
 import { motion } from 'framer-motion';
 
-export function PageHeader({ title, subtitle, actions, breadcrumbs, centered = false }) {
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+  breadcrumbs,
+  centered = false,
+  context,
+}) {
   return (
     <motion.div
       className={`apex-page-header d-flex flex-wrap gap-3 ${centered ? 'apex-page-header--centered' : 'justify-content-between align-items-start'}`}
@@ -22,6 +29,11 @@ export function PageHeader({ title, subtitle, actions, breadcrumbs, centered = f
         )}
         <h1 className="apex-page-title">{title}</h1>
         {subtitle && <p className="apex-page-subtitle">{subtitle}</p>}
+        {context && (
+          <div className={centered ? 'apex-page-header-context apex-page-header-context--centered' : 'apex-page-header-context'}>
+            {context}
+          </div>
+        )}
       </div>
       {actions && <div className="d-flex gap-2 flex-wrap">{actions}</div>}
     </motion.div>

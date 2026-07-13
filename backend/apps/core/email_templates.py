@@ -248,6 +248,42 @@ def build_password_reset_email(
     )
 
 
+def build_staff_portal_welcome_email(
+    *,
+    first_name: str,
+    email: str,
+    temp_password: str,
+    tenant,
+    login_url: str,
+) -> BrandedEmail:
+    school = _school_name(tenant)
+    safe_password = _escape_text(temp_password)
+    highlight = f"""
+              <div style="margin-top:18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:24px;">
+                <div style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-bottom:12px;">One-time password</div>
+                <div style="font-size:22px;font-weight:700;color:#0f172a;word-break:break-all;">{safe_password}</div>
+              </div>"""
+
+    return build_branded_email(
+        title="Your staff portal account",
+        body=(
+            f"Welcome to {school}. A portal account has been created for you.\n\n"
+            f"Sign in at: {login_url}\n"
+            f"Email: {email}\n"
+            f"One-time password: {temp_password}\n\n"
+            "You will be asked to choose a new password immediately after your first sign-in. "
+            "Do not share this password with anyone."
+        ),
+        tone="info",
+        scope="school",
+        tenant=tenant,
+        greeting=first_name or "there",
+        subtitle="Use these credentials for your first sign-in only.",
+        highlight_html=highlight,
+        footer_note="If you were not expecting this account, contact your school administrator.",
+    )
+
+
 def build_announcement_email(
     *,
     tenant,

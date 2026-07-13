@@ -55,6 +55,9 @@ export function StudentForm({
   initialValues,
   submitLabel = 'Save student',
   mode = 'create',
+  lockClassFields = false,
+  lockedClassLabel = '',
+  lockedStreamLabel = '',
 }) {
   const [saving, setSaving] = useState(false);
   const [activeSection, setActiveSection] = useState('identity');
@@ -143,8 +146,18 @@ export function StudentForm({
       {activeSection === 'identity' && (
         <WorkspaceSection title="Student identity" description="Legal name, admission details, and NEMIS identifiers">
           <WorkspaceFieldGrid>
-            <Field label="Admission Number" required error={errors.admission_number?.message}>
-              <input className="form-control" {...register('admission_number', { required: 'Required' })} readOnly={mode === 'edit'} />
+            <Field
+              label="Admission Number"
+              required={!lockClassFields}
+              hint={lockClassFields ? 'Leave blank to auto-generate on enrollment.' : undefined}
+              error={errors.admission_number?.message}
+            >
+              <input
+                className="form-control"
+                {...register('admission_number', { required: lockClassFields ? false : 'Required' })}
+                readOnly={mode === 'edit'}
+                placeholder={lockClassFields ? 'Auto-generated if empty' : undefined}
+              />
             </Field>
             <Field label="UPI / NEMIS Number" hint="Unique Personal Identifier from NEMIS">
               <input className="form-control" {...register('upi_number')} />
@@ -183,20 +196,34 @@ export function StudentForm({
         <WorkspaceSection title="Academic placement" description="Class, stream, curriculum, and enrollment">
           <WorkspaceFieldGrid>
             <Field label="Class" required error={errors.school_class?.message}>
-              <select className="form-select" {...register('school_class', { required: 'Select a class' })}>
-                <option value="">Select class</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
-                ))}
-              </select>
+              {lockClassFields ? (
+                <>
+                  <input type="hidden" {...register('school_class', { required: 'Select a class' })} />
+                  <div className="form-control bg-light">{lockedClassLabel || 'Selected class'}</div>
+                </>
+              ) : (
+                <select className="form-select" {...register('school_class', { required: 'Select a class' })}>
+                  <option value="">Select class</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+                  ))}
+                </select>
+              )}
             </Field>
             <Field label="Stream">
-              <select className="form-select" {...register('stream')}>
-                <option value="">No stream</option>
-                {(streams.length ? streams : []).map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+              {lockClassFields ? (
+                <>
+                  <input type="hidden" {...register('stream')} />
+                  <div className="form-control bg-light">{lockedStreamLabel || 'Whole class'}</div>
+                </>
+              ) : (
+                <select className="form-select" {...register('stream')}>
+                  <option value="">No stream</option>
+                  {(streams.length ? streams : []).map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              )}
             </Field>
             <Field label="Enrollment Date" required>
               <input type="date" className="form-control" {...register('enrollment_date', { required: true })} />

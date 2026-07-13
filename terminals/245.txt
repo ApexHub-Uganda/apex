@@ -1,0 +1,18 @@
+---
+pid: 8032
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_teaching_assignments.py::TestTeachingAssignments::test_teacher_list_scoped_to_own_assignments -q --tb=short 2>&1"
+started_at: 2026-07-09T08:24:08.134Z
+running_for_ms: 9790006  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 1 item
+
+tests\test_teaching_assignments.py .                                     [100%]
+
+============================= 1 passed in 42.94s ==============================

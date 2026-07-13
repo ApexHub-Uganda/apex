@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError
 from django.db.models import ProtectedError
 from django.http import Http404
 from rest_framework import status
@@ -81,6 +82,20 @@ def custom_exception_handler(exc: Exception, context: dict) -> Optional[Response
             },
             status=status.HTTP_409_CONFLICT,
         )
+    elif isinstance(exc, IntegrityError):
+        message = _integrity_error_message(exc)
+        return Response(
+            {
+                "success": False,
+                "message": message,
+                "error": {
+                    "code": "integrity_error",
+                    "message": message,
+                    "details": None,
+                },
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
 
     response = exception_handler(exc, context)
 
@@ -96,6 +111,15 @@ def custom_exception_handler(exc: Exception, context: dict) -> Optional[Response
         response.data = error_body
 
     return response
+
+
+def _integrity_error_message(exc: IntegrityError) -> str:
+    raw = str(exc).lower()
+    if "email" in raw or "accounts_user" in raw:
+        return "An account with this email already exists. Sign in or use a different email."
+    if "code" in raw or "slug" in raw:
+        return "A school with a similar name or code already exists. Try a different school name."
+    return "These details conflict with an existing record. Review your entries and try again."
 
 
 def _format_error_value(value: Any) -> str:

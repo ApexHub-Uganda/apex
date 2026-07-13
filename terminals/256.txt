@@ -1,0 +1,20 @@
+---
+pid: 4764
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_academic_scoping.py tests/test_teaching_assignments.py tests/test_grading_schemes.py -q --tb=no 2>&1"
+started_at: 2026-07-09T10:33:39.555Z
+running_for_ms: 2015000  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 22 items
+
+tests\test_academic_scoping.py ...........                               [ 50%]
+tests\test_teaching_assignments.py ........                              [ 86%]
+tests\test_grading_schemes.py ...                                        [100%]
+
+======================== 22 passed in 75.56s (0:01:15) ========================

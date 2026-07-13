@@ -41,13 +41,26 @@ export function extractApiError(error, fallback = 'Something went wrong. Please 
   if (!error.response) {
     return 'Cannot reach the server. Check your connection and try again.';
   }
-  const { data } = error.response;
+  const { data, headers } = error.response;
+  const contentType = String(headers?.['content-type'] || '');
+  if (
+    (typeof data === 'string' && /^\s*</.test(data))
+    || contentType.includes('text/html')
+  ) {
+    if (error.response.status >= 500) {
+      return 'The server encountered an error while processing your request. Please try again shortly.';
+    }
+    return 'Received an unexpected response from the server. Ensure the API is running and reachable.';
+  }
   const message =
     data?.error?.message ||
     data?.message ||
     data?.detail ||
     data?.non_field_errors?.[0] ||
     data?.error?.details?.non_field_errors?.[0] ||
+    data?.admin_email?.[0] ||
+    data?.email?.[0] ||
+    data?.name?.[0] ||
     (typeof data === 'string' ? data : null);
   if (message) return String(message);
   if (data?.error?.details && typeof data.error.details === 'object') {

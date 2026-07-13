@@ -169,6 +169,7 @@ ROLE_PROFILES: dict[str, dict[str, Any]] = {
         "accent": "primary",
         "quick_actions": [
             {"label": "Teacher Workspace", "path": "/school-admin/academics/teacher", "feature_key": "teacher_workspace"},
+            {"label": "Student Attendance", "path": "/school-admin/attendance", "feature_key": "student_attendance"},
             {"label": "Marks Entry", "path": "/school-admin/examinations/marks", "feature_key": "marks_entry"},
             {"label": "Lesson Attendance", "path": "/school-admin/attendance/lessons", "feature_key": "lesson_attendance"},
         ],
@@ -181,6 +182,7 @@ ROLE_PROFILES: dict[str, dict[str, Any]] = {
         "accent": "secondary",
         "quick_actions": [
             {"label": "Class Teacher Tools", "path": "/school-admin/academics/class-teacher", "feature_key": "class_teacher_tools"},
+            {"label": "Student Attendance", "path": "/school-admin/attendance", "feature_key": "student_attendance"},
             {"label": "Class Notices", "path": "/school-admin/academics/class-notices", "feature_key": "class_notices"},
             {"label": "Discipline Remarks", "path": "/school-admin/academics/discipline", "feature_key": "discipline_remarks"},
             {"label": "Marks Entry", "path": "/school-admin/examinations/marks", "feature_key": "marks_entry"},

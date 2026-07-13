@@ -1,10 +1,10 @@
-"""CSV bulk import utilities — template generation, parsing, and validation."""
+"""Bulk import utilities — Excel and CSV template generation, parsing, and validation."""
 from __future__ import annotations
 
 import csv
 import io
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any, Callable
@@ -13,6 +13,11 @@ from apps.core.email_validation import validate_deliverable_email
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PHONE_RE = re.compile(r"^\+?[\d\s\-()]{7,20}$")
+
+SUPPORTED_IMPORT_EXTENSIONS = (".xlsx", ".xlsm", ".csv", ".txt")
+DEFAULT_IMPORT_FORMAT = "xlsx"
+EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+CSV_CONTENT_TYPE = "text/csv; charset=utf-8"
 
 
 @dataclass
@@ -47,12 +52,7 @@ def normalize_header(header: str) -> str:
     return header.strip().lower().replace(" ", "_").replace("-", "_")
 
 
-def generate_csv_template(spec: ImportSpec) -> bytes:
-    """Build a UTF-8 CSV template with header row and one example row."""
-    output = io.StringIO()
-    writer = csv.writer(output)
-    headers = [col.label for col in spec.columns]
-    writer.writerow(headers)
+def _hint_row(spec: ImportSpec) -> list[str]:
     hints = []
     for col in spec.columns:
         hint = col.help_text or ""
@@ -61,42 +61,138 @@ def generate_csv_template(spec: ImportSpec) -> bytes:
         if col.required:
             hint = f"{hint} (required)".strip()
         hints.append(hint)
-    writer.writerow(hints)
+    return hints
+
+
+def is_supported_import_filename(filename: str) -> bool:
+    lowered = (filename or "").lower()
+    return any(lowered.endswith(ext) for ext in SUPPORTED_IMPORT_EXTENSIONS)
+
+
+def unsupported_import_message() -> str:
+    return "Upload an Excel workbook (.xlsx) or CSV file (.csv)."
+
+
+def generate_csv_template(spec: ImportSpec) -> bytes:
+    """Build a UTF-8 CSV template with header row and hint row."""
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([col.label for col in spec.columns])
+    writer.writerow(_hint_row(spec))
     return output.getvalue().encode("utf-8-sig")
 
 
-def parse_upload(file_obj) -> tuple[list[str], list[dict[str, str]]]:
-    """Parse uploaded CSV/Excel-compatible CSV into normalized row dicts."""
-    raw = file_obj.read()
-    if isinstance(raw, bytes):
-        text = raw.decode("utf-8-sig", errors="replace")
-    else:
-        text = str(raw)
+def generate_excel_template(spec: ImportSpec) -> bytes:
+    """Build an Excel workbook template with header and hint rows."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
 
-    reader = csv.reader(io.StringIO(text))
-    rows = list(reader)
-    if not rows:
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Import"
+    worksheet.append([col.label for col in spec.columns])
+    worksheet.append(_hint_row(spec))
+    for cell in worksheet[1]:
+        cell.font = Font(bold=True)
+    buffer = io.BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
+
+
+def generate_import_template(spec: ImportSpec, *, file_format: str = DEFAULT_IMPORT_FORMAT) -> tuple[bytes, str, str]:
+    """Return template bytes, filename, and content type."""
+    slug = spec.entity_name.lower().replace(" ", "_")
+    if file_format == "csv":
+        return generate_csv_template(spec), f"{slug}_import_template.csv", CSV_CONTENT_TYPE
+    return generate_excel_template(spec), f"{slug}_import_template.xlsx", EXCEL_CONTENT_TYPE
+
+
+def _cell_to_str(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        return value.strftime("%Y-%m-%d")
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value).strip()
+
+
+def _is_hint_row(row_values: list[str]) -> bool:
+    if not row_values:
+        return False
+    return all(
+        not value
+        or value.startswith("(")
+        or "required" in value.lower()
+        or "options:" in value.lower()
+        for value in row_values
+        if value
+    )
+
+
+def _rows_to_records(raw_rows: list[list[str]]) -> tuple[list[str], list[dict[str, str]]]:
+    if not raw_rows:
         return [], []
 
-    raw_headers = rows[0]
+    raw_headers = raw_rows[0]
     headers = [normalize_header(h) for h in raw_headers]
-    label_to_key = {normalize_header(col.label): col.key for col in []}
-
     data_rows: list[dict[str, str]] = []
-    for row_values in rows[1:]:
-        if not any(str(v).strip() for v in row_values):
+    for row_values in raw_rows[1:]:
+        normalized_values = [value.strip() for value in row_values]
+        if not any(normalized_values):
             continue
-        if all(str(v).strip().startswith("(") or "required" in str(v).lower() or "options:" in str(v).lower()
-               for v in row_values if str(v).strip()):
+        if _is_hint_row(normalized_values):
             continue
         row_dict: dict[str, str] = {}
         for idx, header in enumerate(headers):
             if not header:
                 continue
-            value = row_values[idx].strip() if idx < len(row_values) else ""
-            row_dict[header] = value
+            row_dict[header] = normalized_values[idx] if idx < len(normalized_values) else ""
         data_rows.append(row_dict)
     return headers, data_rows
+
+
+def _parse_csv_bytes(raw: bytes) -> tuple[list[str], list[dict[str, str]]]:
+    text = raw.decode("utf-8-sig", errors="replace")
+    reader = csv.reader(io.StringIO(text))
+    rows = [[cell.strip() for cell in row] for row in reader]
+    return _rows_to_records(rows)
+
+
+def _parse_excel_bytes(raw: bytes) -> tuple[list[str], list[dict[str, str]]]:
+    from openpyxl import load_workbook
+
+    workbook = load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
+    worksheet = workbook.active
+    rows = [
+        [_cell_to_str(cell) for cell in row]
+        for row in worksheet.iter_rows(values_only=True)
+    ]
+    workbook.close()
+    return _rows_to_records(rows)
+
+
+def _detect_upload_format(filename: str, raw: bytes) -> str:
+    lowered = (filename or "").lower()
+    if lowered.endswith((".xlsx", ".xlsm")):
+        return "excel"
+    if lowered.endswith((".csv", ".txt")):
+        return "csv"
+    if raw[:2] == b"PK":
+        return "excel"
+    return "csv"
+
+
+def parse_upload(file_obj) -> tuple[list[str], list[dict[str, str]]]:
+    """Parse uploaded Excel (.xlsx) or CSV into normalized row dicts."""
+    raw = file_obj.read()
+    if not isinstance(raw, bytes):
+        raw = str(raw).encode("utf-8-sig", errors="replace")
+
+    filename = getattr(file_obj, "name", "") or ""
+    if _detect_upload_format(filename, raw) == "excel":
+        return _parse_excel_bytes(raw)
+    return _parse_csv_bytes(raw)
 
 
 def map_headers_to_keys(headers: list[str], spec: ImportSpec) -> dict[str, str]:
@@ -165,9 +261,17 @@ def _coerce_value(col: ImportColumn, raw: str) -> tuple[Any, str | None]:
             return None, f"{col.label} is required"
         return None, None
 
+    if col.key == "gender":
+        normalized = value.strip().upper()
+        if normalized in ("M", "MALE"):
+            return "male", None
+        if normalized in ("F", "FEMALE"):
+            return "female", None
+        return None, f"{col.label} must be M or F"
+
     if col.choices:
-        normalized = value.lower().replace(" ", "_")
-        valid = {c.lower(): c for c in col.choices}
+        normalized = value.strip().upper().replace(" ", "_")
+        valid = {c.upper(): c for c in col.choices}
         if normalized not in valid:
             return None, f"{col.label} must be one of: {', '.join(col.choices)}"
         return valid[normalized], None

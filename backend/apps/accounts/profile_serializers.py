@@ -10,6 +10,7 @@ from apps.accounts.profile_service import (
     STAFF_SELF_EDITABLE,
     USER_SELF_EDITABLE,
     build_profile_completion,
+    get_user_self_editable_fields,
 )
 from apps.core.email_validation import validate_deliverable_email
 from apps.staff.models import Staff
@@ -106,7 +107,7 @@ class MeProfileUpdateSerializer(serializers.ModelSerializer):
         fields = ["first_name", "last_name", "phone", "staff_profile", "parent_profile"]
 
     def validate(self, attrs: dict) -> dict:
-        allowed = set(USER_SELF_EDITABLE) | {"staff_profile", "parent_profile"}
+        allowed = get_user_self_editable_fields(self.instance) | {"staff_profile", "parent_profile"}
         extra = set(self.initial_data.keys()) - allowed
         if extra:
             raise serializers.ValidationError(
@@ -118,7 +119,7 @@ class MeProfileUpdateSerializer(serializers.ModelSerializer):
         staff_data = validated_data.pop("staff_profile", None)
         parent_data = validated_data.pop("parent_profile", None)
 
-        for key in USER_SELF_EDITABLE:
+        for key in get_user_self_editable_fields(instance):
             if key in validated_data:
                 setattr(instance, key, validated_data[key])
         instance.save()
@@ -153,6 +154,7 @@ class MeProfileSerializer(AvatarFieldsMixin, serializers.ModelSerializer):
             "id", "email", "first_name", "last_name", "full_name", "phone",
             "avatar", "avatar_url", "has_avatar",
             "role", "effective_role", "tenant", "is_email_verified",
+            "must_change_password",
             "tenant_is_verified", "tenant_is_suspended",
             "staff_profile", "parent_profile", "profile_completion",
             "editable_fields", "admin_only_fields",
@@ -184,7 +186,7 @@ class MeProfileSerializer(AvatarFieldsMixin, serializers.ModelSerializer):
         return build_profile_completion(obj)
 
     def get_editable_fields(self, obj: User) -> dict:
-        fields = {"user": sorted(USER_SELF_EDITABLE)}
+        fields = {"user": sorted(get_user_self_editable_fields(obj))}
         try:
             if obj.staff_profile:
                 fields["staff_profile"] = sorted(STAFF_SELF_EDITABLE)

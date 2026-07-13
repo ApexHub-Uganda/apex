@@ -1,0 +1,23 @@
+---
+pid: 18776
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_school_validation.py -v --tb=short 2>&1"
+started_at: 2026-07-11T16:54:09.551Z
+running_for_ms: 4010000  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 5 items
+
+tests/test_school_validation.py::TestSchoolValidation::test_public_registration_rejects_duplicate_email PASSED [ 20%]
+tests/test_school_validation.py::TestSchoolValidation::test_public_registration_rejects_junk_school PASSED [ 40%]
+tests/test_school_validation.py::TestSchoolValidation::test_super_admin_create_rejects_reserved_test_code PASSED [ 60%]
+tests/test_school_validation.py::TestSchoolValidation::test_probable_test_detector_flags_fixture_school PASSED [ 80%]
+tests/test_school_validation.py::TestSchoolValidation::test_prune_test_schools_command PASSED [100%]
+
+============================= 5 passed in 41.77s ==============================

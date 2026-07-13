@@ -33,6 +33,8 @@ def exam_marks_are_editable(exam: Exam) -> bool:
 
 
 def exam_allows_mark_entry(exam: Exam) -> bool:
+    if exam.exam_type == "assignment":
+        return exam_marks_are_editable(exam)
     return (
         exam.lifecycle_status == EXAM_LIFECYCLE_PUBLISHED
         and exam_marks_are_editable(exam)

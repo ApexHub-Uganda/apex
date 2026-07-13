@@ -60,7 +60,13 @@ export function Register() {
           <label className="form-label small fw-medium">School Name</label>
           <div className="position-relative">
             <FiBriefcase className="position-absolute text-muted" style={{ left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-            <input className="form-control ps-5" {...register('school_name', { required: true })} />
+            <input
+              className="form-control ps-5"
+              {...register('school_name', {
+                required: 'School name is required',
+                minLength: { value: 3, message: 'Enter your school\'s full official name' },
+              })}
+            />
           </div>
         </div>
 

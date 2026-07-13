@@ -28,7 +28,7 @@ def scoping_plan(db):
     plan = Plan.objects.create(name="Scoping Plan", slug="scoping-plan", max_students=500)
     assign_plan_features(plan, [
         "classes", "subjects", "terms", "timetables", "marks_entry",
-        "examination_management", "student_management",
+        "examination_management", "student_management", "academic_years",
     ])
     return plan
 
@@ -139,6 +139,7 @@ def academic_setup(db, scoping_tenant, assigned_teacher):
     )
     return {
         "year": year,
+        "term": term,
         "assigned_class": assigned_class,
         "other_class": other_class,
         "assigned_subject": assigned_subject,
@@ -189,8 +190,11 @@ class TestAcademicScoping:
         api_client.force_authenticate(user=academic_setup["teacher_user"])
         response = api_client.get("/api/v1/examinations/marks-entry/options/")
         assert response.status_code == 200
-        subject_ids = {s["value"] for s in response.data["data"]["subjects"]}
+        data = response.data["data"]
+        subject_ids = {s["value"] for s in data["subjects"]}
         assert subject_ids == {str(academic_setup["assigned_subject"].id)}
+        assert data["scope_meta"]["term_locked"] is True
+        assert data["scope_meta"]["is_unrestricted"] is False
 
         response = api_client.get(
             "/api/v1/examinations/marks-entry/options/",
@@ -198,6 +202,51 @@ class TestAcademicScoping:
         )
         assert response.status_code == 200
         assert response.data["data"]["classes"] == []
+
+    def test_marks_entry_terms_locked_to_current_for_teacher(self, api_client, academic_setup, scoping_tenant):
+        year = academic_setup["year"]
+        Term.objects.create(
+            tenant=scoping_tenant,
+            academic_year=year,
+            name="Term 2",
+            term_number=2,
+            start_date=date(2026, 5, 1),
+            end_date=date(2026, 8, 1),
+            is_current=False,
+        )
+        api_client.force_authenticate(user=academic_setup["teacher_user"])
+        response = api_client.get(
+            "/api/v1/examinations/marks-entry/options/",
+            {
+                "subject": academic_setup["assigned_subject"].id,
+                "school_class": academic_setup["assigned_class"].id,
+            },
+        )
+        assert response.status_code == 200
+        terms = response.data["data"]["terms"]
+        assert len(terms) == 1
+        assert terms[0]["value"] == str(academic_setup["term"].id)
+
+    def test_marks_entry_rejects_past_term_for_teacher(self, api_client, academic_setup, scoping_tenant):
+        past_term = Term.objects.create(
+            tenant=scoping_tenant,
+            academic_year=academic_setup["year"],
+            name="Past Term",
+            term_number=3,
+            start_date=date(2025, 9, 1),
+            end_date=date(2025, 12, 1),
+            is_current=False,
+        )
+        api_client.force_authenticate(user=academic_setup["teacher_user"])
+        response = api_client.get(
+            "/api/v1/examinations/marks-entry/options/",
+            {
+                "subject": academic_setup["assigned_subject"].id,
+                "school_class": academic_setup["assigned_class"].id,
+                "term": past_term.id,
+            },
+        )
+        assert response.status_code == 403
 
     def test_marks_entry_bulk_denied_for_unassigned_exam(self, api_client, academic_setup):
         api_client.force_authenticate(user=academic_setup["teacher_user"])
@@ -207,3 +256,27 @@ class TestAcademicScoping:
             format="json",
         )
         assert response.status_code == 403
+
+    def test_teacher_sees_only_active_term(self, api_client, academic_setup, scoping_tenant):
+        year = academic_setup["year"]
+        Term.objects.create(
+            tenant=scoping_tenant,
+            academic_year=year,
+            name="Term 2",
+            term_number=2,
+            start_date=date(2026, 5, 1),
+            end_date=date(2026, 8, 1),
+            is_current=False,
+        )
+        api_client.force_authenticate(user=academic_setup["teacher_user"])
+        response = api_client.get("/api/v1/academics/terms/")
+        assert response.status_code == 200
+        results = response.data.get("results") or response.data.get("data", {}).get("results", [])
+        assert len(results) == 1
+        assert results[0]["name"] == "Term 1"
+
+    def test_filter_students_for_teacher(self, scoping_tenant, academic_setup):
+        user = academic_setup["teacher_user"]
+        students = filter_queryset_for_user(Student.objects.filter(tenant=scoping_tenant), user)
+        assert students.count() == 1
+        assert students.first().admission_number == "SCOPE-001"

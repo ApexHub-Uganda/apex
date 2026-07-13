@@ -9,18 +9,6 @@ export function Plans() {
       subtitle="Configure pricing plans and feature tiers"
       queryKey={['plans']}
       fetchData={() => plansService.list({ page_size: 50 })}
-      onCreate={(data) => plansService.create({
-        name: data.name,
-        slug: data.slug,
-        description: data.description,
-        price_monthly: data.price_monthly,
-        price_yearly: data.price_yearly || Number(data.price_monthly) * 10,
-        max_students: 0,
-        max_staff: 0,
-        max_parents: 0,
-        is_active: true,
-        is_public: true,
-      })}
       onUpdate={(id, data) => plansService.update(id, {
         name: data.name,
         description: data.description,
@@ -33,7 +21,6 @@ export function Plans() {
         is_public: data.is_public !== 'false',
       })}
       onDelete={(id) => plansService.delete(id)}
-      createLabel="Create Plan"
       columns={[
         { key: 'name', label: 'Plan Name', accessor: 'name', sortable: true },
         { key: 'slug', label: 'Slug', accessor: 'slug' },

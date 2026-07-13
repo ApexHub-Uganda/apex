@@ -7,6 +7,11 @@ from apps.core.serializer_fields import DeliverableEmailField
 from apps.staff.models import Staff
 from apps.students.models import Student
 from apps.tenants.models import Tenant
+from apps.tenants.school_validation import (
+    validate_school_code,
+    validate_school_contact_email,
+    validate_school_name,
+)
 
 
 class TenantBrandingSerializer(serializers.ModelSerializer):
@@ -93,16 +98,41 @@ class TenantRegistrationSerializer(serializers.ModelSerializer):
             "admin_email", "admin_password", "admin_first_name", "admin_last_name",
         ]
 
+    def validate_name(self, value: str) -> str:
+        return validate_school_name(value)
+
+    def validate_email(self, value: str) -> str:
+        if not value:
+            return value
+        return validate_school_contact_email(value)
+
+    def validate_admin_email(self, value: str) -> str:
+        return validate_school_contact_email(value)
+
     def validate_code(self, value: str) -> str:
         if not value:
             return value
-        if Tenant.objects.filter(code__iexact=value).exists():
+        code = validate_school_code(value)
+        if Tenant.objects.filter(code__iexact=code).exists():
             raise serializers.ValidationError("School code already exists.")
-        return value.upper()
+        return code
 
     def validate(self, attrs: dict) -> dict:
+        from apps.accounts.models import User
+
         if not attrs.get("email"):
             attrs["email"] = attrs["admin_email"]
+
+        admin_email = str(attrs.get("admin_email", "")).strip().lower()
+        school_email = str(attrs.get("email", "")).strip().lower()
+        if admin_email and User.objects.filter(email__iexact=admin_email).exists():
+            raise serializers.ValidationError({
+                "admin_email": "An account with this email already exists. Sign in or use a different email.",
+            })
+        if school_email and school_email != admin_email and User.objects.filter(email__iexact=school_email).exists():
+            raise serializers.ValidationError({
+                "email": "An account with this school email already exists.",
+            })
         return attrs
 
     def create(self, validated_data: dict) -> Tenant:
@@ -210,8 +240,21 @@ class TenantAdminCreateSerializer(serializers.ModelSerializer):
             "admin_last_name", "plan_slug",
         ]
 
+    def validate_name(self, value: str) -> str:
+        return validate_school_name(value)
+
+    def validate_email(self, value: str) -> str:
+        if not value:
+            return value
+        return validate_school_contact_email(value)
+
+    def validate_admin_email(self, value: str) -> str:
+        if not value:
+            return value
+        return validate_school_contact_email(value)
+
     def validate_code(self, value: str) -> str:
-        code = value.upper()
+        code = validate_school_code(value)
         if Tenant.objects.filter(code__iexact=code).exists():
             raise serializers.ValidationError("School code already exists.")
         return code

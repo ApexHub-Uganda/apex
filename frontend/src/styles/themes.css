@@ -83,6 +83,23 @@
   border-color: var(--apex-border);
 }
 
+[data-theme='dark'] .dashboard-header-meta-grid {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--apex-border);
+}
+
+@media (max-width: 767.98px) {
+  [data-theme='dark'] .dashboard-header-meta-cell {
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: none;
+  }
+}
+
+[data-theme='dark'] .dashboard-header-code {
+  background: rgba(15, 118, 110, 0.15);
+  border-color: rgba(15, 118, 110, 0.25);
+}
+
 [data-theme='dark'] .apex-sidebar-link:hover,
 [data-theme='dark'] .apex-sidebar-link.active {
   background: rgba(15, 118, 110, 0.2);

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
 import Navbar from '../components/Navbar';
 import PendingApproval from '../pages/shared/PendingApproval';
+import ForcePasswordChange from '../pages/auth/ForcePasswordChange';
 import SchoolSuspended from '../pages/shared/SchoolSuspended';
 import SchoolContextBanner from '../components/SchoolContextBanner';
 import { buildSchoolAdminNav } from '../config/navigation';
@@ -85,7 +86,9 @@ export function SchoolAdminLayout() {
               ) : (
                 <>
                   {!isSchoolSuspended && <SchoolContextBanner />}
-                  {isSchoolSuspended ? (
+                  {user?.must_change_password ? (
+                    <ForcePasswordChange />
+                  ) : isSchoolSuspended ? (
                     <SchoolSuspended />
                   ) : isPendingApproval && !hasModules ? (
                     <PendingApproval />

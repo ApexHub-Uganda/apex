@@ -1,0 +1,33 @@
+---
+pid: 6456
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend && npm run build 2>&1"
+started_at: 2026-07-10T13:22:00.377Z
+running_for_ms: 244999   
+---
+
+> apex-hub-frontend@1.0.0 build
+> vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 708 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                            1.65 kB │ gzip:   0.75 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+dist/assets/hero-learner-BqJC_8QV.jpg    390.63 kB
+dist/assets/HomeEntry-DvB2Xm2x.css        26.05 kB │ gzip:   2.24 kB
+dist/assets/landing-3-tjZTcE.css          28.74 kB │ gzip:   5.94 kB
+dist/assets/index-c-0fEV7n.css           345.35 kB │ gzip:  49.67 kB
+dist/assets/TermsPage-DKu1rurb.js          4.96 kB │ gzip:   2.06 kB
+dist/assets/vendor-t_hB19Dw.js            50.58 kB │ gzip:  17.89 kB
+dist/assets/HomeEntry-DirSTGI-.js         71.12 kB │ gzip:  20.94 kB
+dist/assets/motion-DK1W1IBq.js           115.10 kB │ gzip:  38.14 kB
+dist/assets/charts-b_gjf38H.js           185.45 kB │ gzip:  64.72 kB
+dist/assets/index-6zfS_V5-.js          1,095.48 kB │ gzip: 282.77 kB
+✓ built in 17.77s

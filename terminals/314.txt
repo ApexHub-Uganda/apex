@@ -1,0 +1,29 @@
+---
+pid: 8808
+cwd: "E:\apex"
+command: "Stop-Process -Id 10332 -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; cd E:\\apex\\frontend && npm run dev"
+started_at: 2026-07-10T07:20:27.495Z
+running_for_ms: 1155007  
+---
+
+> apex-hub-frontend@1.0.0 dev
+> vite
+
+
+  VITE v6.4.3  ready in 713 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://192.168.227.160:3000/
+12:21:35 AM [vite] (client) hmr update /src/pages/school-admin/ClassDetail.jsx
+12:21:35 AM [vite] (client) hmr update /src/pages/school-admin/HRStaffs.jsx
+12:21:35 AM [vite] (client) hmr update /src/pages/school-admin/Students.jsx
+12:21:35 AM [vite] (client) hmr update /src/pages/school-admin/Parents.jsx
+12:21:35 AM [vite] (client) hmr update /src/pages/school-admin/ClassDetail.jsx
+12:38:47 AM [vite] http proxy error: /api/v1/tenants/context/?_ts=1783669126861
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1194:18)
+    at afterConnectMultiple (node:net:1784:7)
+12:38:47 AM [vite] http proxy error: /api/v1/tenants/current/?_ts=1783669127069
+AggregateError [ECONNREFUSED]: 
+    at internalConnectMultiple (node:net:1194:18)
+    at afterConnectMultiple (node:net:1784:7)

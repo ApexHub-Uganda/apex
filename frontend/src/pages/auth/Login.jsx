@@ -33,6 +33,11 @@ export function Login() {
     setLoading(true);
     try {
       const result = await login(data);
+      if (result.user?.must_change_password) {
+        notify.info('Please set a new password to continue.');
+        navigate('/school-admin', { replace: true });
+        return;
+      }
       notify.success(`Welcome back, ${result.user.first_name || 'there'}!`);
       const from = location.state?.from?.pathname;
       if (result.user.role === 'super_admin') {

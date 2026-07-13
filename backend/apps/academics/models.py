@@ -89,6 +89,52 @@ class Stream(BaseModel):
 
     class Meta:
         unique_together = [("tenant", "school_class", "name")]
+        ordering = ["school_class__name", "name"]
+
+
+class ClassPrefect(BaseModel):
+    """Student leadership role within a class or stream."""
+
+    PREFECT_ROLES = [
+        ("head", "Head Prefect"),
+        ("deputy", "Deputy Prefect"),
+        ("prefect", "Prefect"),
+    ]
+
+    student = models.ForeignKey(
+        "students.Student",
+        on_delete=models.CASCADE,
+        related_name="prefect_roles",
+    )
+    school_class = models.ForeignKey(
+        Class,
+        on_delete=models.CASCADE,
+        related_name="prefects",
+    )
+    stream = models.ForeignKey(
+        Stream,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="prefects",
+    )
+    role = models.CharField(max_length=20, choices=PREFECT_ROLES, default="prefect")
+    appointed_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="appointed_prefects",
+    )
+
+    class Meta:
+        ordering = ["role", "student__last_name", "student__first_name"]
+        unique_together = [("tenant", "student", "school_class", "stream")]
+        indexes = [
+            models.Index(fields=["tenant", "school_class"]),
+            models.Index(fields=["tenant", "stream"]),
+        ]
+        verbose_name = "class prefect"
 
 
 class Subject(BaseModel):
@@ -136,6 +182,46 @@ class Timetable(BaseModel):
     class Meta:
         ordering = ["day_of_week", "start_time"]
         indexes = [models.Index(fields=["tenant", "school_class", "day_of_week"])]
+
+
+class TeachingAssignment(BaseModel):
+    """Authoritative teacher ↔ class ↔ subject staffing link (many-to-many via rows)."""
+
+    teacher = models.ForeignKey(
+        "staff.Teacher",
+        on_delete=models.CASCADE,
+        related_name="teaching_assignments",
+    )
+    school_class = models.ForeignKey(
+        Class,
+        on_delete=models.CASCADE,
+        related_name="teaching_assignments",
+    )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.CASCADE,
+        related_name="teaching_assignments",
+    )
+    academic_year = models.ForeignKey(
+        AcademicYear,
+        on_delete=models.CASCADE,
+        related_name="teaching_assignments",
+    )
+    is_active = models.BooleanField(default=True)
+    notes = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["school_class__name", "subject__code", "teacher__staff__last_name"]
+        unique_together = [("tenant", "teacher", "school_class", "subject")]
+        indexes = [
+            models.Index(fields=["tenant", "teacher", "is_active"]),
+            models.Index(fields=["tenant", "school_class", "is_active"]),
+            models.Index(fields=["tenant", "subject", "is_active"]),
+        ]
+        verbose_name = "teaching assignment"
+
+    def __str__(self) -> str:
+        return f"{self.teacher_id} → {self.school_class_id} / {self.subject_id}"
 
 
 class Assignment(BaseModel):

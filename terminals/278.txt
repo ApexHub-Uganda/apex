@@ -1,0 +1,29 @@
+---
+pid: 19752
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_class_hub.py -q --tb=line 2>&1"
+started_at: 2026-07-09T13:20:20.131Z
+running_for_ms: 730007   
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 11 items
+
+tests\test_class_hub.py .........F.                                      [100%]
+
+================================== FAILURES ===================================
+E   AssertionError: b'{"success":false,"error":{"code":"invalid","message":"admission_number: This field is required.","details":{"admission_number":["This field is required."]}}}'
+    assert 400 in (200, 201)
+     +  where 400 = <Response status_code=400, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 06:21:14,580 log Bad Request: /api/v1/students/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/students/
+E:\apex\backend\tests\test_class_hub.py:268: AssertionError: b'{"success":false,"error":{"code":"invalid","message":"admission_number: This field is required.","details":{"admission_number":["This field is required."]}}}'
+=========================== short test summary info ===========================
+FAILED tests/test_class_hub.py::test_school_admin_can_create_student_in_class
+======================== 1 failed, 10 passed in 49.64s ========================

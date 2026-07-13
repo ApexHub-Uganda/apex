@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from apps.core.constants import UserRole
 from apps.core.permissions import IsSchoolAdmin, IsStaffMember, RequiresFeature, TenantActivePermission
-from apps.staff.permissions import CanManageStaffRecords
+from apps.staff.permissions import CanAccessStaffBulkImport, CanManageStaffRecords
 from apps.core.import_mixins import BulkImportMixin
 from apps.core.views import BaseModelViewSet
 from apps.staff.import_handlers import STAFF_IMPORT_SPEC, commit_staff_rows, staff_import_resolver
@@ -27,6 +27,9 @@ from apps.staff.staff_roles import get_role_definition
 
 class StaffViewSet(BulkImportMixin, BaseModelViewSet):
     required_feature_key = "staff_management"
+    _STAFF_BULK_IMPORT_ACTIONS = frozenset({
+        "import_template", "validate_import", "commit_import",
+    })
     queryset = Staff.objects.select_related(
         "department", "user", "user__profile_picture", "supervisor",
     ).prefetch_related(
@@ -50,10 +53,19 @@ class StaffViewSet(BulkImportMixin, BaseModelViewSet):
 
     def get_permissions(self):
         perms: list = []
-        if self.action in ("create", "update", "partial_update", "destroy", "validate_import", "commit_import"):
-            perms.extend([CanManageStaffRecords(), TenantActivePermission()])
-        else:
+        action = getattr(self, "action", None)
+        if action in self._STAFF_BULK_IMPORT_ACTIONS:
+            perms.extend([CanAccessStaffBulkImport(), TenantActivePermission()])
+            return perms
+        if action == "destroy":
             perms.extend([IsStaffMember(), TenantActivePermission()])
+            perms.append(RequiresFeature("delete_user")())
+            return perms
+        if action in ("create", "update", "partial_update"):
+            perms.extend([CanManageStaffRecords(), TenantActivePermission()])
+            perms.append(RequiresFeature(self.required_feature_key)())
+            return perms
+        perms.extend([IsStaffMember(), TenantActivePermission()])
         if self.required_feature_key:
             perms.append(RequiresFeature(self.required_feature_key)())
         return perms
@@ -73,15 +85,17 @@ class StaffViewSet(BulkImportMixin, BaseModelViewSet):
         staff = serializer.save()
         output = StaffOnboardResponseSerializer(staff, context=self.get_serializer_context())
         message = "Staff member added successfully."
-        temp = getattr(staff, "_onboarding_temp_password", None)
-        if temp and staff.has_portal_access:
-            message += " A portal account was created — share the temporary password securely."
-        return Response({
+        if staff.has_portal_access and staff.user_id and getattr(staff.user, "must_change_password", False):
+            message += " Portal login credentials were emailed to their work address."
+        payload = {
             "success": True,
             "message": message,
             "data": output.data,
-            "temporary_password": temp,
-        }, status=status.HTTP_201_CREATED)
+        }
+        temp = getattr(staff, "_onboarding_temp_password", None)
+        if temp and staff.user_id and not getattr(staff.user, "must_change_password", False):
+            payload["temporary_password"] = temp
+        return Response(payload, status=status.HTTP_201_CREATED)
 
     def retrieve(self, request: Request, *args, **kwargs) -> Response:
         instance = self.get_object()

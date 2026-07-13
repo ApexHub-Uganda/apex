@@ -1,0 +1,17 @@
+---
+pid: 14872
+cwd: "E:\apex"
+command: "$ports = 3000,3001; foreach ($p in $ports) { $c = Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue | Select-Object -First 1; if ($c) { Stop-Process -Id $c.OwningProcess -Force -ErrorAction SilentlyContinue } }; Start-Sleep -Seconds 1; cd E:\\apex\\frontend && npm run dev"
+started_at: 2026-07-10T07:21:52.522Z
+running_for_ms: 1070005  
+---
+
+> apex-hub-frontend@1.0.0 dev
+> vite
+
+Port 3000 is in use, trying another one...
+
+  VITE v6.4.3  ready in 751 ms
+
+  ➜  Local:   http://localhost:3001/
+  ➜  Network: http://192.168.227.160:3001/

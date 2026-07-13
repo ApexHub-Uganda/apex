@@ -25,7 +25,7 @@ export function ChangeSchoolPlanModal({
   const [periodDays, setPeriodDays] = useState(30);
   const [notes, setNotes] = useState('');
 
-  const { data: plans = [], isLoading } = useQuery({
+  const { data: plans = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['plans', 'admin-select'],
     queryFn: () => plansService.list({ page_size: 50, is_active: true }),
     enabled: show,
@@ -87,6 +87,13 @@ export function ChangeSchoolPlanModal({
 
       {isLoading ? (
         <p className="text-muted">Loading plans…</p>
+      ) : isError ? (
+        <div className="alert alert-danger small mb-0">
+          Unable to load plans.
+          <button type="button" className="btn btn-link btn-sm p-0 ms-2" onClick={() => refetch()}>
+            Retry
+          </button>
+        </div>
       ) : (
         <div className="row g-3">
           <div className="col-md-6">
@@ -100,6 +107,11 @@ export function ChangeSchoolPlanModal({
                 </option>
               ))}
             </select>
+            {!plans.length && (
+              <div className="form-text text-warning">
+                No active plans found. Ensure Free Trial, Basic, Premium, and Premium Plus are seeded.
+              </div>
+            )}
           </div>
           <div className="col-md-6">
             <label className="form-label fw-medium">Billing Cycle</label>

@@ -76,7 +76,6 @@ def bulk_upsert_grades(
             })
             continue
 
-        letter = resolve_letter_grade(tenant, score, max_score=exam.max_score)
         remarks = (row.get("remarks") or "").strip()
 
         grade, _created = Grade.objects.update_or_create(
@@ -85,7 +84,7 @@ def bulk_upsert_grades(
             student_id=student_id,
             defaults={
                 "score": score,
-                "grade": letter,
+                "grade": "",
                 "remarks": remarks,
                 "updated_by": user,
             },

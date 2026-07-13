@@ -15,15 +15,14 @@ from apps.staff.services import StaffOnboardingError, onboard_staff
 STAFF_IMPORT_SPEC = ImportSpec(
     entity_name="Staff",
     description=(
-        "Quick staff list with hiring essentials only. HR completes role, department, "
-        "and portal access in each staff profile later."
+        "Quick staff list with name, work email, and phone. HR completes role, department, "
+        "and portal access in each staff profile later; staff complete personal details in My Profile."
     ),
     columns=[
         ImportColumn("first_name", "First Name", required=True),
         ImportColumn("last_name", "Last Name", required=True),
-        ImportColumn("email", "Work Email", required=True, field_type="email"),
+        ImportColumn("email", "Email", required=True, field_type="email"),
         ImportColumn("phone", "Phone", required=True, field_type="phone"),
-        ImportColumn("date_joined", "Date Joined", required=True, field_type="date", help_text="YYYY-MM-DD"),
     ],
 )
 
@@ -92,7 +91,7 @@ def commit_staff_rows(tenant, rows: list[dict], *, actor=None) -> dict[str, Any]
             "staff_category": row.get("staff_category", ""),
             "designation": row.get("designation", ""),
             "department": department_id,
-            "date_joined": row["date_joined"],
+            "date_joined": row.get("date_joined"),
             "employment_type": row.get("employment_type", "full_time"),
             "status": row.get("status", "active"),
             "address": row.get("address", ""),

@@ -33,6 +33,24 @@ PARENT_ADMIN_ONLY = {
 USER_SELF_EDITABLE = {"first_name", "last_name", "phone"}
 
 
+def get_user_self_editable_fields(user) -> set[str]:
+    """Return user-level fields the authenticated account may update."""
+    fields = set(USER_SELF_EDITABLE)
+    has_staff_profile = False
+    has_parent_profile = False
+    try:
+        has_staff_profile = user.staff_profile is not None
+    except Exception:
+        pass
+    try:
+        has_parent_profile = user.parent_profile is not None
+    except Exception:
+        pass
+    if has_staff_profile or has_parent_profile:
+        fields -= {"first_name", "last_name"}
+    return fields
+
+
 def _missing(fields: dict[str, Any], required: list[str]) -> list[str]:
     missing = []
     for key in required:

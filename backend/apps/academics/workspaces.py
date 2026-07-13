@@ -157,7 +157,7 @@ def build_academic_workspace(*, tenant, user) -> dict[str, Any]:
         ]
     elif role == UserRole.DIRECTOR_OF_STUDIES and _feature_enabled(perms, "dos_workspace"):
         payload["quick_links"] = [
-            {"label": "Teacher Assignments", "path": "/school-admin/academics/teacher-assignments", "feature_key": "teacher_assignments"},
+            {"label": "Teacher Assignments", "path": "/school-admin/academics/subject-assignments", "feature_key": "teacher_assignments"},
             {"label": "Exam Sessions", "path": "/school-admin/examinations/sessions", "feature_key": "examination_sessions"},
             {"label": "Marks Approval", "path": "/school-admin/examinations/approval", "feature_key": "marks_approval"},
         ]

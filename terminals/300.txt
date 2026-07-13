@@ -1,0 +1,80 @@
+---
+pid: 8592
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_bulk_import.py::test_staff_import_template_endpoint_for_school_admin tests/test_bulk_import.py::test_staff_import_template_endpoint_for_hr_manager tests/test_hr_rbac.py -q --tb=short 2>&1"
+started_at: 2026-07-10T05:41:49.657Z
+running_for_ms: 7060009  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 6 items
+
+tests\test_bulk_import.py FF                                             [ 33%]
+tests\test_hr_rbac.py FEEE                                               [100%]
+
+=================================== ERRORS ====================================
+_________ ERROR at setup of TestHRRbac.test_hr_manager_workspace_api __________
+tests\test_hr_rbac.py:25: in hr_plan
+    assign_plan_features(plan, [
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\contextlib.py:85: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+apps\subscriptions\services.py:224: in assign_plan_features
+    raise ValueError(f"Unknown or inactive features: {', '.join(sorted(unknown))}")
+E   ValueError: Unknown or inactive features: hr_analytics, hr_manager_workspace, hr_reports, staff_contracts, staff_discipline, staff_documents, staff_qualifications, work_schedules
+__________ ERROR at setup of TestHRRbac.test_leave_approval_workflow __________
+tests\test_hr_rbac.py:25: in hr_plan
+    assign_plan_features(plan, [
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\contextlib.py:85: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+apps\subscriptions\services.py:224: in assign_plan_features
+    raise ValueError(f"Unknown or inactive features: {', '.join(sorted(unknown))}")
+E   ValueError: Unknown or inactive features: hr_analytics, hr_manager_workspace, hr_reports, staff_contracts, staff_discipline, staff_documents, staff_qualifications, work_schedules
+______ ERROR at setup of TestHRRbac.test_leave_write_denied_when_revoked ______
+tests\test_hr_rbac.py:25: in hr_plan
+    assign_plan_features(plan, [
+C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\Lib\contextlib.py:85: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+apps\subscriptions\services.py:224: in assign_plan_features
+    raise ValueError(f"Unknown or inactive features: {', '.join(sorted(unknown))}")
+E   ValueError: Unknown or inactive features: hr_analytics, hr_manager_workspace, hr_reports, staff_contracts, staff_discipline, staff_documents, staff_qualifications, work_schedules
+================================== FAILURES ===================================
+____________ test_staff_import_template_endpoint_for_school_admin _____________
+tests\test_bulk_import.py:281: in test_staff_import_template_endpoint_for_school_admin
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <Response status_code=404, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 22:42:36,569 log Not Found: /api/v1/staff/import-template/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/staff/import-template/
+_____________ test_staff_import_template_endpoint_for_hr_manager ______________
+tests\test_bulk_import.py:311: in test_staff_import_template_endpoint_for_hr_manager
+    assert response.status_code == 200, response.content[:300]
+E   AssertionError: b'{"success":false,"error":{"code":"error","message":"Resource not found.","details":{"detail":"Resource not found."}}}'
+E   assert 404 == 200
+E    +  where 404 = <Response status_code=404, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 22:42:37,943 log Not Found: /api/v1/staff/import-template/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/staff/import-template/
+_______________ TestHRRbac.test_hr_manager_default_permissions ________________
+tests\test_hr_rbac.py:69: in test_hr_manager_default_permissions
+    assert get_default_feature_permission(UserRole.HR_MANAGER, "hr_manager_workspace") == {
+E   AssertionError: assert None == {'can_read': True, 'can_write': True}
+E    +  where None = get_default_feature_permission('hr_manager', 'hr_manager_workspace')
+E    +    where 'hr_manager' = UserRole.HR_MANAGER
+=========================== short test summary info ===========================
+FAILED tests/test_bulk_import.py::test_staff_import_template_endpoint_for_school_admin
+FAILED tests/test_bulk_import.py::test_staff_import_template_endpoint_for_hr_manager
+FAILED tests/test_hr_rbac.py::TestHRRbac::test_hr_manager_default_permissions
+ERROR tests/test_hr_rbac.py::TestHRRbac::test_hr_manager_workspace_api - Valu...
+ERROR tests/test_hr_rbac.py::TestHRRbac::test_leave_approval_workflow - Value...
+ERROR tests/test_hr_rbac.py::TestHRRbac::test_leave_write_denied_when_revoked
+======================== 3 failed, 3 errors in 44.67s =========================

@@ -1,0 +1,30 @@
+---
+pid: 22264
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_class_hub.py -q"
+started_at: 2026-07-09T13:15:31.217Z
+running_for_ms: 1020004  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 11 items
+
+tests\test_class_hub.py .........F.                                      [100%]
+
+================================== FAILURES ===================================
+________________ test_school_admin_can_create_student_in_class ________________
+tests\test_class_hub.py:268: in test_school_admin_can_create_student_in_class
+    assert response.status_code in (200, 201)
+E   assert 400 in (200, 201)
+E    +  where 400 = <Response status_code=400, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 06:16:24,430 log Bad Request: /api/v1/students/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/students/
+=========================== short test summary info ===========================
+FAILED tests/test_class_hub.py::test_school_admin_can_create_student_in_class
+======================== 1 failed, 10 passed in 49.54s ========================

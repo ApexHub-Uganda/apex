@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
   FiLayers, FiTrendingUp, FiClock, FiDollarSign, FiAlertTriangle,
-  FiPlus, FiEdit2, FiTrash2,
+  FiEdit2, FiTrash2,
 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import StatCard from '../../components/StatCard';
@@ -67,10 +67,6 @@ export function PlansAndSubscriptions() {
     queryClient.invalidateQueries({ queryKey: ['plans-subscriptions-hub'] });
     queryClient.invalidateQueries({ queryKey: ['plans'] });
     queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-  };
-
-  const openCreatePlan = () => {
-    navigate(`/super-admin/plans/new?tab=${tab}`);
   };
 
   const openEditPlan = (plan) => {
@@ -154,13 +150,7 @@ export function PlansAndSubscriptions() {
       <PageHeader
         title="Plans & Subscriptions"
         subtitle="Manage pricing tiers, monitor school subscriptions, and track recurring revenue"
-        actions={
-          (tab === 'plans' || tab === 'overview') ? (
-            <button className="btn btn-primary d-flex align-items-center gap-2" onClick={openCreatePlan}>
-              <FiPlus /> Create Plan
-            </button>
-          ) : null
-        }
+        actions={null}
       />
 
       <div className="row g-3 mb-4">

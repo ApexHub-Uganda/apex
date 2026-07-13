@@ -1,29 +1,31 @@
 """Bulk import specs and commit handlers for students and parents."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
 from django.db import transaction
 
 from apps.academics.models import Class, Stream
+from apps.academics.class_hub import user_can_enroll_students
+from apps.academics.scoping import get_academic_context, user_can_access_class, user_has_school_wide_academic_access
 from apps.core.bulk_import import ImportColumn, ImportSpec
 from apps.students.models import Parent, Student
+from apps.students.profile import IMPORT_PLACEHOLDER_DOB, generate_admission_number
 
-# Minimal columns only — full profiles are completed later in the workspace.
+
 STUDENT_IMPORT_SPEC = ImportSpec(
     entity_name="Students",
     description=(
-        "Quick enrollment with essentials only. Class teachers complete UPI, parents, "
-        "and other details in the student profile afterwards."
+        "Quick class or stream enrollment with student name and sex (M or F). "
+        "Choose the class and stream before uploading — every row is assigned to that group. "
+        "Complete email, phone, UPI, date of birth, parents, and other details in each profile later."
     ),
     columns=[
-        ImportColumn("admission_number", "Admission Number", required=True, help_text="Unique per school"),
         ImportColumn("first_name", "First Name", required=True),
         ImportColumn("last_name", "Last Name", required=True),
-        ImportColumn("date_of_birth", "Date of Birth", required=True, field_type="date", help_text="YYYY-MM-DD"),
-        ImportColumn("gender", "Gender", required=True, choices=["male", "female", "other"]),
-        ImportColumn("class_code", "Class Code", required=True, help_text="Must match an existing class e.g. G7A"),
+        ImportColumn("gender", "Sex", required=True, help_text="M = Male, F = Female"),
     ],
 )
 
@@ -31,67 +33,154 @@ STUDENT_IMPORT_SPEC = ImportSpec(
 PARENT_IMPORT_SPEC = ImportSpec(
     entity_name="Parents",
     description=(
-        "Quick parent/guardian registration with contact essentials. "
-        "M-Pesa, address, and fee settings can be added in the full profile later."
+        "Quick parent/guardian registration with name, email, and phone. "
+        "Address, M-Pesa, relationship, and fee settings can be completed in the parent profile later."
     ),
     columns=[
         ImportColumn("first_name", "First Name", required=True),
         ImportColumn("last_name", "Last Name", required=True),
-        ImportColumn("phone", "Phone", required=True, field_type="phone"),
         ImportColumn("email", "Email", required=True, field_type="email"),
+        ImportColumn("phone", "Phone", required=True, field_type="phone"),
     ],
 )
 
 
-def _resolve_class(tenant, class_code: str, academic_year_name: str | None):
-    from apps.academics.models import AcademicYear
+@dataclass
+class StudentImportContext:
+    school_class_id: str | None = None
+    stream_id: str | None = None
 
-    qs = Class.objects.filter(tenant=tenant, code__iexact=class_code.strip())
-    if academic_year_name:
-        qs = qs.filter(academic_year__name__iexact=academic_year_name.strip())
-    else:
-        current = AcademicYear.objects.filter(tenant=tenant, is_current=True).first()
-        if current:
-            qs = qs.filter(academic_year=current)
-    return qs.select_related("academic_year").first()
-
-
-def student_import_resolver(tenant):
-    def resolver(row: dict[str, Any], row_num: int) -> list[dict[str, Any]]:
+    def validate_access(self, tenant, user) -> tuple[Class | None, Stream | None, list[dict[str, Any]]]:
         errors: list[dict[str, Any]] = []
-        admission = row.get("admission_number", "")
-        if Student.objects.filter(tenant=tenant, admission_number__iexact=admission).exists():
-            errors.append({
-                "row": row_num,
-                "field": "admission_number",
-                "message": f"Admission number '{admission}' already exists",
-            })
+        if not self.school_class_id:
+            errors.append({"row": 0, "field": "school_class", "message": "Select a class before importing."})
+            return None, None, errors
 
-        class_code = row.get("class_code", "")
-        school_class = _resolve_class(tenant, class_code, row.get("academic_year"))
-        if not school_class:
+        if not user_can_access_class(user, self.school_class_id):
+            errors.append({"row": 0, "field": "school_class", "message": "You do not have access to this class."})
+            return None, None, errors
+        if not user_can_enroll_students(user, school_class_id=self.school_class_id):
             errors.append({
-                "row": row_num,
-                "field": "class_code",
-                "message": f"Class code '{class_code}' not found for the current academic year",
+                "row": 0,
+                "field": "school_class",
+                "message": "You do not have permission to enroll students into this class.",
             })
-        else:
-            row["_school_class_id"] = str(school_class.id)
+            return None, None, errors
 
-        stream_name = row.get("stream_name")
-        if stream_name and school_class:
+        school_class = Class.objects.filter(tenant=tenant, pk=self.school_class_id, is_deleted=False).first()
+        if school_class is None:
+            errors.append({"row": 0, "field": "school_class", "message": "Class not found."})
+            return None, None, errors
+
+        stream = None
+        streams_exist = Stream.objects.filter(
+            tenant=tenant,
+            school_class_id=school_class.id,
+            is_deleted=False,
+        ).exists()
+
+        if streams_exist and not self.stream_id:
+            errors.append({
+                "row": 0,
+                "field": "stream",
+                "message": "This class has streams. Select a stream before importing.",
+            })
+            return school_class, None, errors
+
+        if self.stream_id:
             stream = Stream.objects.filter(
-                tenant=tenant, school_class=school_class, name__iexact=stream_name.strip(),
+                tenant=tenant,
+                pk=self.stream_id,
+                school_class_id=school_class.id,
+                is_deleted=False,
             ).first()
-            if not stream:
+            if stream is None:
                 errors.append({
-                    "row": row_num,
-                    "field": "stream_name",
-                    "message": f"Stream '{stream_name}' not found in class {class_code}",
+                    "row": 0,
+                    "field": "stream",
+                    "message": "Stream not found in the selected class.",
                 })
-            else:
-                row["_stream_id"] = str(stream.id)
 
+        return school_class, stream, errors
+
+
+def get_student_import_context(user) -> dict[str, Any]:
+    """Classes and defaults for the bulk import wizard."""
+    ctx = get_academic_context(user)
+    if ctx is None or ctx.tenant is None:
+        return {"classes": [], "default_class_id": None, "default_stream_id": None, "is_class_teacher": False}
+
+    from apps.academics.scoping import filter_queryset_for_user
+
+    classes_qs = filter_queryset_for_user(
+        Class.objects.filter(tenant=ctx.tenant, is_deleted=False).select_related("academic_year"),
+        user,
+    ).order_by("name")
+
+    class_teacher_ids = list(ctx.class_teacher_class_ids)
+    classes = []
+    for school_class in classes_qs:
+        streams = list(
+            Stream.objects.filter(
+                tenant=ctx.tenant,
+                school_class_id=school_class.id,
+                is_deleted=False,
+            ).order_by("name").values("id", "name"),
+        )
+        classes.append({
+            "id": str(school_class.id),
+            "name": school_class.name,
+            "code": school_class.code,
+            "is_class_teacher": school_class.id in class_teacher_ids,
+            "can_enroll": user_can_enroll_students(user, school_class_id=str(school_class.id)),
+            "has_streams": len(streams) > 0,
+            "streams": [{"id": str(s["id"]), "name": s["name"]} for s in streams],
+        })
+
+    default_class_id = None
+    default_stream_id = None
+    is_class_teacher = bool(class_teacher_ids)
+
+    if is_class_teacher and len(class_teacher_ids) == 1:
+        default_class_id = str(class_teacher_ids[0])
+        default_class = next((row for row in classes if row["id"] == default_class_id), None)
+        if default_class and len(default_class["streams"]) == 1:
+            default_stream_id = default_class["streams"][0]["id"]
+
+    return {
+        "classes": classes,
+        "default_class_id": default_class_id,
+        "default_stream_id": default_stream_id,
+        "is_class_teacher": is_class_teacher,
+        "is_unrestricted": user_has_school_wide_academic_access(user),
+        "can_enroll_students": user_can_enroll_students(user),
+        "can_enroll_in_default_class": (
+            user_can_enroll_students(user, school_class_id=default_class_id)
+            if default_class_id else False
+        ),
+    }
+
+
+def student_import_resolver(tenant, *, context: StudentImportContext, user):
+    school_class, stream, context_errors = context.validate_access(tenant, user)
+
+    def resolver(row: dict[str, Any], row_num: int) -> list[dict[str, Any]]:
+        errors = list(context_errors)
+        if errors:
+            return errors
+
+        gender = row.get("gender")
+        if gender in ("male", "female"):
+            row["gender"] = gender
+        elif gender:
+            row["gender"] = str(gender).lower()
+
+        if school_class is not None:
+            row["_school_class_id"] = str(school_class.id)
+        if stream is not None:
+            row["_stream_id"] = str(stream.id)
+
+        row.setdefault("date_of_birth", IMPORT_PLACEHOLDER_DOB)
         return errors
 
     return resolver
@@ -131,6 +220,13 @@ def commit_student_rows(tenant, rows: list[dict], *, actor=None) -> dict[str, An
         row.setdefault("curriculum_pathway", "cbc")
         row.setdefault("boarding_status", "day")
         row.setdefault("special_needs", False)
+        row.setdefault("date_of_birth", IMPORT_PLACEHOLDER_DOB)
+        row.setdefault("gender", "other")
+
+        if not row.get("admission_number") and school_class_id:
+            school_class = Class.objects.filter(tenant=tenant, pk=school_class_id).first()
+            if school_class is not None:
+                row["admission_number"] = generate_admission_number(tenant, school_class=school_class)
 
         student = Student.objects.create(
             tenant=tenant,
@@ -157,7 +253,7 @@ def commit_student_rows(tenant, rows: list[dict], *, actor=None) -> dict[str, An
         "created": created,
         "message": (
             f"Enrolled {created} student(s) with basic details. "
-            "Open each profile to complete the full record."
+            "Open each profile to add date of birth, UPI, parents, and other information."
         ),
     }
 

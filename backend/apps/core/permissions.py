@@ -125,9 +125,11 @@ class TenantActivePermission(BasePermission):
 
 def mutation_requires_write(request: Request, view: APIView) -> bool:
     """True when the request mutates data (POST/PUT/PATCH/DELETE or write viewset actions)."""
+    action = getattr(view, "action", None)
+    if action in {"prefects", "remove_prefect"}:
+        return False
     if request.method not in SAFE_METHODS:
         return True
-    action = getattr(view, "action", None)
     return action in {
         "create", "update", "partial_update", "destroy",
         "validate_import", "commit_import",
@@ -187,7 +189,10 @@ def RequiresFeature(feature: str) -> type[BasePermission]:
                     detail=f"Feature '{feature}' is not available on your plan."
                 )
 
-            from apps.tenants.role_permissions import user_can_access_feature
+            from apps.tenants.role_permissions import user_can_access_feature, user_is_school_admin
+
+            if user_is_school_admin(user):
+                return True
 
             needs_write = mutation_requires_write(request, view)
             if not user_can_access_feature(tenant, user, feature, require_write=needs_write):

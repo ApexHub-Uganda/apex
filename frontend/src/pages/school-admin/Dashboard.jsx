@@ -6,7 +6,9 @@ import {
   FiAlertTriangle, FiArrowRight, FiLayers, FiLock, FiTrendingUp,
 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
+import TeacherAttendancePanel from '../../components/TeacherAttendancePanel';
 import SchoolNameWithBadge from '../../components/SchoolNameWithBadge';
+import DashboardHeaderMeta from '../../components/DashboardHeaderMeta';
 import StatCard from '../../components/StatCard';
 import { LineChart, BarChart, DoughnutChart } from '../../components/Charts';
 import ProgressBar from '../../components/ProgressBar';
@@ -151,7 +153,10 @@ export function SchoolAdminDashboard() {
     return paths;
   }, [activeModules]);
 
-  const isParent = roleProfile?.role === 'parent';
+  const userRole = roleProfile?.role;
+  const showTeacherAttendance = ['teacher', 'class_teacher'].includes(userRole)
+    && enabledFeatureKeys.includes('student_attendance');
+  const isParent = userRole === 'parent';
   const showAdmissionVacancies = isParent && enabledFeatureKeys.includes('admission_vacancies');
 
   const { data: portalVacancies = [] } = useQuery({
@@ -178,6 +183,7 @@ export function SchoolAdminDashboard() {
   const dashboardSubtitle = roleProfile?.subtitle
     || 'Overview of school operations, statistics, and module activity';
   const quickActions = roleProfile?.quick_actions || [];
+  const headerContext = data?.header_context ?? null;
 
   return (
     <div className="school-dashboard">
@@ -191,6 +197,7 @@ export function SchoolAdminDashboard() {
           />
         ) : dashboardTitle}
         subtitle={dashboardSubtitle}
+        context={<DashboardHeaderMeta context={headerContext} />}
       />
 
       {showAdmissionVacancies && portalVacancies.length > 0 && (
@@ -222,6 +229,12 @@ export function SchoolAdminDashboard() {
               </div>
             ))}
           </div>
+        </motion.div>
+      )}
+
+      {showTeacherAttendance && (
+        <motion.div className="mb-4" {...sectionMotion}>
+          <TeacherAttendancePanel />
         </motion.div>
       )}
 

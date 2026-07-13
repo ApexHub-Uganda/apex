@@ -47,6 +47,20 @@ class TestProfileWorkspace:
         assert hr_staff.personal_email == "personal@test.edu"
         assert hr_staff.address == "123 School Road"
 
+    def test_staff_cannot_change_name_via_profile(self, tenant, hr_staff):
+        client = APIClient()
+        client.force_authenticate(user=hr_staff.user)
+
+        response = client.patch("/api/v1/auth/me/", {
+            "first_name": "Changed",
+            "last_name": "Name",
+        }, format="json")
+
+        assert response.status_code == 400
+        hr_staff.user.refresh_from_db()
+        assert hr_staff.user.first_name == "HR"
+        assert hr_staff.user.last_name == "Staff"
+
     def test_staff_cannot_change_portal_role_via_profile(self, tenant, hr_staff):
         client = APIClient()
         client.force_authenticate(user=hr_staff.user)

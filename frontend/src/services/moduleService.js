@@ -14,8 +14,17 @@ const unwrapData = (response) => {
   return data?.data ?? data;
 };
 
+const unwrapListWithMeta = (response) => {
+  const data = response?.data ?? response;
+  return {
+    records: unwrapList(response),
+    meta: data?.meta ?? data?.data?.meta ?? null,
+  };
+};
+
 const createCrudService = (basePath) => ({
   list: (params = {}) => api.get(basePath, { params: { page_size: 100, ...params } }).then((r) => unwrapList(r)),
+  listWithMeta: (params = {}) => api.get(basePath, { params: { page_size: 100, ...params } }).then((r) => unwrapListWithMeta(r)),
   get: (id) => api.get(`${basePath}${id}/`).then((r) => unwrapData(r)),
   create: (payload) => api.post(basePath, payload).then((r) => unwrapData(r)),
   update: (id, payload) => api.patch(`${basePath}${id}/`, payload).then((r) => unwrapData(r)),
@@ -187,7 +196,10 @@ export const platformService = {
   getHealth: () => api.get('/platform/health/').then((r) => r?.data ?? r),
 };
 
-export const studentsService = createCrudService('/students/');
+export const studentsService = {
+  ...createCrudService('/students/'),
+  getImportContext: () => api.get('/students/import-context/').then((r) => unwrapData(r)),
+};
 export const parentsService = {
   ...createCrudService('/students/parents/'),
   linkStudent: (parentId, studentId) =>
@@ -201,10 +213,35 @@ export const parentsService = {
 };
 export const academicYearsService = createCrudService('/academics/years/');
 export const termsService = createCrudService('/academics/terms/');
-export const streamsService = createCrudService('/academics/streams/');
+export const streamsService = {
+  ...createCrudService('/academics/streams/'),
+  formOptions: () =>
+    api.get('/academics/streams/form-options/').then((r) => unwrapData(r)),
+};
 export const subjectsService = createCrudService('/academics/subjects/');
 export const homeworkService = createCrudService('/academics/homework/');
 export const assignmentsService = createCrudService('/academics/assignments/');
+
+export const teachingAssignmentsService = {
+  ...createCrudService('/academics/teaching-assignments/'),
+  formOptions: () =>
+    api.get('/academics/teaching-assignments/form-options/').then((r) => unwrapData(r)),
+  bulkAssign: (payload) =>
+    api.post('/academics/teaching-assignments/bulk-assign/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+  syncAssign: (payload) =>
+    api.post('/academics/teaching-assignments/sync-assign/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+  syncTeacher: (payload) =>
+    api.post('/academics/teaching-assignments/sync-teacher/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+};
 export const timetablesService = createCrudService('/academics/timetables/');
 export const feeCategoriesService = createCrudService('/finance/fee-categories/');
 export const feeStructuresService = createCrudService('/finance/fee-structures/');
@@ -288,6 +325,23 @@ export const medicalRecordsService = createCrudService('/students/medical-record
 export const periodsService = createCrudService('/academics/periods/');
 export const classroomsService = createCrudService('/academics/classrooms/');
 export const gradingScalesService = createCrudService('/examinations/grading-scales/');
+export const gradingSchemesService = {
+  ...createCrudService('/examinations/grading-schemes/'),
+  sync: (payload) =>
+    api.post('/examinations/grading-schemes/sync/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+};
+export const gradeCalculationService = {
+  getOptions: (params = {}) =>
+    api.get('/examinations/grade-calculation/options/', { params }).then((r) => unwrapData(r)),
+  apply: (payload) =>
+    api.post('/examinations/grade-calculation/apply/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+};
 export const gradesService = createCrudService('/examinations/grades/');
 export const subjectPapersService = createCrudService('/academics/subject-papers/');
 export const examinationReferenceService = {
@@ -300,6 +354,29 @@ export const marksEntryService = {
     api.post('/examinations/marks-entry/bulk/', payload).then((r) => {
       const body = r?.data ?? r;
       return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+    }),
+};
+export const assignmentMarksService = {
+  getOptions: (params = {}) =>
+    api.get('/academics/assignment-marks/options/', { params }).then((r) => unwrapData(r)),
+  createAssessment: (payload) =>
+    api.post('/academics/assignment-marks/create/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+    }),
+  saveBulk: (payload) =>
+    api.post('/academics/assignment-marks/bulk/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+    }),
+};
+export const assignmentGradeService = {
+  getOptions: (params = {}) =>
+    api.get('/academics/assignment-grades/options/', { params }).then((r) => unwrapData(r)),
+  apply: (payload) =>
+    api.post('/academics/assignment-grades/apply/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
     }),
 };
 export const reportCardsService = createCrudService('/examinations/report-cards/');
@@ -356,6 +433,15 @@ export const lessonAttendanceBulkService = {
     const body = r?.data ?? r;
     return { ...(body?.data ?? body), message: body?.message, success: body?.success };
   }),
+};
+export const classAttendanceService = {
+  getOptions: (params = {}) =>
+    api.get('/attendance/class-marking/options/', { params }).then((r) => unwrapData(r)),
+  saveBulk: (payload) =>
+    api.post('/attendance/class-marking/bulk/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+    }),
 };
 export const booksService = createCrudService('/library/books/');
 export const borrowsService = createCrudService('/library/borrows/');
@@ -433,7 +519,27 @@ export const staffService = {
 export const departmentsService = createCrudService('/academics/departments/');
 export const classesService = {
   ...createCrudService('/academics/classes/'),
-  listStreams: (classId) => streamsService.list({ school_class: classId }),
+  formOptions: () =>
+    api.get('/academics/classes/form-options/').then((r) => unwrapData(r)),
+  listOverview: () =>
+    api.get('/academics/classes/overview/').then((r) => unwrapData(r)),
+  getHub: (classId, params = {}) =>
+    api.get(`/academics/classes/${classId}/hub/`, { params }).then((r) => unwrapData(r)),
+  listPrefects: (classId, params = {}) =>
+    api.get(`/academics/classes/${classId}/prefects/`, { params }).then((r) => unwrapData(r)),
+  addPrefect: (classId, payload) =>
+    api.post(`/academics/classes/${classId}/prefects/`, payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message };
+    }),
+    removePrefect: (classId, prefectId) =>
+      api.post(`/academics/classes/${classId}/prefects/remove/`, { prefect_id: prefectId }).then((r) => {
+        const body = r?.data ?? r;
+        return { ...(body?.data ?? body), message: body?.message };
+      }),
+    getDeletionPreview: (classId) =>
+      api.get(`/academics/classes/${classId}/deletion-preview/`).then((r) => unwrapData(r)),
+    listStreams: (classId) => streamsService.list({ school_class: classId }),
 };
 export const attendanceService = createCrudService('/attendance/');
 export const financeService = feePaymentsService;

@@ -117,7 +117,19 @@ ASGI_APPLICATION = "apex_hub.asgi.application"
 # Database
 import sys
 
-if "pytest" in sys.modules:
+
+def _is_test_environment() -> bool:
+    if os.environ.get("APEX_USE_DEV_DATABASE") == "1":
+        return False
+    if "pytest" in sys.modules:
+        return True
+    argv = sys.argv
+    if any(token in ("test", "pytest", "py.test") for token in argv[1:3]):
+        return True
+    return any("pytest" in arg or "py.test" in arg for arg in argv[:1])
+
+
+if _is_test_environment():
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",

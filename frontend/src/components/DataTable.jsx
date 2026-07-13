@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { FiSearch, FiChevronLeft, FiChevronRight, FiFilter } from 'react-icons/fi';
+import { FiSearch, FiChevronLeft, FiChevronRight, FiChevronRight as FiRowOpen, FiFilter } from 'react-icons/fi';
 import { TableSkeleton } from './LoadingSkeleton';
-import { ROW_NUMBER_COLUMN } from '../utils/tableDisplay';
+import { isNameColumn, isShortColumn, ROW_NUMBER_COLUMN } from '../utils/tableDisplay';
 
-/** Tables at or above this column count scroll horizontally on small viewports. */
-const WIDE_TABLE_COLUMN_THRESHOLD = 5;
+/** Horizontal scroll only when the table has many columns. */
+const WIDE_TABLE_COLUMN_THRESHOLD = 8;
 
 export function DataTable({
   columns,
@@ -18,10 +18,11 @@ export function DataTable({
   emptyMessage = 'No records found',
   actions,
   filters,
-  compact = false,
+  compact = true,
   showRowNumbers = true,
   embedded = false,
   scrollable = false,
+  showRowOpenHint = true,
 }) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
@@ -40,10 +41,22 @@ export function DataTable({
       );
     }
     if (sortKey) {
+      const sortCol = columns.find((col) => col.key === sortKey);
+      const readSortVal = (row) => {
+        if (sortCol?.sortValue) return sortCol.sortValue(row);
+        if (sortCol?.accessor && typeof sortCol.accessor === 'string') return row[sortCol.accessor];
+        if (typeof sortCol?.accessor === 'function') return sortCol.accessor(row);
+        return row[sortKey];
+      };
       result.sort((a, b) => {
-        const aVal = a[sortKey];
-        const bVal = b[sortKey];
-        const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        const aVal = readSortVal(a);
+        const bVal = readSortVal(b);
+        const aEmpty = aVal == null || aVal === '';
+        const bEmpty = bVal == null || bVal === '';
+        if (aEmpty && bEmpty) return 0;
+        if (aEmpty) return 1;
+        if (bEmpty) return -1;
+        const cmp = String(aVal).localeCompare(String(bVal), undefined, { numeric: true, sensitivity: 'base' });
         return sortDir === 'asc' ? cmp : -cmp;
       });
     }
@@ -64,9 +77,18 @@ export function DataTable({
 
   const displayColumns = useMemo(() => {
     const base = columns.filter((col) => col.key !== 'id' && col.accessor !== 'id');
-    if (!showRowNumbers) return base;
-    return [{ ...ROW_NUMBER_COLUMN }, ...base];
-  }, [columns, showRowNumbers]);
+    const hasActions = base.some((col) => col.key === 'actions');
+    const withHint = onRowClick && showRowOpenHint && !hasActions
+      ? [...base, { key: '_open', label: '', width: '2rem', truncate: false, sortable: false }]
+      : base;
+    if (!showRowNumbers) return withHint;
+    return [{ ...ROW_NUMBER_COLUMN }, ...withHint];
+  }, [columns, showRowNumbers, onRowClick, showRowOpenHint]);
+
+  const hasNameColumns = useMemo(
+    () => displayColumns.some((col) => isNameColumn(col)),
+    [displayColumns],
+  );
 
   const isAlwaysScrollable = scrollable;
   const isWideTable = displayColumns.length >= WIDE_TABLE_COLUMN_THRESHOLD;
@@ -75,21 +97,27 @@ export function DataTable({
   const tableMinWidth = useMemo(() => {
     if (!useExpandedLayout) return undefined;
     const total = displayColumns.reduce((sum, col) => {
-      if (col.key === '_rowNum') return sum + 44;
-      if (col.key === 'actions') return sum + 120;
-      if (col.minWidth) {
-        const parsed = parseInt(String(col.minWidth), 10);
-        return sum + (Number.isFinite(parsed) ? parsed : 120);
+      if (col.key === '_rowNum') return sum + 22;
+      if (col.key === '_open') return sum + 32;
+      if (col.key === 'actions') return sum + 44;
+      if (isNameColumn(col)) return sum + 112;
+      if (col.width && String(col.width).endsWith('rem')) {
+        const parsed = parseFloat(String(col.width));
+        return sum + (Number.isFinite(parsed) ? parsed * 16 : 72);
       }
-      return sum + 120;
+      if (col.minWidth && String(col.minWidth).endsWith('rem')) {
+        const parsed = parseFloat(String(col.minWidth));
+        return sum + (Number.isFinite(parsed) ? parsed * 16 : 72);
+      }
+      return sum + 72;
     }, 0);
-    return Math.max(total, 720);
+    return Math.max(total, 640);
   }, [displayColumns, useExpandedLayout]);
 
   const wrapperClassName = [
     'apex-table-wrapper',
-    isAlwaysScrollable ? 'apex-table-wrapper--scrollable' : 'apex-table-wrapper--fit',
-    isWideTable && !isAlwaysScrollable ? 'apex-table-wrapper--wide' : '',
+    useExpandedLayout ? 'apex-table-wrapper--scrollable' : 'apex-table-wrapper--fit',
+    isWideTable ? 'apex-table-wrapper--wide' : '',
   ].filter(Boolean).join(' ');
 
   const tableClassName = [
@@ -97,8 +125,9 @@ export function DataTable({
     'apex-table',
     'mb-0',
     compact ? 'apex-table--compact' : '',
-    isAlwaysScrollable ? 'apex-table--scrollable' : '',
-    isWideTable && !isAlwaysScrollable ? 'apex-table--wide' : '',
+    useExpandedLayout ? 'apex-table--scrollable' : '',
+    isWideTable ? 'apex-table--wide' : '',
+    hasNameColumns ? 'apex-table--has-names' : '',
   ].filter(Boolean).join(' ');
 
   const wrapperStyle = isWideTable && !isAlwaysScrollable && tableMinWidth
@@ -107,13 +136,23 @@ export function DataTable({
 
   const getCellClass = (col) => {
     if (col.key === '_rowNum') return 'apex-table-cell--rownum';
+    if (col.key === '_open') return 'apex-table-cell--open';
     if (col.key === 'actions') return 'apex-table-cell--actions';
+    if (isNameColumn(col)) return 'apex-table-cell--name';
+    if (isShortColumn(col)) return 'apex-table-cell--short';
     if (col.truncate === false || col.render) return 'apex-table-cell--fit';
     return 'apex-table-cell--truncate';
   };
 
   const wrapCellContent = (col, content, title) => {
-    if (col.key === '_rowNum' || col.key === 'actions' || col.render || col.truncate === false) {
+    if (
+      col.key === '_rowNum'
+      || col.key === '_open'
+      || col.key === 'actions'
+      || isNameColumn(col)
+      || col.render
+      || col.truncate === false
+    ) {
       return content;
     }
     return (
@@ -125,7 +164,10 @@ export function DataTable({
 
   const getHeaderClass = (col) => {
     if (col.key === '_rowNum') return 'apex-table-cell--rownum';
+    if (col.key === '_open') return 'apex-table-cell--open';
     if (col.key === 'actions') return 'apex-table-cell--actions';
+    if (isNameColumn(col)) return 'apex-table-cell--name';
+    if (isShortColumn(col)) return 'apex-table-cell--short';
     return undefined;
   };
 
@@ -154,14 +196,14 @@ export function DataTable({
   return (
     <Wrapper {...wrapperProps}>
       {(searchable || filters || actions) && (
-        <div className="p-3 border-bottom d-flex flex-wrap gap-2 align-items-center justify-content-between">
+        <div className="apex-table-toolbar p-2 px-3 border-bottom d-flex flex-wrap gap-2 align-items-center justify-content-between">
           <div className="d-flex gap-2 flex-wrap flex-grow-1" style={{ minWidth: 0 }}>
             {searchable && (
               <div className="position-relative apex-table-search">
-                <FiSearch className="position-absolute text-muted" style={{ left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+                <FiSearch className="position-absolute text-muted apex-table-search-icon" />
                 <input
                   type="text"
-                  className="form-control ps-5"
+                  className="form-control form-control-sm ps-5 apex-table-search-input"
                   placeholder={searchPlaceholder}
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(0); }}
@@ -177,23 +219,26 @@ export function DataTable({
       <div className={wrapperClassName} style={wrapperStyle}>
         <table
           className={tableClassName}
-          style={isAlwaysScrollable && tableMinWidth ? { minWidth: tableMinWidth } : undefined}
+          style={useExpandedLayout && tableMinWidth ? { minWidth: tableMinWidth } : undefined}
         >
-          {((isAlwaysScrollable && displayColumns.some((col) => col.minWidth))
-            || (!isWideTable && displayColumns.some((col) => col.width))) && (
-            <colgroup>
-              {displayColumns.map((col) => (
-                <col
-                  key={col.key}
-                  style={
-                    isAlwaysScrollable
-                      ? { minWidth: col.minWidth || (col.key === '_rowNum' ? '2.75rem' : col.key === 'actions' ? '7rem' : undefined) }
-                      : col.width ? { width: col.width } : undefined
-                  }
-                />
-              ))}
-            </colgroup>
-          )}
+          <colgroup>
+            {displayColumns.map((col) => (
+              <col
+                key={col.key}
+                style={
+                  isNameColumn(col)
+                    ? {
+                        width: '1%',
+                        minWidth: col.minWidth || '7rem',
+                        maxWidth: col.maxWidth || '14rem',
+                      }
+                    : col.key === '_rowNum'
+                      ? { width: '1.35rem' }
+                      : { width: col.width || col.minWidth || undefined }
+                }
+              />
+            ))}
+          </colgroup>
           <thead>
             <tr>
               {displayColumns.map((col) => (
@@ -231,6 +276,7 @@ export function DataTable({
                 return (
                 <motion.tr
                   key={row.id ?? i}
+                  className={onRowClick ? 'apex-table-row--clickable' : undefined}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: i * 0.03 }}
@@ -242,6 +288,13 @@ export function DataTable({
                       return (
                         <td key={col.key} className={getCellClass(col)}>
                           {serial}
+                        </td>
+                      );
+                    }
+                    if (col.key === '_open') {
+                      return (
+                        <td key={col.key} className={getCellClass(col)}>
+                          <FiRowOpen size={14} className="apex-table-row-open-icon text-muted" aria-hidden />
                         </td>
                       );
                     }
@@ -271,8 +324,8 @@ export function DataTable({
       </div>
 
       {totalPages > 1 && (
-        <div className="p-3 border-top d-flex justify-content-between align-items-center">
-          <span className="text-muted small">
+        <div className="apex-table-footer p-2 px-3 border-top d-flex justify-content-between align-items-center">
+          <span className="text-muted apex-table-footer-meta">
             Showing {page * pageSize + 1}–{Math.min((page + 1) * pageSize, filtered.length)} of {filtered.length}
           </span>
           <div className="d-flex gap-1">

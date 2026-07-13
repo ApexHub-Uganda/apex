@@ -1,0 +1,18 @@
+---
+pid: 15772
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_staff_onboarding.py -q --tb=short -k \"api_create\" 2>&1"
+started_at: 2026-07-10T05:37:59.746Z
+running_for_ms: 7290013  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 6 items / 5 deselected / 1 selected
+
+tests\test_staff_onboarding.py .                                         [100%]
+
+====================== 1 passed, 5 deselected in 43.96s =======================

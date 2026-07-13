@@ -1,0 +1,38 @@
+---
+pid: 15048
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_bulk_import.py::test_staff_import_template_endpoint_for_school_admin -q --tb=long -s 2>&1"
+started_at: 2026-07-10T05:47:28.404Z
+running_for_ms: 6720009  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 1 item
+
+tests\test_bulk_import.py WARNING 2026-07-09 22:48:22,087 log Not Found: /api/v1/staff/import-template/
+F
+
+================================== FAILURES ===================================
+____________ test_staff_import_template_endpoint_for_school_admin _____________
+
+school_admin = <User: admin@test.edu>, import_plan = <Plan: Test Plan>
+
+    @pytest.mark.django_db
+    def test_staff_import_template_endpoint_for_school_admin(school_admin, import_plan):
+        client = APIClient()
+        client.force_authenticate(user=school_admin)
+        response = client.get("/api/v1/staff/import-template/?format=xlsx")
+>       assert response.status_code == 200
+E       assert 404 == 200
+E        +  where 404 = <Response status_code=404, "application/json">.status_code
+
+tests\test_bulk_import.py:281: AssertionError
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/staff/import-template/
+=========================== short test summary info ===========================
+FAILED tests/test_bulk_import.py::test_staff_import_template_endpoint_for_school_admin
+============================= 1 failed in 49.20s ==============================

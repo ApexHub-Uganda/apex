@@ -11,6 +11,20 @@ from django.db.models import Q
 from apps.core.constants import UserRole, normalize_role
 from apps.tenants.role_permissions import user_is_school_admin
 
+ACADEMIC_LEADERSHIP_ROLES = frozenset({
+    UserRole.SUPER_ADMIN,
+    UserRole.SCHOOL_ADMIN,
+    UserRole.DIRECTOR_OF_STUDIES,
+    UserRole.HEAD_TEACHER,
+    UserRole.DEPUTY_HEAD_TEACHER,
+})
+
+ASSIGNMENT_SCOPED_ROLES = frozenset({
+    UserRole.TEACHER,
+    UserRole.CLASS_TEACHER,
+    UserRole.HEAD_OF_DEPARTMENT,
+})
+
 
 @dataclass
 class AcademicContext:
@@ -39,12 +53,77 @@ def get_teacher_for_user(user) -> Any | None:
 
 
 def user_has_school_wide_academic_access(user) -> bool:
+    """Leadership roles see all academic records."""
     if not user or not getattr(user, "is_authenticated", False):
         return False
     if user_is_school_admin(user):
         return True
     role = normalize_role(getattr(user, "role", ""))
-    return role == UserRole.DIRECTOR_OF_STUDIES
+    return role in ACADEMIC_LEADERSHIP_ROLES
+
+
+def user_has_unrestricted_marks_access(user) -> bool:
+    """Only school admin and Director of Studies may enter marks/grades for any term, class, or subject."""
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if user_is_school_admin(user):
+        return True
+    return normalize_role(getattr(user, "role", "")) == UserRole.DIRECTOR_OF_STUDIES
+
+
+def user_can_write_exam_marks(user, exam) -> bool:
+    """Enforce marks/grade write integrity for teachers vs DoS/school admin."""
+    if exam.exam_type == "assignment":
+        return user_can_write_assignment_marks(user, exam)
+
+    if user_has_unrestricted_marks_access(user):
+        return True
+
+    ctx = get_academic_context(user)
+    if ctx is None or ctx.teacher is None:
+        return False
+
+    from apps.examinations.marks_scoping import resolve_current_term
+
+    active_term = resolve_current_term(ctx.tenant)
+    if active_term is None or exam.term_id != active_term.id:
+        return False
+
+    return (exam.subject_id, exam.school_class_id) in ctx.teaching_pairs
+
+
+def user_can_write_assignment_marks(user, exam) -> bool:
+    """Class assignments: teaching-assignment scope only — no term restriction."""
+    if getattr(exam, "exam_type", None) != "assignment":
+        return False
+    if user_has_unrestricted_marks_access(user):
+        return True
+
+    ctx = get_academic_context(user)
+    if ctx is None or ctx.teacher is None:
+        return False
+
+    return (exam.subject_id, exam.school_class_id) in ctx.teaching_pairs
+
+
+def should_scope_to_assignments(user, *, feature_key: str | None = None) -> bool:
+    """True when the user should see only records assigned to them (not the full table)."""
+    if user_has_school_wide_academic_access(user):
+        return False
+
+    role = normalize_role(getattr(user, "role", ""))
+    if role in ASSIGNMENT_SCOPED_ROLES:
+        return True
+
+    if feature_key:
+        tenant = getattr(user, "tenant", None)
+        if tenant is not None:
+            from apps.tenants.role_permissions import user_can_access_feature
+
+            if user_can_access_feature(tenant, user, feature_key, require_write=True):
+                return False
+
+    return True
 
 
 def get_academic_context(user) -> AcademicContext | None:
@@ -73,10 +152,24 @@ def get_academic_context(user) -> AcademicContext | None:
     if teacher is None and role not in (UserRole.HEAD_OF_DEPARTMENT,):
         return ctx
 
-    from apps.academics.models import Assignment, Class, Homework, Subject, Timetable
+    from apps.academics.models import Assignment, Class, Homework, Subject, TeachingAssignment, Timetable
 
     if teacher is not None:
         subject_ids = set(teacher.subjects.values_list("id", flat=True))
+        teaching_rows = TeachingAssignment.objects.filter(
+            tenant=tenant,
+            teacher=teacher,
+            is_active=True,
+            is_deleted=False,
+        ).values_list("subject_id", "school_class_id")
+        for subject_id, class_id in teaching_rows:
+            if subject_id:
+                subject_ids.add(subject_id)
+            if class_id:
+                ctx.assigned_class_ids.add(class_id)
+            if subject_id and class_id:
+                ctx.teaching_pairs.add((subject_id, class_id))
+
         timetable_rows = Timetable.objects.filter(
             tenant=tenant,
             teacher=teacher,
@@ -177,6 +270,13 @@ def filter_queryset_for_user(queryset: models.QuerySet, user) -> models.QuerySet
         clause = _subject_filter(ctx)
         return queryset.filter(clause) if clause is not None else queryset.none()
 
+    if model_name == "SubjectPaper":
+        if ctx.assigned_subject_ids:
+            return queryset.filter(subject_id__in=ctx.assigned_subject_ids)
+        if ctx.is_hod:
+            return queryset.none()
+        return queryset.none()
+
     if model_name == "Class":
         clause = _class_filter(ctx)
         return queryset.filter(clause) if clause is not None else queryset.none()
@@ -186,6 +286,11 @@ def filter_queryset_for_user(queryset: models.QuerySet, user) -> models.QuerySet
         if not class_ids:
             return queryset.none()
         return queryset.filter(school_class_id__in=class_ids)
+
+    if model_name == "Department":
+        if ctx.department_id:
+            return queryset.filter(id=ctx.department_id)
+        return queryset.none()
 
     if model_name == "Exam":
         return queryset.filter(_exam_filter(ctx))
@@ -216,6 +321,13 @@ def filter_queryset_for_user(queryset: models.QuerySet, user) -> models.QuerySet
             | Q(attendee_type="staff", staff=ctx.staff),
         )
 
+    if model_name == "TeachingAssignment":
+        if ctx.teacher is not None:
+            return queryset.filter(teacher=ctx.teacher, is_active=True)
+        if ctx.is_hod and ctx.department_subject_ids:
+            return queryset.filter(subject_id__in=ctx.department_subject_ids, is_active=True)
+        return queryset.none()
+
     if model_name in ("Timetable", "Assignment", "Homework"):
         if ctx.teacher is not None:
             return queryset.filter(teacher=ctx.teacher)
@@ -224,9 +336,19 @@ def filter_queryset_for_user(queryset: models.QuerySet, user) -> models.QuerySet
         return queryset.none()
 
     if model_name == "Term":
-        return queryset
+        from apps.academics.singleton import get_active_term
+
+        active = get_active_term(ctx.tenant)
+        if active is not None:
+            return queryset.filter(id=active.id)
+        return queryset.none()
 
     if model_name == "AcademicYear":
+        from apps.academics.singleton import get_active_academic_year
+
+        active = get_active_academic_year(ctx.tenant)
+        if active is not None:
+            return queryset.filter(id=active.id)
         return queryset.none()
 
     if model_name == "ClassNotice":
@@ -247,6 +369,9 @@ def filter_queryset_for_user(queryset: models.QuerySet, user) -> models.QuerySet
                 Q(subject_id__isnull=True) | Q(subject_id__in=ctx.department_subject_ids),
             )
         return qs
+
+    if model_name in ("Period", "Classroom"):
+        return queryset.none()
 
     if model_name == "ExaminationSession":
         return queryset

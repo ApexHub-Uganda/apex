@@ -34,6 +34,12 @@ class SchoolDashboardView(APIView):
                     "sections": {},
                     "widgets": [],
                     "module_stats": {},
+                    "header_context": {
+                        "academic_year": None,
+                        "current_term": None,
+                        "assigned_classes": None,
+                        "subject_codes": None,
+                    },
                     "upgrade_suggestions": [],
                     "recent_activities": [],
                 },

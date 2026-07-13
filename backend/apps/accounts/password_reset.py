@@ -180,7 +180,12 @@ def confirm_password_reset(*, email: str, otp: str, new_password: str) -> User:
     user.set_password(new_password)
     user.password_reset_token = ""
     user.password_reset_expires = None
-    user.save(update_fields=["password", "password_reset_token", "password_reset_expires", "updated_at"])
+    if getattr(user, "must_change_password", False):
+        user.must_change_password = False
+    user.save(update_fields=[
+        "password", "password_reset_token", "password_reset_expires",
+        "must_change_password", "updated_at",
+    ])
     cache.delete(attempt_key)
     cache.delete(_cooldown_cache_key(str(user.id)))
     return user

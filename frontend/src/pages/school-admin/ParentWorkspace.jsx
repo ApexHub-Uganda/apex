@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiLink, FiX } from 'react-icons/fi';
 import WorkspaceShell from '../../components/WorkspaceShell';
 import ParentForm from '../../components/ParentForm';
+import UserDeleteDangerZone from '../../components/UserDeleteDangerZone';
+import { usePermissions } from '../../hooks/usePermissions';
 import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
 import { parentsService, studentsService } from '../../services/moduleService';
@@ -14,6 +16,7 @@ export function ParentWorkspace() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEdit = Boolean(parentId && parentId !== 'new');
+  const { canReadDeleteUser, canWriteDeleteUser } = usePermissions();
   const [studentSearch, setStudentSearch] = useState('');
   const [linking, setLinking] = useState(false);
 
@@ -36,6 +39,13 @@ export function ParentWorkspace() {
       queryClient.invalidateQueries({ queryKey: ['parent-matching-summary'] }),
       queryClient.invalidateQueries({ queryKey: ['students'] }),
     ]);
+  };
+
+  const handleDeleteParent = async () => {
+    await parentsService.delete(parentId);
+    notify.success('Parent record deleted.');
+    await invalidateParentData();
+    navigate('/school-admin/parents');
   };
 
   const handleSubmit = async (formData) => {
@@ -186,6 +196,17 @@ export function ParentWorkspace() {
             </div>
           </div>
         </div>
+      )}
+
+      {isEdit && (
+        <UserDeleteDangerZone
+          entityLabel="parent"
+          recordName={parent?.full_name}
+          description="Permanently remove this parent or guardian from the school directory. Learner links will be removed."
+          onDelete={handleDeleteParent}
+          canRead={canReadDeleteUser()}
+          canWrite={canWriteDeleteUser()}
+        />
       )}
     </WorkspaceShell>
   );

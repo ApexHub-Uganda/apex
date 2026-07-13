@@ -5,8 +5,11 @@ from apps.examinations.views import (
     ExamViewSet,
     ExaminationReferenceView,
     ExaminationSessionViewSet,
+    GradeCalculationApplyView,
+    GradeCalculationOptionsView,
     GradeViewSet,
     GradingScaleViewSet,
+    GradingSchemeViewSet,
     MarksApprovalQueueView,
     MarksEntryBulkView,
     MarksEntryOptionsView,
@@ -16,6 +19,7 @@ from apps.examinations.views import (
 
 router = DefaultRouter()
 router.register("grading-scales", GradingScaleViewSet, basename="grading-scale")
+router.register("grading-schemes", GradingSchemeViewSet, basename="grading-scheme")
 router.register("sessions", ExaminationSessionViewSet, basename="examination-session")
 router.register("exams", ExamViewSet, basename="exam")
 router.register("grades", GradeViewSet, basename="grade")
@@ -25,6 +29,8 @@ urlpatterns = [
     path("reference/", ExaminationReferenceView.as_view(), name="examination-reference"),
     path("marks-entry/options/", MarksEntryOptionsView.as_view(), name="marks-entry-options"),
     path("marks-entry/bulk/", MarksEntryBulkView.as_view(), name="marks-entry-bulk"),
+    path("grade-calculation/options/", GradeCalculationOptionsView.as_view(), name="grade-calculation-options"),
+    path("grade-calculation/apply/", GradeCalculationApplyView.as_view(), name="grade-calculation-apply"),
     path("marks-approval/queue/", MarksApprovalQueueView.as_view(), name="marks-approval-queue"),
     path("workflow/bulk/", WorkflowBulkActionView.as_view(), name="workflow-bulk"),
     path("", include(router.urls)),

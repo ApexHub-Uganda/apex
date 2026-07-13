@@ -75,6 +75,8 @@ export function usePermissions() {
     canDelete: (moduleOrFeatureKey) => (
       canAccessFeature(moduleOrFeatureKey, true) || canWriteModule(moduleOrFeatureKey)
     ),
+    canReadDeleteUser: () => isSchoolAdmin || canAccessFeature('delete_user', false),
+    canWriteDeleteUser: () => isSchoolAdmin || canAccessFeature('delete_user', true),
   };
 }
 

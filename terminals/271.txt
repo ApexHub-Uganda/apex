@@ -1,0 +1,31 @@
+---
+pid: 6992
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_class_hub.py::test_class_teacher_can_appoint_prefect -q"
+started_at: 2026-07-09T12:54:53.942Z
+running_for_ms: 2255005  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 1 item
+
+tests\test_class_hub.py F                                                [100%]
+
+================================== FAILURES ===================================
+___________________ test_class_teacher_can_appoint_prefect ____________________
+tests\test_class_hub.py:123: in test_class_teacher_can_appoint_prefect
+    assert response.status_code == 201, response.content
+E   AssertionError: b'{"success":false,"error":{"code":"feature_not_available","message":"You do not have write permission for any of: cla...ss teacher tools.","details":{"detail":"You do not have write permission for any of: classes, class teacher tools."}}}'
+E   assert 403 == 201
+E    +  where 403 = <Response status_code=403, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 05:55:59,094 log Forbidden: /api/v1/academics/classes/69efed22-5db7-40a0-a2e6-ee722a5eeeb7/prefects/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Forbidden: /api/v1/academics/classes/69efed22-5db7-40a0-a2e6-ee722a5eeeb7/prefects/
+=========================== short test summary info ===========================
+FAILED tests/test_class_hub.py::test_class_teacher_can_appoint_prefect - Asse...
+======================== 1 failed in 62.13s (0:01:02) =========================

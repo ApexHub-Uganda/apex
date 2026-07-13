@@ -55,7 +55,7 @@ _TEACHER_EXAMINATIONS: dict[str, _PERM] = {
     "marks_entry": _rw(),
     "result_processing": _deny(),
     "report_cards": _r(),
-    "grade_calculation": _deny(),
+    "grade_calculation": _rw(),
     "marks_approval": _deny(),
     "examination_sessions": _deny(),
     "class_report_cards": _deny(),
@@ -284,6 +284,8 @@ def get_default_feature_permission(role: str, feature_key: str) -> dict[str, boo
     canonical = normalize_role(role)
     perms = DEFAULT_ROLE_FEATURE_PERMISSIONS.get(canonical, {}).get(feature_key)
     if perms is None:
+        if feature_key == "delete_user":
+            return _deny()
         return None
     return perms.copy()
 

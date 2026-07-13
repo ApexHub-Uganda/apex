@@ -1,0 +1,19 @@
+---
+pid: 16152
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_canonical_plans.py::TestCanonicalPlans::test_api_blocks_plan_creation -v --tb=short 2>&1"
+started_at: 2026-07-10T13:04:17.087Z
+running_for_ms: 1310004  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 1 item
+
+tests/test_canonical_plans.py::TestCanonicalPlans::test_api_blocks_plan_creation PASSED [100%]
+
+======================== 1 passed in 76.37s (0:01:16) =========================

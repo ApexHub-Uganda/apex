@@ -1,0 +1,35 @@
+---
+pid: 13508
+cwd: "E:\apex"
+command: "cd E:\\apex\\frontend && if (Test-Path \"node_modules\\.vite\") { Remove-Item -Recurse -Force \"node_modules\\.vite\"; Write-Output \"cleared vite cache\" } else { Write-Output \"no vite cache\" }; npm run build 2>&1"
+started_at: 2026-07-10T07:16:31.411Z
+running_for_ms: 1375006  
+---
+if: The term 'if' is not recognized as a name of a cmdlet, function, script file, or executable program.
+Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+
+> apex-hub-frontend@1.0.0 build
+> vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 708 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                            1.65 kB │ gzip:   0.75 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+dist/assets/hero-learner-BqJC_8QV.jpg    390.63 kB
+dist/assets/HomeEntry-DvB2Xm2x.css        26.05 kB │ gzip:   2.24 kB
+dist/assets/landing-3-tjZTcE.css          28.74 kB │ gzip:   5.94 kB
+dist/assets/index-BjgaT8Sd.css           345.16 kB │ gzip:  49.63 kB
+dist/assets/TermsPage-CMQSDZJE.js          4.96 kB │ gzip:   2.06 kB
+dist/assets/vendor-t_hB19Dw.js            50.58 kB │ gzip:  17.89 kB
+dist/assets/HomeEntry-CFj8IyLo.js         71.12 kB │ gzip:  20.94 kB
+dist/assets/motion-DK1W1IBq.js           115.10 kB │ gzip:  38.14 kB
+dist/assets/charts-b_gjf38H.js           185.45 kB │ gzip:  64.72 kB
+dist/assets/index-CXiO3tYi.js          1,095.45 kB │ gzip: 282.76 kB
+✓ built in 15.71s

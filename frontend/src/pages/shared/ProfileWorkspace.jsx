@@ -126,12 +126,16 @@ export function ProfileWorkspace() {
     return items;
   }, [staffProfile, parentProfile]);
 
+  const canEditName = !staffProfile && !parentProfile;
+
   const onSave = (formData) => {
     const payload = {
-      first_name: formData.first_name,
-      last_name: formData.last_name,
       phone: formData.phone,
     };
+    if (canEditName) {
+      payload.first_name = formData.first_name;
+      payload.last_name = formData.last_name;
+    }
     if (staffProfile && formData.staff_profile) {
       payload.staff_profile = formData.staff_profile;
     }
@@ -257,14 +261,23 @@ export function ProfileWorkspace() {
               </div>
             </div>
             <WorkspaceFieldGrid>
-              <div className="col-md-6">
-                <label className="form-label small fw-medium">First name</label>
-                <input className="form-control" {...register('first_name')} />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label small fw-medium">Last name</label>
-                <input className="form-control" {...register('last_name')} />
-              </div>
+              {(staffProfile || parentProfile) ? (
+                <>
+                  <ReadOnlyField label="First name" value={profile?.first_name} hint="Managed by your school admin." />
+                  <ReadOnlyField label="Last name" value={profile?.last_name} hint="Managed by your school admin." />
+                </>
+              ) : (
+                <>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-medium">First name</label>
+                    <input className="form-control" {...register('first_name')} />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small fw-medium">Last name</label>
+                    <input className="form-control" {...register('last_name')} />
+                  </div>
+                </>
+              )}
               <ReadOnlyField label="Work email" value={profile?.email} hint="Contact your school admin to change your login email." />
               <div className="col-md-6">
                 <label className="form-label small fw-medium">Phone</label>

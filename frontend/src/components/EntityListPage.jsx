@@ -5,6 +5,7 @@ import { FiArrowLeft, FiEdit2, FiPlus, FiSend, FiTrash2 } from 'react-icons/fi';
 import PageHeader from './PageHeader';
 import DataTable from './DataTable';
 import ModuleEmptyState from './ModuleEmptyState';
+import CurrentRecordPanel from './CurrentRecordPanel';
 import { Modal } from './Modal';
 import StatusBadge from './StatusBadge';
 import { usePermissions } from '../hooks/usePermissions';
@@ -29,7 +30,7 @@ import {
   financialAccountsService,
 } from '../services/moduleService';
 import { validateDeliverableEmail } from '../utils/emailValidation';
-import { formatTableCellValue, inferOptionsFromKey } from '../utils/tableDisplay';
+import { COL_WIDTH, formatTableCellValue, inferOptionsFromKey, sanitizeListColumns } from '../utils/tableDisplay';
 import { alert, extractApiError, notify } from '../utils/notify';
 
 const OPTION_LOADERS = {
@@ -125,11 +126,32 @@ export function EntityListPage({
 
   const listParams = config.listParams || {};
 
-  const { data: records = [], isLoading, isError } = useQuery({
-    queryKey: [...config.queryKey, listParams],
-    queryFn: () => config.service.list({ page_size: 200, ...listParams }),
+  const { data: listPayload, isLoading, isError } = useQuery({
+    queryKey: [...config.queryKey, listParams, config.singleton ? 'meta' : 'plain'],
+    queryFn: async () => {
+      if (config.singleton && config.service?.listWithMeta) {
+        return config.service.listWithMeta({ page_size: 200, ...listParams });
+      }
+      const records = await config.service.list({ page_size: 200, ...listParams });
+      return { records, meta: null };
+    },
     enabled: Boolean(config.service?.list),
   });
+
+  const records = listPayload?.records ?? [];
+  const listMeta = listPayload?.meta ?? null;
+  const creationLocked = Boolean(listMeta?.creation_locked);
+  const canCreate = canManage && config.creatable !== false && !creationLocked;
+  const isReadOnlyViewer = !canManage && !isSchoolAdmin;
+  const hideSingletonTable = Boolean(
+    config.singleton
+    && creationLocked
+    && listMeta?.active_record
+    && !isSchoolAdmin
+    && (featureKey === 'academic_years' || featureKey === 'terms'),
+  );
+  const scopedEmptyTitle = `No ${title.toLowerCase()} assigned to you`;
+  const scopedEmptyMessage = 'You only see records linked to your teaching assignments. Contact the Director of Studies if something is missing.';
 
   const optionsFromKeys = useMemo(() => {
     const keys = new Set();
@@ -257,15 +279,14 @@ export function EntityListPage({
   };
 
   const columns = [
-    ...config.columns
-      .filter((col) => col.key !== 'id' && col.accessor !== 'id')
-      .map((col) => ({
-        ...col,
-        render: col.render || ((row) => formatCell(col, row, dynamicOptions)),
-      })),
+    ...sanitizeListColumns(config.columns).map((col) => ({
+      ...col,
+      render: col.render || ((row) => formatCell(col, row, dynamicOptions)),
+    })),
     ...(canManage ? [{
       key: 'actions',
       label: '',
+      width: COL_WIDTH.actions,
       truncate: false,
       render: (row) => (
         <div className="apex-table-row-actions">
@@ -454,10 +475,23 @@ export function EntityListPage({
         </div>
       )}
 
+      {config.singleton && listMeta?.active_record && (
+        <CurrentRecordPanel
+          title={
+            (typeof config.singleton === 'object' ? config.singleton.title : config.singletonTitle)
+            || `Current ${title.replace(/s$/i, '')}`
+          }
+          record={listMeta.active_record}
+          lockReason={listMeta.lock_reason}
+          creationLocked={creationLocked}
+          type={listMeta.singleton_type || (typeof config.singleton === 'object' ? config.singleton.type : config.singleton)}
+        />
+      )}
+
       <PageHeader
         title={title}
         subtitle={config.subtitle}
-        actions={canManage && config.creatable !== false && (
+        actions={canCreate && (
           <div className="d-flex gap-2">
             {config.allowBulkDelete && config.service?.deleteAll && records.length > 0 && (
               <button
@@ -478,18 +512,30 @@ export function EntityListPage({
 
       {isError ? (
         <div className="alert alert-danger">Unable to load {title.toLowerCase()}. Check your connection and try again.</div>
-      ) : (
+      ) : hideSingletonTable ? null : (
         <DataTable
             columns={columns}
             data={records}
             loading={isLoading}
+            compact
+            searchPlaceholder={`Search ${title.toLowerCase()}…`}
             onRowClick={canManage ? openEdit : undefined}
             emptyState={(
               <ModuleEmptyState
-                title={`No ${title.toLowerCase()} yet`}
-                message={`Create your first ${title.toLowerCase()} record — data is saved to your school database.`}
-                actionLabel={canManage ? config.createLabel : undefined}
-                onAction={canManage ? openCreate : undefined}
+                title={
+                  creationLocked
+                    ? `Active ${title.toLowerCase()} in progress`
+                    : (isReadOnlyViewer ? scopedEmptyTitle : `No ${title.toLowerCase()} yet`)
+                }
+                message={
+                  creationLocked
+                    ? (listMeta?.lock_reason || 'The current period must end before a new record can be created.')
+                    : (isReadOnlyViewer
+                      ? scopedEmptyMessage
+                      : `Create your first ${title.toLowerCase()} record — data is saved to your school database.`)
+                }
+                actionLabel={canCreate ? config.createLabel : undefined}
+                onAction={canCreate ? openCreate : undefined}
               />
             )}
           />

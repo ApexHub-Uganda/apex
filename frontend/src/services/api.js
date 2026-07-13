@@ -4,10 +4,21 @@ import { confirmMaintenanceAction } from '../utils/maintenanceConfirm';
 
 const resolveApiBaseUrl = () => {
   const configured = import.meta.env.VITE_API_BASE_URL;
+  const onTunnelHost = typeof window !== 'undefined'
+    && /\.ngrok-free\.dev$|\.ngrok\.io$/.test(window.location.hostname);
+  const onHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+
+  // Relative base routes through the Vite dev proxy (required for ngrok / HTTPS tunnels).
+  if (configured?.startsWith('/')) {
+    return configured.endsWith('/') ? configured.slice(0, -1) : configured;
+  }
+  if (import.meta.env.DEV || onTunnelHost || onHttps) {
+    return '/api/v1';
+  }
   if (configured) {
     return configured.endsWith('/') ? configured.slice(0, -1) : configured;
   }
-  return import.meta.env.DEV ? '/api/v1' : 'http://localhost:8000/api/v1';
+  return 'http://localhost:8000/api/v1';
 };
 
 const API_BASE_URL = resolveApiBaseUrl();
@@ -65,10 +76,44 @@ const clearStoredTokens = () => {
   sessionStorage.removeItem('apex_refresh_token');
 };
 
-const AUTH_SKIP_PATHS = ['/auth/login/', '/auth/refresh/', '/auth/register/'];
+// Public endpoints only — must NOT match longer authenticated paths
+// (e.g. /subscriptions/plans/ must not strip auth from /subscriptions/plans/manage/).
+const AUTH_SKIP_PATHS = [
+  '/auth/login/',
+  '/auth/refresh/',
+  '/auth/register/',
+  '/tenants/register/',
+  '/platform/settings/public/',
+  '/subscriptions/plans/',
+];
 
-const isAuthSkipRequest = (url = '') =>
-  AUTH_SKIP_PATHS.some((path) => url.includes(path));
+const resolveRequestPath = (url = '') => {
+  const raw = String(url || '').split('?')[0];
+  try {
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      return new URL(raw).pathname;
+    }
+  } catch {
+    // use raw path below
+  }
+  return raw;
+};
+
+const isAuthSkipRequest = (url = '') => {
+  const path = resolveRequestPath(url);
+  if (!path) return false;
+  return AUTH_SKIP_PATHS.some((skip) => {
+    const withSlash = skip.endsWith('/') ? skip : `${skip}/`;
+    const noSlash = withSlash.slice(0, -1);
+    // Exact match only (path may include /api/v1 prefix when absolute).
+    return (
+      path === withSlash
+      || path === noSlash
+      || path.endsWith(withSlash)
+      || path.endsWith(noSlash)
+    );
+  });
+};
 
 const isDemoToken = (token) =>
   !token || token === 'demo-access-token' || token === 'demo-refresh-token';

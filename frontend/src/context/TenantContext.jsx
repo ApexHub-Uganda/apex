@@ -129,9 +129,14 @@ export function TenantProvider({ children }) {
     [tenant?.permissions],
   );
 
+  const resolveFeatureKey = useCallback((featureKey) => (
+    featureKey === 'streams' ? 'classes' : featureKey
+  ), []);
+
   const canAccessFeature = useCallback(
     (featureKey, requireWrite = false) => {
       if (!featureKey) return true;
+      featureKey = resolveFeatureKey(featureKey);
       if (isSuspended) return false;
       if (isSchoolAdmin) return true;
       if (CORE_FEATURE_KEYS.includes(featureKey) && featureKey === 'dashboard_analytics') {
@@ -178,12 +183,14 @@ export function TenantProvider({ children }) {
       canAccessModule,
       moduleMenu,
       permissionTokens,
+      resolveFeatureKey,
     ],
   );
 
   const isFeatureEnabled = useCallback(
     (featureKey) => {
       if (!featureKey) return true;
+      featureKey = resolveFeatureKey(featureKey);
       if (isSuspended) return false;
       if (CORE_FEATURE_KEYS.includes(featureKey)) {
         return isSchoolAdmin || featureKey === 'dashboard_analytics';
@@ -198,7 +205,7 @@ export function TenantProvider({ children }) {
       if (keys.includes(featureKey)) return true;
       return tenant.feature_flags?.[featureKey] === true;
     },
-    [tenant, isSchoolAdmin, isSuspended, canAccessFeature],
+    [tenant, isSchoolAdmin, isSuspended, canAccessFeature, resolveFeatureKey],
   );
 
   const canWriteFeature = useCallback(

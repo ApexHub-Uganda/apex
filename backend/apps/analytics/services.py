@@ -455,12 +455,20 @@ def get_school_dashboard(tenant_id: str, user=None) -> dict[str, Any]:
             "datasets": [{"label": "Students", "data": [row["count"] for row in by_class]}],
         }
 
+    from apps.analytics.dashboard_context import build_dashboard_header_context
+
     payload: dict[str, Any] = {
         "subscription": subscription,
         "plan_usage": _get_plan_usage(subscription, total_students, total_staff),
         "sections": sections,
         "widgets": dashboard_widgets,
         "module_stats": _get_module_stats(tenant_id, sections),
+        "header_context": build_dashboard_header_context(tenant=tenant, user=user) if user else {
+            "academic_year": None,
+            "current_term": None,
+            "assigned_classes": None,
+            "subject_codes": None,
+        },
         "upgrade_suggestions": _get_upgrade_suggestions(tenant) if not user or user_is_school_admin(user) else [],
         "stats": {
             "total_students": total_students,

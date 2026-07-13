@@ -1,0 +1,22 @@
+---
+pid: 18756
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_delete_user_permission.py -v --tb=short 2>&1"
+started_at: 2026-07-11T16:17:52.518Z
+running_for_ms: 6190011  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 4 items
+
+tests/test_delete_user_permission.py::TestDeleteUserPermission::test_student_delete_requires_delete_user_write PASSED [ 25%]
+tests/test_delete_user_permission.py::TestDeleteUserPermission::test_parent_delete_requires_delete_user_write PASSED [ 50%]
+tests/test_delete_user_permission.py::TestDeleteUserPermission::test_staff_delete_requires_delete_user_write PASSED [ 75%]
+tests/test_delete_user_permission.py::TestDeleteUserPermission::test_school_admin_can_delete_without_explicit_grant PASSED [100%]
+
+============================= 4 passed in 47.39s ==============================

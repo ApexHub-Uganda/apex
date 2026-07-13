@@ -139,7 +139,7 @@ def get_tenant_module_menu(tenant) -> list[dict[str, Any]]:
             continue
         children = [
             child for child in module["children"]
-            if child["feature_key"] in enabled
+            if child["feature_key"] in enabled and child["feature_key"] != "streams"
         ]
         modules.append({
             "key": module["key"],

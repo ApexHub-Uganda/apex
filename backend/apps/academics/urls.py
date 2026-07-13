@@ -1,6 +1,13 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from apps.academics.assignment_marks_views import (
+    AssignmentGradeCalculationApplyView,
+    AssignmentGradeCalculationOptionsView,
+    AssignmentMarksBulkView,
+    AssignmentMarksCreateView,
+    AssignmentMarksOptionsView,
+)
 from apps.academics.views import (
     AcademicWorkspaceView,
     AcademicYearViewSet,
@@ -15,6 +22,7 @@ from apps.academics.views import (
     StreamViewSet,
     SubjectPaperViewSet,
     SubjectViewSet,
+    TeachingAssignmentViewSet,
     TermViewSet,
     TimetableViewSet,
 )
@@ -28,6 +36,7 @@ router.register("streams", StreamViewSet, basename="stream")
 router.register("subjects", SubjectViewSet, basename="subject")
 router.register("subject-papers", SubjectPaperViewSet, basename="subject-paper")
 router.register("timetables", TimetableViewSet, basename="timetable")
+router.register("teaching-assignments", TeachingAssignmentViewSet, basename="teaching-assignment")
 router.register("assignments", AssignmentViewSet, basename="assignment")
 router.register("homework", HomeworkViewSet, basename="homework")
 router.register("periods", PeriodViewSet, basename="period")
@@ -37,5 +46,10 @@ router.register("discipline-remarks", DisciplineRemarkViewSet, basename="discipl
 
 urlpatterns = [
     path("workspace/", AcademicWorkspaceView.as_view(), name="academic-workspace"),
+    path("assignment-marks/options/", AssignmentMarksOptionsView.as_view(), name="assignment-marks-options"),
+    path("assignment-marks/create/", AssignmentMarksCreateView.as_view(), name="assignment-marks-create"),
+    path("assignment-marks/bulk/", AssignmentMarksBulkView.as_view(), name="assignment-marks-bulk"),
+    path("assignment-grades/options/", AssignmentGradeCalculationOptionsView.as_view(), name="assignment-grades-options"),
+    path("assignment-grades/apply/", AssignmentGradeCalculationApplyView.as_view(), name="assignment-grades-apply"),
     path("", include(router.urls)),
 ]

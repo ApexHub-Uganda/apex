@@ -96,6 +96,11 @@ export const ENTITY_REGISTRY_EXTRAS = {
     'Classes, streams, and enrolment capacity',
     { to: '/school-admin/academics', label: 'Academics' },
   ),
+  streams: redirectEntry(
+    '/school-admin/classes',
+    'Streams are managed inside each class',
+    { to: '/school-admin/academics', label: 'Academics' },
+  ),
   student_management: redirectEntry(
     '/school-admin/students',
     'Student profiles, enrolment, and academic records',
@@ -287,50 +292,22 @@ export const ENTITY_REGISTRY_EXTRAS = {
   },
 
   grading: {
-    service: gradingScalesService,
-    queryKey: ['grading-scales'],
-    createLabel: 'Add Grade Band',
-    subtitle: 'Letter grades and score ranges for assessments',
+    redirectTo: '/school-admin/academics/grading',
+    subtitle: 'Named grading schemes with score ranges and letter grades',
     backLink: { to: '/school-admin/academics', label: 'Academics' },
-    columns: gradingScaleColumns,
-    formFields: gradingScaleFormFields,
-    emptyForm: gradingScaleEmptyForm,
   },
 
   assignments: {
-    service: assignmentsService,
-    queryKey: ['assignments'],
-    createLabel: 'Add Assignment',
-    subtitle: 'Class assignments and due dates',
+    redirectTo: '/school-admin/academics/assignments',
+    subtitle: 'Enter marks and calculate grades for your teaching assignments',
     backLink: { to: '/school-admin/academics', label: 'Academics' },
-    columns: [
-      { key: 'title', label: 'Title', accessor: 'title', sortable: true },
-      { key: 'due_date', label: 'Due', accessor: 'due_date' },
-    ],
-    formFields: [
-      { name: 'title', label: 'Title', required: true },
-      { name: 'description', label: 'Description', type: 'textarea', required: true },
-      { name: 'school_class', label: 'Class', type: 'select', required: true, optionsFrom: 'classes' },
-      { name: 'subject', label: 'Subject', type: 'select', required: true, optionsFrom: 'subjects' },
-      { name: 'due_date', label: 'Due Date', type: 'datetime-local', required: true },
-      { name: 'max_score', label: 'Max Score', type: 'number' },
-    ],
-    emptyForm: {
-      title: '', description: '', school_class: '', subject: '',
-      due_date: '', max_score: 100,
-    },
   },
 
   // ── Examinations ────────────────────────────────────────────────────────
   grade_calculation: {
-    service: gradingScalesService,
-    queryKey: ['grade-calculation-scales'],
-    createLabel: 'Add Scale Entry',
-    subtitle: 'Configure how numeric scores map to letter grades',
+    redirectTo: '/school-admin/examinations/grades',
+    subtitle: 'Apply a grading scheme to entered marks and generate letter grades',
     backLink: { to: '/school-admin/examinations', label: 'Examinations' },
-    columns: gradingScaleColumns,
-    formFields: gradingScaleFormFields,
-    emptyForm: gradingScaleEmptyForm,
   },
 
   marks_entry: redirectEntry(

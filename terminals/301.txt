@@ -1,0 +1,30 @@
+---
+pid: 13008
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_bulk_import.py::test_student_import_template_endpoint_defaults_to_excel tests/test_bulk_import.py::test_staff_import_template_endpoint_for_school_admin -q --tb=short 2>&1"
+started_at: 2026-07-10T05:44:50.288Z
+running_for_ms: 6880014  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 2 items
+
+tests\test_bulk_import.py .F                                             [100%]
+
+================================== FAILURES ===================================
+____________ test_staff_import_template_endpoint_for_school_admin _____________
+tests\test_bulk_import.py:281: in test_staff_import_template_endpoint_for_school_admin
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <Response status_code=404, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 22:45:37,614 log Not Found: /api/v1/staff/import-template/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/staff/import-template/
+=========================== short test summary info ===========================
+FAILED tests/test_bulk_import.py::test_staff_import_template_endpoint_for_school_admin
+======================== 1 failed, 1 passed in 44.30s =========================

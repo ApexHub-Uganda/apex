@@ -1,0 +1,31 @@
+---
+pid: 22320
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_academic_singleton.py tests/test_academic_scoping.py -q --tb=short 2>&1"
+started_at: 2026-07-09T07:27:40.825Z
+running_for_ms: 13180011 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 15 items
+
+tests\test_academic_singleton.py ...F..                                  [ 40%]
+tests\test_academic_scoping.py .........                                 [100%]
+
+================================== FAILURES ===================================
+_____________ TestAcademicSingleton.test_academic_year_list_meta ______________
+tests\test_academic_singleton.py:154: in test_academic_year_list_meta
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <HttpResponseNotFound status_code=404, "text/html; charset=utf-8">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 00:28:30,223 log Not Found: /api/v1/academics/academic-years/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/academics/academic-years/
+=========================== short test summary info ===========================
+FAILED tests/test_academic_singleton.py::TestAcademicSingleton::test_academic_year_list_meta
+======================== 1 failed, 14 passed in 56.65s ========================

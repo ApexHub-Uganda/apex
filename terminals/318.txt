@@ -1,0 +1,34 @@
+---
+pid: 15388
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_canonical_plans.py tests/test_plan_delete.py tests/test_subscriptions.py -v --tb=short 2>&1"
+started_at: 2026-07-10T13:07:18.946Z
+running_for_ms: 1130002  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\solid\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cachedir: .pytest_cache
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collecting ... collected 16 items
+
+tests/test_canonical_plans.py::TestCanonicalPlans::test_api_blocks_plan_creation PASSED [  6%]
+tests/test_canonical_plans.py::TestCanonicalPlans::test_ensure_canonical_plans_upserts_only_four_tiers PASSED [ 12%]
+tests/test_canonical_plans.py::TestCanonicalPlans::test_prune_orphan_plans_removes_test_artifacts PASSED [ 18%]
+tests/test_canonical_plans.py::TestCanonicalPlans::test_management_command_prunes_orphans PASSED [ 25%]
+tests/test_plan_delete.py::TestPlanDelete::test_deletion_preview_lists_reassign_options PASSED [ 31%]
+tests/test_plan_delete.py::TestPlanDelete::test_delete_requires_reassign_when_subscriptions_exist PASSED [ 37%]
+tests/test_plan_delete.py::TestPlanDelete::test_delete_with_reassign_moves_subscriptions PASSED [ 43%]
+tests/test_plan_delete.py::TestPlanDelete::test_can_delete_unused_plan PASSED [ 50%]
+tests/test_plan_delete.py::TestPlanDelete::test_cannot_reassign_to_same_plan PASSED [ 56%]
+tests/test_subscriptions.py::TestSubscriptions::test_list_public_plans PASSED [ 62%]
+tests/test_subscriptions.py::TestSubscriptions::test_tenant_has_feature_from_plan PASSED [ 68%]
+tests/test_subscriptions.py::TestSubscriptions::test_subscription_expiry PASSED [ 75%]
+tests/test_subscriptions.py::TestSubscriptions::test_subscription_grace_period PASSED [ 81%]
+tests/test_subscriptions.py::TestSubscriptions::test_current_subscription_endpoint PASSED [ 87%]
+tests/test_subscriptions.py::TestSubscriptions::test_plan_feature_catalog_assignment PASSED [ 93%]
+tests/test_subscriptions.py::TestSubscriptions::test_feature_catalog_api PASSED [100%]
+
+======================== 16 passed in 92.31s (0:01:32) ========================

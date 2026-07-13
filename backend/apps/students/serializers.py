@@ -6,6 +6,7 @@ from apps.accounts.avatar_service import resolve_avatar_url, user_has_avatar
 from apps.core.email_validation import validate_deliverable_email
 from apps.core.media_utils import resolve_media_url
 from apps.students.models import Admission, Guardian, MedicalRecord, Parent, Student
+from apps.students.profile import is_profile_incomplete
 
 READ_ONLY = ["id", "tenant", "created_at", "updated_at", "created_by", "updated_by", "is_deleted"]
 
@@ -129,6 +130,7 @@ class StudentListSerializer(serializers.ModelSerializer):
     photo_url = serializers.SerializerMethodField()
     avatar_url = serializers.SerializerMethodField()
     has_avatar = serializers.SerializerMethodField()
+    is_profile_incomplete = serializers.SerializerMethodField()
 
     class Meta:
         model = Student
@@ -137,7 +139,11 @@ class StudentListSerializer(serializers.ModelSerializer):
             "gender", "date_of_birth", "status", "class_name", "stream_name",
             "boarding_status", "upi_number", "county", "phone", "parent_names",
             "enrollment_date", "photo_url", "avatar_url", "has_avatar",
+            "is_profile_incomplete",
         ]
+
+    def get_is_profile_incomplete(self, obj) -> bool:
+        return is_profile_incomplete(obj)
 
     def get_photo_url(self, obj) -> str | None:
         return resolve_media_url(self.context.get("request"), obj.photo)
@@ -191,6 +197,7 @@ class StudentDetailSerializer(serializers.ModelSerializer):
 
 class StudentSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(read_only=True)
+    admission_number = serializers.CharField(required=False, allow_blank=True, default="")
 
     class Meta:
         model = Student
@@ -199,7 +206,29 @@ class StudentSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         _validate_optional_emails(attrs, ("email", "alternate_email"))
+        admission_number = (attrs.get("admission_number") or "").strip()
+        if admission_number:
+            attrs["admission_number"] = admission_number
+        elif not attrs.get("school_class"):
+            raise serializers.ValidationError({
+                "admission_number": "Admission number is required when no class is selected.",
+            })
         return attrs
+
+    def create(self, validated_data):
+        if not (validated_data.get("admission_number") or "").strip() and validated_data.get("school_class"):
+            from apps.students.profile import generate_admission_number
+
+            tenant = validated_data.get("tenant")
+            if tenant is None:
+                request = self.context.get("request")
+                tenant = getattr(request.user, "tenant", None) if request else None
+            if tenant is not None:
+                validated_data["admission_number"] = generate_admission_number(
+                    tenant,
+                    school_class=validated_data["school_class"],
+                )
+        return super().create(validated_data)
 
 
 class GuardianSerializer(serializers.ModelSerializer):

@@ -3,8 +3,9 @@ import { CORE_FEATURE_KEYS } from '../config/navigation';
 import UpgradeRequired from '../pages/shared/UpgradeRequired';
 import AccessDenied from '../pages/shared/AccessDenied';
 
-export function FeatureGate({ featureKey, children }) {
+export function FeatureGate({ featureKey, featureKeys, children }) {
   const { isFeatureEnabled, canAccessFeature, isSchoolAdmin, loading } = useTenantContext();
+  const keys = (featureKeys?.length ? featureKeys : (featureKey ? [featureKey] : []));
 
   if (loading) {
     return (
@@ -14,19 +15,19 @@ export function FeatureGate({ featureKey, children }) {
     );
   }
 
-  if (!featureKey || CORE_FEATURE_KEYS.includes(featureKey)) {
+  if (!keys.length || keys.some((k) => CORE_FEATURE_KEYS.includes(k))) {
     return children;
   }
 
-  if (!isSchoolAdmin && !canAccessFeature(featureKey, false)) {
+  if (!isSchoolAdmin && !keys.some((k) => canAccessFeature(k, false))) {
     return <AccessDenied message={`Your role does not have permission to access this area. Contact your school admin to update Permission Settings.`} />;
   }
 
-  if (isFeatureEnabled(featureKey)) {
+  if (keys.some((k) => isFeatureEnabled(k))) {
     return children;
   }
 
-  return <UpgradeRequired featureKey={featureKey} />;
+  return <UpgradeRequired featureKey={keys[0]} />;
 }
 
 export default FeatureGate;

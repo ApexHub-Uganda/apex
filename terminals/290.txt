@@ -1,0 +1,43 @@
+---
+pid: 15640
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_bulk_import.py tests/test_staff_onboarding.py tests/test_student_import_class_teacher.py -q --tb=line 2>&1"
+started_at: 2026-07-10T05:13:02.427Z
+running_for_ms: 119999   
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 23 items
+
+tests\test_bulk_import.py ......F..                                      [ 39%]
+tests\test_staff_onboarding.py ......                                    [ 65%]
+tests\test_student_import_class_teacher.py .                             [ 69%]
+tests\test_bulk_import.py .F.F.FF                                        [100%]
+
+================================== FAILURES ===================================
+E   assert 0 == 2
+E:\apex\backend\tests\test_bulk_import.py:226: assert 0 == 2
+E   AssertionError: assert ('First Name'...ail', 'Phone') == ('First Name'...me', 'Gender')
+      
+      At index 2 diff: 'Email' != 'Gender'
+      Left contains one more item: 'Phone'
+      Use -v to get more diff
+E:\apex\backend\tests\test_bulk_import.py:70: AssertionError: assert ('First Name'...ail', 'Phone') == ('First Name'...me', 'Gender')
+E   AssertionError: assert 'Gender' in 'First Name,Last Name,Email,Phone\r\n(required),(required),(required),(required)\r\n'
+E:\apex\backend\tests\test_bulk_import.py:84: AssertionError: assert 'Gender' in 'First Name,Last Name,Email,Phone\r\n(required),(required),(required),(required)\r\n'
+E   assert False
+     +  where False = any(<generator object test_validate_headers_missing_required.<locals>.<genexpr> at 0x000001A7D063AF60>)
+E:\apex\backend\tests\test_bulk_import.py:100: assert False
+E   assert 0 == 1
+E:\apex\backend\tests\test_bulk_import.py:109: assert 0 == 1
+=========================== short test summary info ===========================
+FAILED tests/test_bulk_import.py::test_student_validate_import_endpoint - ass...
+FAILED tests/test_bulk_import.py::test_generate_excel_template_has_minimal_headers
+FAILED tests/test_bulk_import.py::test_generate_csv_template_has_minimal_headers
+FAILED tests/test_bulk_import.py::test_validate_headers_missing_required - as...
+FAILED tests/test_bulk_import.py::test_gender_accepts_m_and_f - assert 0 == 1
+=================== 5 failed, 18 passed in 68.12s (0:01:08) ===================

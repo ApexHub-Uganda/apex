@@ -14,6 +14,12 @@ from apps.subscriptions.models import (
     Plan,
     Subscription,
 )
+from apps.subscriptions.canonical_plans import (
+    CANONICAL_PLAN_SLUGS,
+    NonCanonicalPlanError,
+    assert_canonical_plan_slug,
+    is_canonical_plan_slug,
+)
 from apps.subscriptions.plan_tiers import (
     PlanInheritanceError,
     get_inherited_feature_keys,
@@ -105,16 +111,6 @@ class PlanSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Yearly price cannot be negative.")
         return value
 
-    def validate(self, attrs: dict) -> dict:
-        limits = ["max_students", "max_staff", "max_parents", "max_branches",
-                  "max_storage_mb", "max_sms_monthly", "max_emails_monthly",
-                  "trial_days", "grace_period_days"]
-        for field in limits:
-            val = attrs.get(field, getattr(self.instance, field, None) if self.instance else None)
-            if val is not None and val < 0:
-                raise serializers.ValidationError({field: "Must be zero or greater."})
-        return attrs
-
     def get_features(self, obj: Plan) -> list[str]:
         return list(
             obj.features.filter(is_active=True)
@@ -148,6 +144,30 @@ class PlanSerializer(serializers.ModelSerializer):
     def get_feature_inheritance_summary(self, obj: Plan) -> str | None:
         return get_plan_feature_breakdown(obj).get("inherited_summary")
 
+    def validate_slug(self, value: str) -> str:
+        if not is_canonical_plan_slug(value):
+            allowed = ", ".join(sorted(CANONICAL_PLAN_SLUGS))
+            raise serializers.ValidationError(
+                f"New plans cannot be created. Only platform tiers are allowed: {allowed}.",
+            )
+        return assert_canonical_plan_slug(value)
+
+    def validate(self, attrs: dict) -> dict:
+        limits = [
+            "max_students", "max_staff", "max_parents", "max_branches",
+            "max_storage_mb", "max_sms_monthly", "max_emails_monthly",
+            "trial_days", "grace_period_days",
+        ]
+        for field in limits:
+            val = attrs.get(field, getattr(self.instance, field, None) if self.instance else None)
+            if val is not None and val < 0:
+                raise serializers.ValidationError({field: "Must be zero or greater."})
+        if self.instance and "slug" in attrs and attrs["slug"] != self.instance.slug:
+            raise serializers.ValidationError({
+                "slug": "Plan slug cannot be changed after creation.",
+            })
+        return attrs
+
     def validate_enabled_feature_keys(self, value: list[str]) -> list[str]:
         slug = self.initial_data.get("slug") or getattr(self.instance, "slug", None)
         if slug and value is not None:
@@ -159,11 +179,12 @@ class PlanSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data: dict) -> Plan:
-        keys = validated_data.pop("enabled_feature_keys", [])
-        plan = Plan.objects.create(**validated_data)
-        if keys is not None:
-            assign_plan_features(plan, keys)
-        return plan
+        raise serializers.ValidationError({
+            "non_field_errors": [
+                "Subscription plans are fixed platform tiers and cannot be created via the API. "
+                "Use the ensure_canonical_plans management command to seed the four standard plans.",
+            ],
+        })
 
     @transaction.atomic
     def update(self, instance: Plan, validated_data: dict) -> Plan:

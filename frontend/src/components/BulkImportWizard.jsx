@@ -11,6 +11,7 @@ export function BulkImportWizard({
   onHide,
   title = 'Bulk Import',
   description,
+  templateHint,
   profileNote,
   importService,
   onSuccess,
@@ -40,8 +41,8 @@ export function BulkImportWizard({
     try {
       await importService.downloadTemplate();
       setStep(1);
-    } catch {
-      setError('Unable to download template. Try again.');
+    } catch (err) {
+      setError(err?.message || 'Unable to download template. Try again.');
     } finally {
       setLoading(false);
     }
@@ -143,10 +144,14 @@ export function BulkImportWizard({
             <div className="bulk-import-icon-wrap">
               <FiDownload size={28} />
             </div>
-            <h6 className="fw-bold mb-2">Get the CSV template</h6>
+            <h6 className="fw-bold mb-2">Get the Excel template</h6>
             <p className="text-muted small mb-0">
-              Download a <strong>minimal</strong> template — only essential fields to get records in fast.
-              Fill in Excel or Google Sheets, then save as <strong>CSV UTF-8</strong> before uploading.
+              {templateHint || (
+                <>
+                  Download a <strong>minimal</strong> Excel template — only essential fields to get records in fast.
+                  Fill it in and upload directly, or save as CSV if you prefer.
+                </>
+              )}
             </p>
           </div>
         )}
@@ -156,12 +161,12 @@ export function BulkImportWizard({
             <label className="bulk-import-dropzone">
               <input
                 type="file"
-                accept=".csv,.txt"
+                accept=".xlsx,.xlsm,.csv,.txt"
                 className="d-none"
                 onChange={(e) => { setFile(e.target.files?.[0] || null); setError(''); }}
               />
               <FiUpload size={28} className="text-primary mb-2" />
-              <div className="fw-medium">{file ? file.name : 'Choose CSV file'}</div>
+              <div className="fw-medium">{file ? file.name : 'Choose Excel or CSV file'}</div>
               <div className="text-muted small">or drag and drop here</div>
             </label>
             {file && (

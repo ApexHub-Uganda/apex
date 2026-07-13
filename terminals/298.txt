@@ -1,0 +1,22 @@
+---
+pid: 15676
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_bulk_import.py tests/test_class_hub.py tests/test_student_import_class_teacher.py tests/test_staff_onboarding.py -q --tb=short 2>&1"
+started_at: 2026-07-10T05:29:39.838Z
+running_for_ms: 7790004  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 39 items
+
+tests\test_bulk_import.py .........                                      [ 23%]
+tests\test_class_hub.py .............                                    [ 56%]
+tests\test_student_import_class_teacher.py ....                          [ 66%]
+tests\test_staff_onboarding.py ......                                    [ 82%]
+tests\test_bulk_import.py .......                                        [100%]
+
+======================== 39 passed in 73.66s (0:01:13) ========================

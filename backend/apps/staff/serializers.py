@@ -6,9 +6,31 @@ from apps.accounts.avatar_service import resolve_avatar_url, user_has_avatar
 from apps.core.constants import UserRole
 from apps.core.serializer_fields import DeliverableEmailField
 from apps.core.media_utils import resolve_media_url
+from apps.academics.models import Department
 from apps.staff.models import Staff, Teacher
+from apps.tenants.context import TenantContext
 from apps.staff.services import StaffOnboardingError, onboard_staff, update_staff_record
 from apps.staff.staff_roles import get_role_definition, list_staff_role_options
+
+
+def _tenant_department_queryset(context: dict):
+    request = context.get("request")
+    tenant = TenantContext.get_tenant()
+    if tenant is None and request and getattr(request.user, "tenant_id", None):
+        tenant = request.user.tenant
+    if tenant is None:
+        return Department.objects.none()
+    return Department.objects.filter(tenant=tenant, is_deleted=False)
+
+
+def _tenant_staff_queryset(context: dict):
+    request = context.get("request")
+    tenant = TenantContext.get_tenant()
+    if tenant is None and request and getattr(request.user, "tenant_id", None):
+        tenant = request.user.tenant
+    if tenant is None:
+        return Staff.objects.none()
+    return Staff.objects.filter(tenant=tenant, is_deleted=False)
 
 
 class TeacherNestedSerializer(serializers.ModelSerializer):
@@ -118,8 +140,21 @@ class StaffOnboardSerializer(serializers.Serializer):
     )
     portal_role = serializers.ChoiceField(choices=UserRole.CHOICES)
     designation = serializers.CharField(required=False, allow_blank=True, max_length=100)
-    department = serializers.UUIDField(required=False, allow_null=True)
-    supervisor = serializers.UUIDField(required=False, allow_null=True)
+    department = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.none(),
+        required=False,
+        allow_null=True,
+    )
+    supervisor = serializers.PrimaryKeyRelatedField(
+        queryset=Staff.objects.none(),
+        required=False,
+        allow_null=True,
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["department"].queryset = _tenant_department_queryset(self.context)
+        self.fields["supervisor"].queryset = _tenant_staff_queryset(self.context)
     date_joined = serializers.DateField(required=False)
     employment_type = serializers.ChoiceField(
         choices=[("full_time", "Full Time"), ("part_time", "Part Time"), ("contract", "Contract"), ("intern", "Intern")],
@@ -172,6 +207,21 @@ class StaffUpdateSerializer(serializers.ModelSerializer):
     teacher = TeacherNestedSerializer(required=False)
     email = DeliverableEmailField()
     personal_email = DeliverableEmailField(required=False, allow_blank=True)
+    department = serializers.PrimaryKeyRelatedField(
+        queryset=Department.objects.none(),
+        required=False,
+        allow_null=True,
+    )
+    supervisor = serializers.PrimaryKeyRelatedField(
+        queryset=Staff.objects.none(),
+        required=False,
+        allow_null=True,
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["department"].queryset = _tenant_department_queryset(self.context)
+        self.fields["supervisor"].queryset = _tenant_staff_queryset(self.context)
 
     class Meta:
         model = Staff

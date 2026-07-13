@@ -14,7 +14,10 @@ MAINTENANCE_MESSAGE = "Apex Hub is currently under maintenance. Please try again
 BYPASS_PATH_PREFIXES = (
     "/api/v1/auth/login/",
     "/api/v1/auth/refresh/",
+    "/api/v1/tenants/register/",
     "/api/v1/platform/health/",
+    "/api/v1/platform/settings/public/",
+    "/api/v1/subscriptions/plans/",
     "/admin/",
 )
 

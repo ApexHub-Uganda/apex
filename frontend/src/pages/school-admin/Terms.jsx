@@ -5,6 +5,7 @@ import { FiArrowLeft, FiPlus } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
+import CurrentRecordPanel from '../../components/CurrentRecordPanel';
 import { Modal } from '../../components/Modal';
 import { academicYearsService, termsService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
@@ -17,17 +18,23 @@ const EMPTY_FORM = {
 
 export function Terms() {
   const queryClient = useQueryClient();
-  const { canWriteModule } = usePermissions();
+  const { canWriteModule, isSchoolAdmin } = usePermissions();
   const canManage = canWriteModule('terms') || canWriteModule('academics');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
-  const { data: terms = [], isLoading, isError } = useQuery({
-    queryKey: ['terms'],
-    queryFn: () => termsService.list(),
+  const { data: listPayload, isLoading, isError } = useQuery({
+    queryKey: ['terms', 'meta'],
+    queryFn: () => termsService.listWithMeta({ page_size: 200 }),
   });
+
+  const terms = listPayload?.records ?? [];
+  const listMeta = listPayload?.meta ?? null;
+  const creationLocked = Boolean(listMeta?.creation_locked);
+  const canCreate = canManage && !creationLocked;
+  const hideTermTable = Boolean(creationLocked && listMeta?.active_record && !isSchoolAdmin);
 
   const { data: years = [] } = useQuery({
     queryKey: ['academic-years'],
@@ -104,10 +111,20 @@ export function Terms() {
         </Link>
       </div>
 
+      {listMeta?.active_record && (
+        <CurrentRecordPanel
+          title="Current academic term"
+          record={listMeta.active_record}
+          lockReason={listMeta.lock_reason}
+          creationLocked={creationLocked}
+          type="term"
+        />
+      )}
+
       <PageHeader
         title="Terms"
         subtitle="Kenyan 3-term calendar — reporting dates, mid-term breaks, and term numbers"
-        actions={canManage && (
+        actions={canCreate && (
           <button type="button" className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1" onClick={openCreate}>
             <FiPlus size={16} /> Add Term
           </button>
@@ -116,7 +133,7 @@ export function Terms() {
 
       {isError ? (
         <div className="alert alert-danger">Unable to load terms.</div>
-      ) : (
+      ) : hideTermTable ? null : (
         <div className="apex-card p-3 p-md-4">
           <DataTable
             columns={columns}
@@ -125,10 +142,14 @@ export function Terms() {
             onRowClick={canManage ? openEdit : undefined}
             emptyState={(
               <ModuleEmptyState
-                title="No terms configured"
-                message="Set up Term 1, 2, and 3 for the academic year before fee structures."
-                actionLabel={canManage ? 'Add Term' : undefined}
-                onAction={canManage ? openCreate : undefined}
+                title={creationLocked ? 'Active term in progress' : 'No terms configured'}
+                message={
+                  creationLocked
+                    ? (listMeta?.lock_reason || 'The current term must end before a new term can be created.')
+                    : 'Set up Term 1, 2, and 3 for the academic year before fee structures.'
+                }
+                actionLabel={canCreate ? 'Add Term' : undefined}
+                onAction={canCreate ? openCreate : undefined}
               />
             )}
           />

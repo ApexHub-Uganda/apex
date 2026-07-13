@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PlanEditorWorkspace from '../../components/PlanEditorWorkspace';
@@ -13,15 +13,21 @@ export function PlanEditor() {
   const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const isNew = planId === 'new';
+  const returnTab = searchParams.get('tab') || 'plans';
+  const returnPath = `/super-admin/plans${returnTab ? `?tab=${returnTab}` : ''}`;
+
+  useEffect(() => {
+    if (isNew) {
+      notify.info('Subscription plans are fixed platform tiers and cannot be created from the dashboard.');
+      navigate(returnPath, { replace: true });
+    }
+  }, [isNew, navigate, returnPath]);
 
   const { data: plan, isLoading, isError } = useQuery({
     queryKey: ['plan-editor', planId],
     queryFn: () => plansService.get(planId),
     enabled: !isNew,
   });
-
-  const returnTab = searchParams.get('tab') || 'plans';
-  const returnPath = `/super-admin/plans${returnTab ? `?tab=${returnTab}` : ''}`;
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['plans-subscriptions-hub'] });
@@ -35,16 +41,8 @@ export function PlanEditor() {
   const handleSave = async (formData) => {
     setSaving(true);
     try {
-      if (isNew) {
-        await plansService.create({
-          ...formData,
-          slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '_'),
-        });
-        notify.success('Plan created successfully.');
-      } else {
-        await plansService.update(planId, formData);
-        notify.success('Plan updated successfully.');
-      }
+      await plansService.update(planId, formData);
+      notify.success('Plan updated successfully.');
       invalidateAll();
       navigate(returnPath);
     } catch (err) {
@@ -54,9 +52,11 @@ export function PlanEditor() {
     }
   };
 
-  if (!isNew && isLoading) return <PageSkeleton />;
+  if (isNew) return null;
 
-  if (!isNew && isError) {
+  if (isLoading) return <PageSkeleton />;
+
+  if (isError) {
     return (
       <div className="apex-card p-5 text-center">
         <h5 className="fw-bold">Unable to load plan</h5>
@@ -70,7 +70,7 @@ export function PlanEditor() {
 
   return (
     <PlanEditorWorkspace
-      plan={isNew ? null : plan}
+      plan={plan}
       onSave={handleSave}
       onCancel={handleCancel}
       saving={saving}

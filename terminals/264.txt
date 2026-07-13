@@ -1,0 +1,25 @@
+---
+pid: 9864
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_bulk_import.py -q"
+started_at: 2026-07-09T12:16:40.784Z
+running_for_ms: 4550007  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 16 items
+
+tests\test_bulk_import.py ....F...........                               [100%]
+
+================================== FAILURES ===================================
+___________ test_student_import_template_endpoint_defaults_to_excel ___________
+tests\test_bulk_import.py:181: in test_student_import_template_endpoint_defaults_to_excel
+    assert "student_import_template.xlsx" in response["Content-Disposition"]
+E   assert 'student_import_template.xlsx' in 'attachment; filename="students_import_template.xlsx"'
+=========================== short test summary info ===========================
+FAILED tests/test_bulk_import.py::test_student_import_template_endpoint_defaults_to_excel
+======================== 1 failed, 15 passed in 50.13s ========================

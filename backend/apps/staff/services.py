@@ -19,6 +19,15 @@ class StaffOnboardingError(Exception):
     pass
 
 
+def _coerce_uuid_pk(value: Any) -> Any:
+    """Normalize FK payloads that may be UUID strings, model instances, or empty."""
+    if value in (None, ""):
+        return None
+    if hasattr(value, "pk"):
+        return value.pk
+    return value
+
+
 def _next_employee_id(tenant) -> str:
     prefix = tenant.code or "EMP"
     count = Staff.all_objects.filter(tenant=tenant).count() + 1
@@ -69,6 +78,7 @@ def onboard_staff(
             raise StaffOnboardingError(
                 "This email is already registered as a portal user. Use a different work email."
             )
+        admin_supplied_password = bool((data.get("password") or "").strip())
         temp_password = data.get("password") or _generate_temp_password()
         user = User.objects.create_user(
             email=email,
@@ -81,6 +91,16 @@ def onboard_staff(
             is_active=True,
             is_email_verified=bool(data.get("mark_email_verified", False)),
         )
+        if not admin_supplied_password:
+            user.must_change_password = True
+            user.save(update_fields=["must_change_password", "updated_at"])
+            from apps.staff.portal_credentials import send_staff_portal_credentials_email
+
+            send_staff_portal_credentials_email(
+                user=user,
+                tenant=tenant,
+                temp_password=temp_password,
+            )
 
     staff = Staff.objects.create(
         tenant=tenant,
@@ -100,7 +120,7 @@ def onboard_staff(
         staff_category=staff_category,
         portal_role=portal_role,
         designation=designation,
-        department_id=data.get("department"),
+        department_id=_coerce_uuid_pk(data.get("department")),
         date_joined=data.get("date_joined") or timezone.now().date(),
         employment_type=data.get("employment_type", "full_time"),
         status=data.get("status", "active"),
@@ -111,7 +131,7 @@ def onboard_staff(
         has_portal_access=has_portal_access,
         qualification_summary=data.get("qualification_summary", ""),
         notes=data.get("notes", ""),
-        supervisor_id=data.get("supervisor"),
+        supervisor_id=_coerce_uuid_pk(data.get("supervisor")),
         created_by=actor,
         updated_by=actor,
     )
@@ -159,9 +179,9 @@ def update_staff_record(staff: Staff, *, actor=None, data: dict[str, Any]) -> St
     if "email" in data:
         staff.email = email
     if "department" in data:
-        staff.department_id = data["department"]
+        staff.department_id = _coerce_uuid_pk(data["department"])
     if "supervisor" in data:
-        staff.supervisor_id = data["supervisor"]
+        staff.supervisor_id = _coerce_uuid_pk(data["supervisor"])
     if "date_joined" in data:
         staff.date_joined = data["date_joined"]
     if "date_left" in data:

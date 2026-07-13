@@ -14,7 +14,47 @@ from apps.examinations.constants import (
 )
 
 
+class GradingScheme(BaseModel):
+    """Named grading scheme — a set of score bands mapped to letter grades."""
+
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    is_default = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = [("tenant", "name")]
+        verbose_name = "grading scheme"
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class GradingSchemeBand(BaseModel):
+    """One score range within a grading scheme."""
+
+    scheme = models.ForeignKey(
+        GradingScheme,
+        on_delete=models.CASCADE,
+        related_name="bands",
+    )
+    min_score = models.DecimalField(max_digits=5, decimal_places=2)
+    max_score = models.DecimalField(max_digits=5, decimal_places=2)
+    grade = models.CharField(max_length=5)
+    grade_point = models.DecimalField(max_digits=3, decimal_places=1, null=True, blank=True)
+    remarks = models.CharField(max_length=100, blank=True)
+
+    class Meta:
+        ordering = ["-min_score"]
+        verbose_name = "grading scheme band"
+
+    def __str__(self) -> str:
+        return f"{self.grade} ({self.min_score}–{self.max_score})"
+
+
 class GradingScale(BaseModel):
+    """Legacy flat grading rows — superseded by GradingScheme + GradingSchemeBand."""
+
     name = models.CharField(max_length=100)
     min_score = models.DecimalField(max_digits=5, decimal_places=2)
     max_score = models.DecimalField(max_digits=5, decimal_places=2)
@@ -69,7 +109,14 @@ class Exam(BaseModel):
         help_text="Optional paper when the subject has multiple papers",
     )
     school_class = models.ForeignKey("academics.Class", on_delete=models.CASCADE, related_name="exams")
-    term = models.ForeignKey("academics.Term", on_delete=models.CASCADE, related_name="exams")
+    term = models.ForeignKey(
+        "academics.Term",
+        on_delete=models.CASCADE,
+        related_name="exams",
+        null=True,
+        blank=True,
+        help_text="Optional for class assignments tracked outside term examinations",
+    )
     examination_session = models.ForeignKey(
         ExaminationSession,
         on_delete=models.SET_NULL,
@@ -86,6 +133,7 @@ class Exam(BaseModel):
             ("midterm", "Midterm"),
             ("final", "Final"),
             ("continuous", "Continuous Assessment"),
+            ("assignment", "Class Assignment"),
         ],
         default="final",
     )

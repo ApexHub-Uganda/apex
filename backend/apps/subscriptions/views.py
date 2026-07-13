@@ -65,6 +65,23 @@ class PlanViewSet(viewsets.ModelViewSet):
     filterset_fields = ["is_active", "is_public"]
     search_fields = ["name", "slug"]
 
+    def create(self, request: Request, *args, **kwargs) -> Response:
+        return Response(
+            {
+                "success": False,
+                "message": (
+                    "Subscription plans are fixed platform tiers (Free Trial, Basic, Premium, "
+                    "Premium Plus) and cannot be created from the dashboard. "
+                    "Run `python manage.py ensure_canonical_plans` to seed or repair the catalog."
+                ),
+                "error": {
+                    "code": "plan_creation_disabled",
+                    "message": "Only the four platform tier plans are supported.",
+                },
+            },
+            status=status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+
     @action(detail=True, methods=["get"], url_path="deletion-preview")
     def deletion_preview(self, request: Request, pk: str = None) -> Response:
         plan = self.get_object()

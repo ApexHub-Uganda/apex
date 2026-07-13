@@ -235,13 +235,26 @@ def get_effective_feature_permissions(tenant, role: str) -> dict[str, dict[str, 
 
         for child in children:
             feature_key = child["feature_key"]
-            resolved[feature_key] = _resolve_feature_permission(
+            next_perm = _resolve_feature_permission(
                 canonical=canonical,
                 feature_key=feature_key,
                 mod_perms=mod_perms,
                 granular=granular,
                 stored_features=stored_features,
             )
+            prev_perm = resolved.get(feature_key)
+            if prev_perm is None:
+                resolved[feature_key] = next_perm
+            else:
+                resolved[feature_key] = {
+                    "can_read": prev_perm["can_read"] or next_perm["can_read"],
+                    "can_write": prev_perm["can_write"] or next_perm["can_write"],
+                }
+
+    if "classes" in resolved:
+        resolved["streams"] = resolved["classes"]
+    elif "streams" in resolved:
+        resolved["classes"] = resolved["streams"]
 
     return resolved
 
@@ -249,8 +262,8 @@ def get_effective_feature_permissions(tenant, role: str) -> dict[str, dict[str, 
 def user_is_school_admin(user) -> bool:
     return bool(
         user
-        and user.is_authenticated
-        and user.role in (UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+        and getattr(user, "is_authenticated", False)
+        and normalize_role(getattr(user, "role", "")) in (UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
     )
 
 

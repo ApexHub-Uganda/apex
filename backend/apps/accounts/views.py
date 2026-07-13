@@ -206,8 +206,11 @@ class ChangePasswordView(generics.GenericAPIView):
     def post(self, request: Request) -> Response:
         ser = self.get_serializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        request.user.set_password(ser.validated_data["new_password"])
-        request.user.save()
+        user = request.user
+        user.set_password(ser.validated_data["new_password"])
+        if getattr(user, "must_change_password", False):
+            user.must_change_password = False
+        user.save(update_fields=["password", "must_change_password", "updated_at"])
         return Response({"success": True, "message": "Password changed successfully."})
 
 

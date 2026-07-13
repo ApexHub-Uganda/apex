@@ -1,0 +1,19 @@
+---
+pid: 7556
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_academic_scoping.py tests/test_marks_entry.py -q"
+started_at: 2026-07-09T10:29:30.043Z
+running_for_ms: 2270010  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 18 items
+
+tests\test_academic_scoping.py ...........                               [ 61%]
+tests\test_marks_entry.py .......                                        [100%]
+
+============================= 18 passed in 55.87s =============================

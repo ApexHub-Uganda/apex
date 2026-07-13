@@ -37,6 +37,7 @@ export const ENTITY_REGISTRY = {
   academic_years: {
     service: academicYearsService,
     queryKey: ['academic-years'],
+    singleton: { type: 'academic_year', title: 'Current academic year' },
     createLabel: 'Add Academic Year',
     subtitle: 'Define school years — required before terms and classes',
     backLink: { to: '/school-admin/academics', label: 'Academics' },
@@ -59,25 +60,6 @@ export const ENTITY_REGISTRY = {
       { name: 'is_current', label: 'Current Year', type: 'checkbox', checkboxLabel: 'Mark as current academic year' },
     ],
     emptyForm: { name: '', start_date: '', end_date: '', is_current: false },
-  },
-
-  streams: {
-    service: streamsService,
-    queryKey: ['streams'],
-    createLabel: 'Add Stream',
-    subtitle: 'Class streams e.g. A, B, East',
-    backLink: { to: '/school-admin/academics', label: 'Academics' },
-    columns: [
-      { key: 'name', label: 'Stream', accessor: 'name', sortable: true },
-      { key: 'school_class', label: 'Class ID', accessor: 'school_class' },
-      { key: 'capacity', label: 'Capacity', accessor: 'capacity' },
-    ],
-    formFields: [
-      { name: 'name', label: 'Stream Name', required: true },
-      { name: 'school_class', label: 'Class', type: 'select', required: true, optionsFrom: 'classes' },
-      { name: 'capacity', label: 'Capacity', type: 'number' },
-    ],
-    emptyForm: { name: '', school_class: '', capacity: 40 },
   },
 
   subjects: {
@@ -115,9 +97,9 @@ export const ENTITY_REGISTRY = {
     subtitle: 'Organizational units for staff, subjects, and reporting',
     backLink: { to: '/school-admin/core', label: 'Core Management' },
     columns: [
-      { key: 'name', label: 'Department', accessor: 'name', sortable: true },
-      { key: 'code', label: 'Code', accessor: 'code', width: '10%' },
-      { key: 'head_name', label: 'Head', accessor: 'head_name' },
+      { key: 'name', label: 'Department', accessor: 'name', sortable: true, primary: true },
+      { key: 'code', label: 'Code', accessor: 'code', primary: true },
+      { key: 'head_name', label: 'Head', accessor: 'head_name', primary: true },
       { key: 'description', label: 'Description', accessor: 'description' },
     ],
     formFields: [
@@ -176,28 +158,16 @@ export const ENTITY_REGISTRY = {
   },
 
   subject_assignment: {
-    service: assignmentsService,
-    queryKey: ['subject-assignments'],
-    createLabel: 'Add Assignment',
-    subtitle: 'Link subjects to classes with assignments',
-    backLink: { to: '/school-admin/academics', label: 'Academics' },
-    columns: [
-      { key: 'title', label: 'Title', accessor: 'title', sortable: true },
-      { key: 'due_date', label: 'Due', accessor: 'due_date' },
-    ],
-    formFields: [
-      { name: 'title', label: 'Title', required: true },
-      { name: 'description', label: 'Description', type: 'textarea', required: true },
-      { name: 'school_class', label: 'Class', type: 'select', required: true, optionsFrom: 'classes' },
-      { name: 'subject', label: 'Subject', type: 'select', required: true, optionsFrom: 'subjects' },
-      { name: 'due_date', label: 'Due Date', type: 'datetime-local', required: true },
-    ],
-    emptyForm: { title: '', description: '', school_class: '', subject: '', due_date: '' },
+    redirectTo: '/school-admin/academics/subject-assignments',
+  },
+  teacher_assignments: {
+    redirectTo: '/school-admin/academics/subject-assignments',
   },
 
   timetables: {
     service: timetablesService,
     queryKey: ['timetables'],
+    singleton: { type: 'term', title: 'Current academic term', hideTableWhenLocked: false },
     createLabel: 'Add Timetable Entry',
     subtitle: 'Weekly class timetable slots',
     backLink: { to: '/school-admin/academics', label: 'Academics' },

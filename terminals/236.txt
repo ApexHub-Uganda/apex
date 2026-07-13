@@ -1,0 +1,61 @@
+---
+pid: 17436
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_academic_singleton.py tests/test_academic_scoping.py -q --tb=short 2>&1"
+started_at: 2026-07-09T07:26:02.994Z
+running_for_ms: 13275002 
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 15 items
+
+tests\test_academic_singleton.py F..F.F                                  [ 40%]
+tests\test_academic_scoping.py ........F                                 [100%]
+
+================================== FAILURES ===================================
+_ TestAcademicSingleton.test_second_user_cannot_create_academic_year_while_active _
+tests\test_academic_singleton.py:114: in test_second_user_cannot_create_academic_year_while_active
+    assert response.status_code == 400
+E   assert 404 == 400
+E    +  where 404 = <HttpResponseNotFound status_code=404, "text/html; charset=utf-8">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 00:26:56,088 log Not Found: /api/v1/academics/academic-years/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/academics/academic-years/
+_____________ TestAcademicSingleton.test_academic_year_list_meta ______________
+tests\test_academic_singleton.py:154: in test_academic_year_list_meta
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <HttpResponseNotFound status_code=404, "text/html; charset=utf-8">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 00:26:59,839 log Not Found: /api/v1/academics/academic-years/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/academics/academic-years/
+________ TestAcademicSingleton.test_can_create_after_active_year_ends _________
+tests\test_academic_singleton.py:235: in test_can_create_after_active_year_ends
+    assert response.status_code in (200, 201)
+E   assert 404 in (200, 201)
+E    +  where 404 = <HttpResponseNotFound status_code=404, "text/html; charset=utf-8">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 00:27:02,920 log Not Found: /api/v1/academics/academic-years/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/academics/academic-years/
+__________ TestAcademicScoping.test_students_api_scoped_for_teacher ___________
+tests\test_academic_scoping.py:232: in test_students_api_scoped_for_teacher
+    assert response.status_code == 200
+E   assert 403 == 200
+E    +  where 403 = <Response status_code=403, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 00:27:11,223 log Forbidden: /api/v1/students/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Forbidden: /api/v1/students/
+=========================== short test summary info ===========================
+FAILED tests/test_academic_singleton.py::TestAcademicSingleton::test_second_user_cannot_create_academic_year_while_active
+FAILED tests/test_academic_singleton.py::TestAcademicSingleton::test_academic_year_list_meta
+FAILED tests/test_academic_singleton.py::TestAcademicSingleton::test_can_create_after_active_year_ends
+FAILED tests/test_academic_scoping.py::TestAcademicScoping::test_students_api_scoped_for_teacher
+=================== 4 failed, 11 passed in 65.19s (0:01:05) ===================

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FiEdit2, FiLink, FiPlus, FiUpload, FiUsers, FiX } from 'react-icons/fi';
+import { FiLink, FiPlus, FiUpload, FiUsers, FiX } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
@@ -10,8 +10,13 @@ import StatusBadge from '../../components/StatusBadge';
 import { parentsService, studentsService } from '../../services/moduleService';
 import { parentBulkImport } from '../../services/bulkImportService';
 import { usePermissions } from '../../hooks/usePermissions';
-import { PersonNameCell } from '../../components/PersonAvatar';
 import { extractApiError, notify } from '../../utils/notify';
+import TableCategoryFilters from '../../components/TableCategoryFilters';
+import { useTableCategoryFilters } from '../../hooks/useTableCategoryFilters';
+import { PARENT_DIRECTORY_FILTERS } from '../../config/directoryTableFilters';
+import { buildParentDirectoryColumns } from '../../config/directoryTableColumns.jsx';
+import { COL_WIDTH, nameColumn } from '../../utils/tableDisplay';
+import { PersonNameCell } from '../../components/PersonAvatar';
 
 const TABS = [
   { key: 'directory', label: 'Parent Directory' },
@@ -33,6 +38,14 @@ export function Parents() {
     queryKey: ['parents'],
     queryFn: () => parentsService.list(),
   });
+
+  const {
+    values: filterValues,
+    setFilter,
+    clearFilters,
+    filteredRows: filteredParents,
+    activeCount: activeFilterCount,
+  } = useTableCategoryFilters(parents, PARENT_DIRECTORY_FILTERS);
 
   const { data: matchingSummary, isLoading: summaryLoading } = useQuery({
     queryKey: ['parent-matching-summary'],
@@ -103,61 +116,26 @@ export function Parents() {
     }
   };
 
-  const columns = [
-    {
-      key: 'full_name',
-      label: 'Name',
-      accessor: 'full_name',
-      sortable: true,
-      render: (row) => <PersonNameCell row={row} />,
-    },
-    { key: 'phone', label: 'Phone', accessor: 'phone' },
-    { key: 'email', label: 'Email', accessor: 'email' },
-    { key: 'mpesa_phone', label: 'Mobile Money', accessor: 'mpesa_phone' },
-    { key: 'county', label: 'District', accessor: 'county' },
-    {
-      key: 'relationship_to_student',
-      label: 'Relationship',
-      render: (row) => row.relationship_to_student?.replace('_', ' ') || '—',
-    },
-    {
-      key: 'is_fee_payer',
-      label: 'Fee Payer',
-      render: (row) => (row.is_fee_payer
-        ? <span className="badge text-bg-success-subtle border text-success">Yes</span>
-        : <span className="text-muted">—</span>),
-    },
-    {
-      key: 'children_names',
-      label: 'Linked Learners',
-      render: (row) => row.children_names || <span className="text-muted">None</span>,
-    },
-    { key: 'children_count', label: 'Count', accessor: 'children_count', sortable: true },
-    ...(canManage ? [{
-      key: 'actions',
-      label: '',
-      truncate: false,
-      render: (row) => (
-        <div className="apex-table-row-actions">
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-primary"
-            onClick={(e) => { e.stopPropagation(); navigate(`/school-admin/parents/${row.id}`); }}
-          >
-            <FiEdit2 size={14} />
-          </button>
-        </div>
-      ),
-    }] : []),
-  ];
+  const columns = useMemo(
+    () => buildParentDirectoryColumns({ canManage, navigate }),
+    [canManage, navigate],
+  );
 
   const childColumns = [
-    { key: 'admission_number', label: 'Admission No.', accessor: 'admission_number' },
-    { key: 'full_name', label: 'Learner', accessor: 'full_name', sortable: true },
-    { key: 'class_name', label: 'Class', accessor: 'class_name' },
+    { key: 'admission_number', label: 'Adm. No.', accessor: 'admission_number', width: COL_WIDTH.admission },
+    nameColumn({
+      key: 'full_name',
+      label: 'Learner',
+      accessor: 'full_name',
+      sortable: true,
+      render: (row) => <PersonNameCell row={row} compact />,
+    }),
+    { key: 'class_name', label: 'Class', accessor: 'class_name', width: COL_WIDTH.class },
     {
       key: 'status',
       label: 'Status',
+      width: COL_WIDTH.status,
+      truncate: false,
       render: (row) => (row.status ? <StatusBadge status={row.status} /> : '—'),
     },
     ...(canManage ? [{
@@ -193,7 +171,7 @@ export function Parents() {
         actions={canManage && (
           <div className="d-flex flex-wrap gap-2">
             <button type="button" className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" onClick={() => setShowImport(true)}>
-              <FiUpload size={16} /> Import CSV
+              <FiUpload size={16} /> Import Excel
             </button>
             <Link to="/school-admin/parents/new" className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
               <FiPlus size={16} /> Add Parent
@@ -238,22 +216,31 @@ export function Parents() {
         isError ? (
           <div className="alert alert-danger">Unable to load parent records.</div>
         ) : (
-          <div className="apex-card p-3 p-md-4">
-            <DataTable
-              columns={columns}
-              data={parents}
-              loading={isLoading}
-              onRowClick={canManage ? (row) => navigate(`/school-admin/parents/${row.id}`) : undefined}
-              emptyState={(
-                <ModuleEmptyState
-                  title="No parents yet"
-                  message="Add one parent at a time, or import many using the minimal CSV template."
-                  actionLabel={canManage ? 'Add Parent' : undefined}
-                  onAction={canManage ? () => navigate('/school-admin/parents/new') : undefined}
-                />
-              )}
-            />
-          </div>
+          <DataTable
+            columns={columns}
+            data={filteredParents}
+            loading={isLoading}
+            searchPlaceholder="Search parents…"
+            filters={(
+              <TableCategoryFilters
+                data={parents}
+                filterDefs={PARENT_DIRECTORY_FILTERS}
+                values={filterValues}
+                onChange={setFilter}
+                onClear={clearFilters}
+                activeCount={activeFilterCount}
+              />
+            )}
+            onRowClick={canManage ? (row) => navigate(`/school-admin/parents/${row.id}`) : undefined}
+            emptyState={(
+              <ModuleEmptyState
+                title="No parents yet"
+                message="Add one parent at a time, or import many using the minimal Excel template."
+                actionLabel={canManage ? 'Add Parent' : undefined}
+                onAction={canManage ? () => navigate('/school-admin/parents/new') : undefined}
+              />
+            )}
+          />
         )
       )}
 
@@ -386,7 +373,13 @@ export function Parents() {
         show={showImport}
         onHide={() => setShowImport(false)}
         title="Import Parents"
-        description="Four columns only: first name, last name, phone, and email."
+        description="Parent imports use a separate template from students and staff."
+        templateHint={(
+          <>
+            Four columns: <strong>First Name</strong>, <strong>Last Name</strong>, <strong>Email</strong>, and <strong>Phone</strong>.
+            Parents with portal access can complete address and contact preferences in My Profile.
+          </>
+        )}
         profileNote="Mobile money numbers, addresses, and fee-payer settings can be added in each parent's full profile later."
         importService={parentBulkImport}
         onSuccess={async (result) => {

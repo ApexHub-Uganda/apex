@@ -1,0 +1,31 @@
+---
+pid: 2332
+cwd: "E:\apex"
+command: "cd E:\\apex\\backend && python -m pytest tests/test_bulk_import.py::test_staff_import_template_endpoint_for_school_admin tests/test_bulk_import.py::test_staff_import_template_rejects_drf_format_query_param tests/test_bulk_import.py::test_staff_import_template_endpoint_for_hr_manager -q --tb=short 2>&1"
+started_at: 2026-07-10T05:50:03.569Z
+running_for_ms: 6565014  
+---
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+django: version: 5.2.15, settings: apex_hub.settings (from ini)
+rootdir: E:\apex\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, Faker-40.27.0, django-4.12.0
+collected 3 items
+
+tests\test_bulk_import.py ..F                                            [100%]
+
+================================== FAILURES ===================================
+_____________ test_staff_import_template_endpoint_for_hr_manager ______________
+tests\test_bulk_import.py:320: in test_staff_import_template_endpoint_for_hr_manager
+    response = client.get("/api/v1/staff/import-template/")
+E   AssertionError: b'{"success":false,"error":{"code":"permission_denied","message":"You do not have permission to perform this action.","details":{"detail":"You do not have permission to perform this action."}}}'
+E   assert 403 == 200
+E    +  where 403 = <Response status_code=403, "application/json">.status_code
+---------------------------- Captured stderr call -----------------------------
+WARNING 2026-07-09 22:50:56,402 log Forbidden: /api/v1/staff/import-template/
+------------------------------ Captured log call ------------------------------
+WARNING  django.request:log.py:253 Forbidden: /api/v1/staff/import-template/
+=========================== short test summary info ===========================
+FAILED tests/test_bulk_import.py::test_staff_import_template_endpoint_for_hr_manager
+======================== 1 failed, 2 passed in 49.19s =========================

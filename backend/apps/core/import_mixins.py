@@ -1,4 +1,4 @@
-"""Reusable bulk CSV import actions for viewsets."""
+"""Reusable bulk Excel/CSV import actions for viewsets."""
 from __future__ import annotations
 
 from typing import Any
@@ -10,7 +10,14 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from apps.core.bulk_import import generate_csv_template, parse_upload, validate_rows
+from apps.core.bulk_import import (
+    DEFAULT_IMPORT_FORMAT,
+    generate_import_template,
+    is_supported_import_filename,
+    parse_upload,
+    unsupported_import_message,
+    validate_rows,
+)
 
 
 class BulkImportMixin:
@@ -32,9 +39,12 @@ class BulkImportMixin:
     @action(detail=False, methods=["get"], url_path="import-template")
     def import_template(self, request: Request) -> HttpResponse:
         spec = self.get_import_spec()
-        content = generate_csv_template(spec)
-        filename = f"{spec.entity_name.lower().replace(' ', '_')}_import_template.csv"
-        response = HttpResponse(content, content_type="text/csv; charset=utf-8")
+        file_format = (
+            request.query_params.get("file_format")
+            or request.query_params.get("format", DEFAULT_IMPORT_FORMAT)
+        )
+        content, filename, content_type = generate_import_template(spec, file_format=file_format)
+        response = HttpResponse(content, content_type=content_type)
         response["Content-Disposition"] = f'attachment; filename="{filename}"'
         return response
 
@@ -48,14 +58,13 @@ class BulkImportMixin:
         upload = request.FILES.get("file")
         if not upload:
             return Response(
-                {"success": False, "message": "No file uploaded. Attach a CSV file."},
+                {"success": False, "message": "No file uploaded. Attach an Excel or CSV file."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        name = (upload.name or "").lower()
-        if not name.endswith((".csv", ".txt")):
+        if not is_supported_import_filename(upload.name):
             return Response(
-                {"success": False, "message": "Only CSV files are supported. Save your spreadsheet as CSV UTF-8."},
+                {"success": False, "message": unsupported_import_message()},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

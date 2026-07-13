@@ -16,11 +16,11 @@ export function PersonAvatar({ person, size = 36, className = '' }) {
   return <UserAvatar user={user} size={size} className={className} />;
 }
 
-export function PersonNameCell({ row, nameField = 'full_name' }) {
+export function PersonNameCell({ row, nameField = 'full_name', compact = false }) {
   const name = row[nameField] || `${row.first_name || ''} ${row.last_name || ''}`.trim() || '—';
   return (
-    <div className="d-flex align-items-center gap-2 apex-list-person-cell">
-      <PersonAvatar person={row} size={36} />
+    <div className={`d-flex align-items-center apex-list-person-cell${compact ? ' apex-list-person-cell--compact' : ''}`}>
+      <PersonAvatar person={row} size={compact ? 24 : 32} />
       <span className="fw-medium apex-list-person-name" title={name}>{name}</span>
     </div>
   );

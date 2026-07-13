@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FiArrowLeft, FiCheck, FiRefreshCw, FiSave, FiSend } from 'react-icons/fi';
+import { FiArrowLeft, FiCheck, FiRefreshCw, FiSave } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
-import { examsService, marksEntryService } from '../../services/moduleService';
+import { assignmentMarksService, examsService, marksEntryService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
 
-const STEPS = [
+const EXAM_STEPS = [
   { key: 'subject', label: 'Subject' },
   { key: 'paper', label: 'Paper' },
   { key: 'class', label: 'Class' },
@@ -17,18 +17,38 @@ const STEPS = [
   { key: 'marks', label: 'Enter Marks' },
 ];
 
-function stepIndex(selection, requiresPaper) {
+const ASSIGNMENT_STEPS = [
+  { key: 'subject', label: 'Subject' },
+  { key: 'paper', label: 'Paper' },
+  { key: 'class', label: 'Class' },
+  { key: 'assessment', label: 'Assignment' },
+  { key: 'marks', label: 'Enter Marks' },
+];
+
+function examStepIndex(selection, requiresPaper) {
   if (!selection.subject) return 0;
-  if (!selection.school_class) return 1;
+  if (requiresPaper && !selection.paper && selection.paper !== 'none') return 1;
+  if (!selection.school_class) return requiresPaper ? 2 : 1;
   if (!selection.term) return requiresPaper ? 3 : 2;
   if (!selection.exam) return requiresPaper ? 4 : 3;
   return requiresPaper ? 5 : 4;
 }
 
-export function MarksEntry() {
+function assignmentStepIndex(selection, requiresPaper) {
+  if (!selection.subject) return 0;
+  if (requiresPaper && !selection.paper && selection.paper !== 'none') return 1;
+  if (!selection.school_class) return requiresPaper ? 2 : 1;
+  if (!selection.assessment) return requiresPaper ? 3 : 2;
+  return requiresPaper ? 4 : 3;
+}
+
+export function MarksEntry({ context = 'examinations' }) {
   const queryClient = useQueryClient();
   const { canWriteFeature } = usePermissions();
   const canManage = canWriteFeature('marks_entry');
+  const isAssignments = context === 'assignments';
+  const backPath = isAssignments ? '/school-admin/academics/assignments' : '/school-admin/examinations';
+  const backLabel = isAssignments ? 'Assignments' : 'Examinations';
 
   const [selection, setSelection] = useState({
     subject: '',
@@ -36,22 +56,42 @@ export function MarksEntry() {
     school_class: '',
     term: '',
     exam: '',
+    assessment: '',
   });
+  const [assignmentName, setAssignmentName] = useState('');
+  const [openingAssessment, setOpeningAssessment] = useState(false);
   const [scores, setScores] = useState({});
   const [remarks, setRemarks] = useState({});
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const { data: options, isLoading, isError, refetch } = useQuery({
-    queryKey: ['marks-entry-options', selection],
-    queryFn: () => marksEntryService.getOptions({
+  const optionsParams = useMemo(() => {
+    if (isAssignments) {
+      return {
+        subject: selection.subject || undefined,
+        paper: selection.paper || undefined,
+        school_class: selection.school_class || undefined,
+        assessment: selection.assessment || undefined,
+      };
+    }
+    return {
       subject: selection.subject || undefined,
       paper: selection.paper || undefined,
       school_class: selection.school_class || undefined,
       term: selection.term || undefined,
       exam: selection.exam || undefined,
-    }),
+    };
+  }, [isAssignments, selection]);
+
+  const { data: options, isLoading, isError, refetch } = useQuery({
+    queryKey: [isAssignments ? 'assignment-marks-options' : 'marks-entry-options', optionsParams],
+    queryFn: () => (
+      isAssignments
+        ? assignmentMarksService.getOptions(optionsParams)
+        : marksEntryService.getOptions(optionsParams)
+    ),
     staleTime: 30_000,
+    enabled: !isAssignments || !openingAssessment,
   });
 
   const subjects = options?.subjects || [];
@@ -60,15 +100,19 @@ export function MarksEntry() {
   const classes = options?.classes || [];
   const terms = options?.terms || [];
   const exams = options?.exams || [];
+  const assessments = options?.assessments || [];
   const students = options?.students || [];
   const grades = options?.grades || {};
   const examDetail = options?.exam_detail;
+  const scopeMeta = options?.scope_meta;
 
   const visibleSteps = useMemo(
-    () => STEPS.filter((step) => step.key !== 'paper' || requiresPaper),
-    [requiresPaper],
+    () => (isAssignments ? ASSIGNMENT_STEPS : EXAM_STEPS).filter((step) => step.key !== 'paper' || requiresPaper),
+    [isAssignments, requiresPaper],
   );
-  const activeStep = stepIndex(selection, requiresPaper);
+  const activeStep = isAssignments
+    ? assignmentStepIndex(selection, requiresPaper)
+    : examStepIndex(selection, requiresPaper);
 
   const mergedScores = useMemo(() => {
     const base = {};
@@ -95,15 +139,24 @@ export function MarksEntry() {
       next.school_class = '';
       next.term = '';
       next.exam = '';
+      next.assessment = '';
+      setAssignmentName('');
     } else if (key === 'paper') {
       next.school_class = '';
       next.term = '';
       next.exam = '';
+      next.assessment = '';
+      setAssignmentName('');
     } else if (key === 'school_class') {
       next.term = '';
       next.exam = '';
+      next.assessment = '';
+      setAssignmentName('');
     } else if (key === 'term') {
       next.exam = '';
+    } else if (key === 'assessment') {
+      const picked = assessments.find((item) => item.value === value);
+      setAssignmentName(picked?.label || '');
     }
     setSelection(next);
     setScores({});
@@ -111,17 +164,57 @@ export function MarksEntry() {
   };
 
   const resetAll = () => {
-    setSelection({ subject: '', paper: '', school_class: '', term: '', exam: '' });
+    setSelection({ subject: '', paper: '', school_class: '', term: '', exam: '', assessment: '' });
+    setAssignmentName('');
     setScores({});
     setRemarks({});
-    queryClient.removeQueries({ queryKey: ['marks-entry-options'] });
+    queryClient.removeQueries({ queryKey: [isAssignments ? 'assignment-marks-options' : 'marks-entry-options'] });
   };
 
+  const activeAssessmentId = isAssignments ? selection.assessment : selection.exam;
   const marksStatus = examDetail?.marks_status || 'draft';
   const marksEditable = marksStatus === 'draft' || marksStatus === 'submitted';
   const canEditMarks = canManage && marksEditable;
   const hasSavedGrades = Object.keys(grades).length > 0;
-  const canSubmit = canManage && marksStatus === 'draft' && hasSavedGrades;
+  const canSubmit = !isAssignments && canManage && marksStatus === 'draft' && hasSavedGrades;
+
+  const openAssignment = async () => {
+    if (!selection.subject || !selection.school_class) return;
+
+    const existing = selection.assessment
+      ? assessments.find((item) => item.value === selection.assessment)
+      : null;
+    const name = (assignmentName || existing?.label || '').trim();
+    if (!name) {
+      notify.error('Enter a name for this assignment, e.g. Assignment 1.');
+      return;
+    }
+
+    setOpeningAssessment(true);
+    try {
+      let assessmentId = selection.assessment;
+      if (!assessmentId || existing?.label !== name) {
+        const created = await assignmentMarksService.createAssessment({
+          name,
+          subject: selection.subject,
+          school_class: selection.school_class,
+          paper: selection.paper || undefined,
+        });
+        assessmentId = created?.id;
+        if (!assessmentId) {
+          notify.error('Unable to open assignment.');
+          return;
+        }
+      }
+      setSelection((prev) => ({ ...prev, assessment: String(assessmentId) }));
+      setAssignmentName(name);
+      await queryClient.invalidateQueries({ queryKey: ['assignment-marks-options'] });
+    } catch (err) {
+      notify.error(extractApiError(err, 'Unable to open assignment.'));
+    } finally {
+      setOpeningAssessment(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!selection.exam || !canSubmit) return;
@@ -139,7 +232,7 @@ export function MarksEntry() {
   };
 
   const handleSave = async () => {
-    if (!selection.exam) return;
+    if (!activeAssessmentId) return;
     setSaving(true);
     try {
       const entries = students.map((student) => ({
@@ -147,7 +240,8 @@ export function MarksEntry() {
         score: mergedScores[student.id] === '' ? null : mergedScores[student.id],
         remarks: mergedRemarks[student.id] || '',
       }));
-      const result = await marksEntryService.saveBulk({ exam: selection.exam, entries });
+      const saveService = isAssignments ? assignmentMarksService : marksEntryService;
+      const result = await saveService.saveBulk({ exam: activeAssessmentId, entries });
       if (result?.errors?.length) {
         notify.warning(result.message || 'Some marks could not be saved.');
       } else {
@@ -189,15 +283,19 @@ export function MarksEntry() {
   return (
     <div>
       <div className="mb-3">
-        <Link to="/school-admin/examinations" className="small text-decoration-none text-muted">
-          <FiArrowLeft className="me-1" /> Examinations
+        <Link to={backPath} className="small text-decoration-none text-muted">
+          <FiArrowLeft className="me-1" /> {backLabel}
         </Link>
       </div>
 
       <PageHeader
-        title="Marks Entry"
-        subtitle="Choose subject first, then class and school-defined term before entering scores"
-        actions={selection.exam && (canEditMarks || canSubmit) && (
+        title={isAssignments ? 'Marks entry' : 'Marks Entry'}
+        subtitle={
+          isAssignments
+            ? 'Choose your subject and class, name the assignment, then enter student scores. No term selection is required.'
+            : 'Choose subject first, then class and school-defined term before entering scores'
+        }
+        actions={activeAssessmentId && (canEditMarks || canSubmit) && (
           <div className="d-flex gap-2">
             {canEditMarks && (
               <button
@@ -216,7 +314,7 @@ export function MarksEntry() {
                 onClick={handleSubmit}
                 disabled={submitting}
               >
-                <FiSend size={14} /> {submitting ? 'Submitting…' : 'Submit for Approval'}
+                {submitting ? 'Submitting…' : 'Submit for Approval'}
               </button>
             )}
           </div>
@@ -271,7 +369,59 @@ export function MarksEntry() {
             !selection.subject,
             true,
           )}
-          {selection.school_class && renderSelect(
+
+          {isAssignments && selection.school_class && (
+            <>
+              <div className="col-md-6 col-lg-4">
+                <label className="form-label small fw-semibold" htmlFor="assignment-name">
+                  Assignment name <span className="text-danger">*</span>
+                </label>
+                <input
+                  id="assignment-name"
+                  type="text"
+                  className="form-control"
+                  placeholder="e.g. Assignment 1"
+                  value={assignmentName}
+                  onChange={(e) => {
+                    setAssignmentName(e.target.value);
+                    setSelection((prev) => ({ ...prev, assessment: '' }));
+                    setScores({});
+                    setRemarks({});
+                  }}
+                />
+              </div>
+              {assessments.length > 0 && (
+                <div className="col-md-6 col-lg-4">
+                  <label className="form-label small fw-semibold" htmlFor="assessment">
+                    Or pick existing
+                  </label>
+                  <select
+                    id="assessment"
+                    className="form-select"
+                    value={selection.assessment}
+                    onChange={(e) => updateSelection('assessment', e.target.value)}
+                  >
+                    <option value="">Select an existing assignment…</option>
+                    {assessments.map((item) => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="col-md-6 col-lg-4 d-flex align-items-end">
+                <button
+                  type="button"
+                  className="btn btn-outline-primary w-100"
+                  onClick={openAssignment}
+                  disabled={openingAssessment || !assignmentName.trim()}
+                >
+                  {openingAssessment ? 'Opening…' : 'Open assignment'}
+                </button>
+              </div>
+            </>
+          )}
+
+          {!isAssignments && selection.school_class && renderSelect(
             'term',
             'Term',
             selection.term,
@@ -279,7 +429,7 @@ export function MarksEntry() {
             !selection.school_class,
             true,
           )}
-          {selection.term && renderSelect(
+          {!isAssignments && selection.term && renderSelect(
             'exam',
             'Exam',
             selection.exam,
@@ -289,17 +439,24 @@ export function MarksEntry() {
           )}
         </div>
 
-        {selection.subject && !isLoading && classes.length === 0 && !selection.school_class && (
-          <div className="alert alert-warning mt-3 mb-0 small">
-            No classes are linked to this subject yet. Assign the subject in timetables, homework, or schedule an exam first.
+        {scopeMeta?.uses_teaching_assignments && (
+          <div className="alert alert-info mt-3 mb-0 small">
+            Showing only subjects and classes from your teaching assignments.
           </div>
         )}
-        {selection.school_class && !isLoading && terms.length === 0 && !selection.term && (
+        {selection.subject && !isLoading && classes.length === 0 && !selection.school_class && (
+          <div className="alert alert-warning mt-3 mb-0 small">
+            {isAssignments
+              ? 'No classes are linked to this subject in your teaching assignments.'
+              : 'No classes are linked to this subject yet. Assign the subject in timetables, homework, or schedule an exam first.'}
+          </div>
+        )}
+        {!isAssignments && selection.school_class && !isLoading && terms.length === 0 && !selection.term && (
           <div className="alert alert-warning mt-3 mb-0 small">
             No terms are defined for this class&apos;s academic year. Add terms under Academics → Terms.
           </div>
         )}
-        {selection.term && !isLoading && exams.length === 0 && !selection.exam && (
+        {!isAssignments && selection.term && !isLoading && exams.length === 0 && !selection.exam && (
           <div className="alert alert-warning mt-3 mb-0 small">
             No exams match this selection.{' '}
             <Link to="/school-admin/examinations">Schedule an exam</Link> for this subject, class, and term.
@@ -311,7 +468,7 @@ export function MarksEntry() {
         <div className="alert alert-danger">Unable to load marks entry data. Please try again.</div>
       )}
 
-      {selection.exam && (
+      {activeAssessmentId && (
         <div className="apex-card p-0 overflow-hidden">
           <div className="p-4 border-bottom bg-light-subtle">
             <h5 className="fw-bold mb-1">{examDetail?.name || 'Enter marks'}</h5>
@@ -320,10 +477,10 @@ export function MarksEntry() {
                 {examDetail?.subject_name}
                 {examDetail?.paper_code ? ` · ${examDetail.paper_code}` : ''}
                 {' · '}{examDetail?.school_class_name}
-                {' · '}{examDetail?.term_name}
+                {!isAssignments && examDetail?.term_name ? ` · ${examDetail.term_name}` : ''}
                 {examDetail?.max_score ? ` · Max score: ${examDetail.max_score}` : ''}
               </p>
-              {marksStatus && (
+              {!isAssignments && marksStatus && (
                 <span className={`badge text-bg-${marksStatus === 'draft' ? 'secondary' : marksStatus === 'submitted' ? 'warning' : marksStatus === 'locked' ? 'dark' : 'success'}-subtle border`}>
                   {marksStatus.replace('_', ' ')}
                 </span>
@@ -336,7 +493,7 @@ export function MarksEntry() {
           ) : students.length === 0 ? (
             <ModuleEmptyState
               title="No active students in this class"
-              message="Add or assign students to the class before entering examination marks."
+              message="Add or assign students to the class before entering marks."
               actionLabel="View students"
               actionHref="/school-admin/students"
             />
@@ -399,28 +556,16 @@ export function MarksEntry() {
             </div>
           )}
 
-          {students.length > 0 && (canEditMarks || canSubmit) && (
+          {students.length > 0 && canEditMarks && (
             <div className="p-3 border-top d-flex justify-content-end gap-2">
-              {canEditMarks && (
-                <button
-                  type="button"
-                  className="btn btn-primary d-inline-flex align-items-center gap-1"
-                  onClick={handleSave}
-                  disabled={saving}
-                >
-                  <FiCheck size={16} /> {saving ? 'Saving…' : 'Save All Marks'}
-                </button>
-              )}
-              {canSubmit && (
-                <button
-                  type="button"
-                  className="btn btn-success d-inline-flex align-items-center gap-1"
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                >
-                  <FiSend size={16} /> {submitting ? 'Submitting…' : 'Submit for Approval'}
-                </button>
-              )}
+              <button
+                type="button"
+                className="btn btn-primary d-inline-flex align-items-center gap-1"
+                onClick={handleSave}
+                disabled={saving}
+              >
+                <FiCheck size={16} /> {saving ? 'Saving…' : 'Save All Marks'}
+              </button>
             </div>
           )}
         </div>
@@ -433,7 +578,9 @@ export function MarksEntry() {
             message={
               subjects.length === 0
                 ? 'Add subjects under Academics → Subjects. They will appear here automatically for marks entry.'
-                : 'Marks entry starts with the subject. Select one, then pick class, term, and exam.'
+                : isAssignments
+                  ? 'Select your subject and class, name the assignment, then enter scores.'
+                  : 'Marks entry starts with the subject. Select one, then pick class, term, and exam.'
             }
             actionLabel={subjects.length === 0 ? 'Add subjects' : undefined}
             actionHref={subjects.length === 0 ? '/school-admin/academics/subjects' : undefined}

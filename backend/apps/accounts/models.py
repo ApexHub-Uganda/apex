@@ -45,6 +45,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Password reset
     password_reset_token = models.CharField(max_length=100, blank=True)
     password_reset_expires = models.DateTimeField(null=True, blank=True)
+    must_change_password = models.BooleanField(
+        default=False,
+        help_text="When true, user must set a new password before using the dashboard.",
+    )
 
     last_login_ip = models.GenericIPAddressField(null=True, blank=True)
     last_login_at = models.DateTimeField(null=True, blank=True)
