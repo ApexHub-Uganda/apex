@@ -1,3 +1,20 @@
+# postgresql://neondb_owner:npg_rcMBS7PilaV8@ep-noisy-wave-aszcydt8.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require
+# npx neonctl@latest init
+
+# postgresql://neondb_owner:npg_rcMBS7PilaV8@ep-noisy-wave-aszcydt8.c-4.eu-central-1.aws.neon.tech/neondb?sslmode=require
+'''
+Host
+ep-noisy-wave-aszcydt8.c-4.eu-central-1.aws.neon.tech
+Database
+neondb
+Role
+neondb_owner
+Password
+************
+Pooler host
+ep-noisy-wave-aszcydt8-pooler.c-4.eu-central-1.aws.neon.tech
+'''
+
 # Apex Hub Backend
 
 Django 5 + Django REST Framework API.
