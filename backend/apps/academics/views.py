@@ -421,6 +421,11 @@ class SubjectPaperViewSet(AcademicScopeMixin, BaseModelViewSet):
 
 
 class TimetableViewSet(TimetableActiveTermMixin, AcademicScopeMixin, BaseModelViewSet):
+    """
+    List/filter timetable slots.
+    Teachers see their periods from *published* schedules only.
+    Admins / DoS see full school data (including drafts).
+    """
     required_feature_key = "timetables"
     queryset = Timetable.objects.select_related(
         "school_class", "subject", "teacher__staff", "period", "stream", "schedule",
@@ -429,8 +434,25 @@ class TimetableViewSet(TimetableActiveTermMixin, AcademicScopeMixin, BaseModelVi
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = [
         "school_class", "day_of_week", "subject", "schedule", "schedule_type",
-        "term", "examination_session", "stream",
+        "term", "examination_session", "stream", "teacher", "is_break_slot",
     ]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        from apps.tenants.role_permissions import user_can_access_feature, user_is_school_admin
+        if user_is_school_admin(user):
+            return qs
+        can_write = user_can_access_feature(
+            getattr(user, "tenant", None), user, "timetables", require_write=True,
+        )
+        if not can_write:
+            # Published only for read-only (teachers)
+            qs = qs.filter(
+                schedule__status__in=["published", "active"],
+                schedule__is_deleted=False,
+            )
+        return qs
 
     def get_permissions(self):
         perms = [permission() for permission in self.permission_classes]
@@ -793,6 +815,35 @@ class PeriodViewSet(BaseModelViewSet):
     serializer_class = PeriodSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     ordering_fields = ["sort_order", "start_time"]
+
+    def get_queryset(self):
+        """
+        Admins / school-wide roles see the full bell schedule.
+        Subject teachers see only periods that appear on *their* timetable rows
+        (my periods). Write operations still require periods feature write.
+        """
+        qs = super().get_queryset()
+        user = self.request.user
+        from apps.academics.scoping import get_academic_context, user_has_school_wide_academic_access
+        from apps.tenants.role_permissions import user_is_school_admin
+
+        if user_is_school_admin(user) or user_has_school_wide_academic_access(user):
+            return qs
+        ctx = get_academic_context(user)
+        if ctx is None or ctx.teacher is None:
+            return qs.none()
+        # Periods used by this teacher's assigned slots
+        period_ids = (
+            Timetable.objects.filter(
+                tenant=user.tenant,
+                teacher=ctx.teacher,
+                is_deleted=False,
+                period__isnull=False,
+            )
+            .values_list("period_id", flat=True)
+            .distinct()
+        )
+        return qs.filter(pk__in=period_ids)
 
 
 class ClassroomViewSet(BaseModelViewSet):

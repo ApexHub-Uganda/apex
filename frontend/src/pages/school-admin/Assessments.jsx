@@ -7,6 +7,7 @@ import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { examsService, marksApprovalService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
+import { ApexLoader } from '../../components/ApexLoader';
 
 export function Assessments() {
   const queryClient = useQueryClient();
@@ -85,7 +86,7 @@ export function Assessments() {
       {isError && <div className="alert alert-danger">Unable to load assessments.</div>}
 
       {isLoading ? (
-        <div className="py-5 text-center"><div className="spinner-border text-primary" role="status" /></div>
+        <div className="py-5 text-center"><ApexLoader label="Loading…" /></div>
       ) : drafts.length === 0 ? (
         <div className="apex-card p-5">
           <ModuleEmptyState

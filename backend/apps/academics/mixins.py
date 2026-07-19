@@ -52,27 +52,59 @@ class AcademicSingletonListMixin:
 class SchoolAdminManageSingletonMixin:
     """
     Singleton periods: create remains locked while one is active (all roles).
-    School admins always retain full update/delete on these records.
+    Once a year/term is in use (current, or has published timetable / dependent data),
+    only school admins may edit, delete, or end it.
     """
 
-    def _user_can_manage_singleton_records(self) -> bool:
+    def _user_is_school_admin(self) -> bool:
         user = self.request.user
         if not user or not user.is_authenticated:
             return False
-        if getattr(user, "is_super_admin", False) or user_is_school_admin(user):
-            return True
-        # Other roles with module write may still update when feature permissions allow
-        # (enforced by RequiresFeature on the viewset). Do not block them here.
-        return True
+        return bool(getattr(user, "is_super_admin", False) or user_is_school_admin(user))
+
+    def _record_is_in_use(self, instance) -> bool:
+        """True when non-admins must not mutate this year/term."""
+        model_name = instance.__class__.__name__
+        if model_name == "AcademicYear":
+            if getattr(instance, "is_current", False):
+                return True
+            # Any terms, classes, or published timetables under this year
+            if instance.terms.filter(is_deleted=False).exists():
+                return True
+            from apps.academics.models import TimetableSchedule
+            if TimetableSchedule.objects.filter(
+                tenant=instance.tenant_id, academic_year=instance, is_deleted=False,
+            ).exclude(status="archived").exists():
+                return True
+            return False
+        if model_name == "Term":
+            if getattr(instance, "is_current", False):
+                return True
+            from apps.academics.models import Timetable, TimetableSchedule
+            if TimetableSchedule.objects.filter(
+                tenant=instance.tenant_id, term=instance, is_deleted=False,
+            ).exclude(status="archived").exists():
+                return True
+            if Timetable.objects.filter(
+                tenant=instance.tenant_id, term=instance, is_deleted=False,
+            ).exists():
+                return True
+            return False
+        return False
 
     def perform_update(self, serializer):
-        if not self._user_can_manage_singleton_records():
-            raise PermissionDenied("You do not have permission to edit this record.")
+        instance = serializer.instance
+        if instance is not None and self._record_is_in_use(instance) and not self._user_is_school_admin():
+            raise PermissionDenied(
+                "This record is already in use. Only a school admin can edit or end it."
+            )
         super().perform_update(serializer)
 
     def perform_destroy(self, instance):
-        if not self._user_can_manage_singleton_records():
-            raise PermissionDenied("You do not have permission to delete this record.")
+        if self._record_is_in_use(instance) and not self._user_is_school_admin():
+            raise PermissionDenied(
+                "This record is already in use. Only a school admin can delete or end it."
+            )
         super().perform_destroy(instance)
 
 

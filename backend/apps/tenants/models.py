@@ -26,8 +26,8 @@ class Tenant(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     city = models.CharField(max_length=100, blank=True)
-    country = models.CharField(max_length=100, default="Kenya")
-    timezone = models.CharField(max_length=50, default="Africa/Nairobi")
+    country = models.CharField(max_length=100, default="Uganda")
+    timezone = models.CharField(max_length=50, default="Africa/Kampala")
 
     # Branding
     logo = models.ImageField(upload_to=tenant_upload_path, blank=True, null=True)

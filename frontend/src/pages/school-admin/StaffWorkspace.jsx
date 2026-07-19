@@ -7,6 +7,7 @@ import UserDeleteDangerZone from '../../components/UserDeleteDangerZone';
 import { usePermissions } from '../../hooks/usePermissions';
 import { staffService } from '../../services/moduleService';
 import { extractApiError, notify } from '../../utils/notify';
+import { ApexLoader } from '../../components/ApexLoader';
 
 const STAFF_WRITE_FIELDS = [
   'employee_id', 'first_name', 'middle_name', 'last_name', 'email', 'personal_email',
@@ -102,7 +103,7 @@ export function StaffWorkspace() {
   if (isEdit && isLoading) {
     return (
       <div className="py-5 text-center">
-        <div className="spinner-border text-primary" role="status" />
+        <ApexLoader label="Loading…" />
       </div>
     );
   }
@@ -127,7 +128,7 @@ export function StaffWorkspace() {
     gender: staff.gender || '',
     date_of_birth: staff.date_of_birth || '',
     national_id: staff.national_id || '',
-    nationality: staff.nationality || 'Kenyan',
+    nationality: staff.nationality || 'Ugandan',
     staff_category: staff.staff_category,
     portal_role: staff.portal_role,
     designation: staff.designation,

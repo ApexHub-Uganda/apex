@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { FiMenu, FiBell, FiSun, FiMoon, FiUser, FiSettings, FiLogOut } from 'react-icons/fi';
+import { AnimatePresence, motion } from 'framer-motion';
+import { FiBell, FiSun, FiMoon, FiUser, FiSettings, FiLogOut } from 'react-icons/fi';
 import GlobalSearch from './GlobalSearch';
 import UserAvatar from './UserAvatar';
 import NotificationBatchActions from './NotificationBatchActions';
@@ -26,7 +26,59 @@ import {
 import { alert, extractApiError, notify } from '../utils/notify';
 import SchoolNameWithBadge from './SchoolNameWithBadge';
 
-export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
+/** Smooth professional popover enter/exit (top-right origin). */
+const popoverTransition = {
+  type: 'spring',
+  stiffness: 420,
+  damping: 32,
+  mass: 0.75,
+};
+
+const popoverVariants = {
+  hidden: {
+    opacity: 0,
+    y: -10,
+    scale: 0.96,
+    pointerEvents: 'none',
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    pointerEvents: 'auto',
+    transition: popoverTransition,
+  },
+  exit: {
+    opacity: 0,
+    y: -8,
+    scale: 0.97,
+    pointerEvents: 'none',
+    transition: { duration: 0.14, ease: [0.4, 0, 1, 1] },
+  },
+};
+
+const menuListVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.035, delayChildren: 0.04 },
+  },
+};
+
+const menuItemVariants = {
+  hidden: { opacity: 0, x: 8 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.18, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+export function Navbar({
+  onMenuClick,
+  sidebarCollapsed,
+  mobileMenuOpen = false,
+  suspended = false,
+}) {
   const { user, logout, isSchoolAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { tenant } = useTenant();
@@ -47,7 +99,11 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
   const userMenuRef = useRef(null);
 
   const profilePath = user?.role === 'super_admin' ? '/super-admin/profile' : '/school-admin/profile';
-  const settingsPath = user?.role === 'super_admin' ? '/super-admin/settings' : '/school-admin/settings';
+  // School Settings is a school-admin-only surface (never for teachers/parents/etc.)
+  const settingsPath = user?.role === 'super_admin'
+    ? '/super-admin/settings'
+    : '/school-admin/settings';
+  const canOpenSettings = user?.role === 'super_admin' || isSchoolAdmin;
 
   const { data: feed } = useQuery({
     queryKey: ['notification-feed', user?.id],
@@ -68,11 +124,14 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
   const markReadMutation = useMutation({
     mutationFn: (id) => platformNotificationsService.markRead(id),
     onSuccess: invalidateNotifications,
+    // Opening a message is personal inbox state — never surface as a "write" failure
+    onError: () => { /* silent; UI already shows as read optimistically */ },
   });
 
   const markReadSchoolMutation = useMutation({
     mutationFn: (id) => notificationsService.markRead(id),
     onSuccess: invalidateNotifications,
+    onError: () => { /* silent; UI already shows as read optimistically */ },
   });
 
   const deleteOneMutation = useMutation({
@@ -209,6 +268,10 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
   const handleSelectNotification = (item) => {
     if (selectionMode) return;
     setSelectedNotification(item);
+    // Auto mark-as-read when opening from the bell (not a create/write operation)
+    if (item && !item.is_read && canMarkReadItem(item)) {
+      handleMarkReadItem(item);
+    }
   };
 
   const handleDeleteNotification = async (item) => {
@@ -254,9 +317,21 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
         overflow: 'visible',
       }}
     >
-      <button className="btn btn-link text-muted d-lg-none p-0" onClick={onMenuClick}>
-        <FiMenu size={22} />
-      </button>
+      <motion.button
+        type="button"
+        className={`btn btn-link text-muted d-lg-none p-0 apex-menu-toggle ${mobileMenuOpen ? 'is-open' : ''}`}
+        onClick={onMenuClick}
+        aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={mobileMenuOpen}
+        whileTap={{ scale: 0.92 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+      >
+        <span className="apex-menu-toggle-bars" aria-hidden>
+          <span />
+          <span />
+          <span />
+        </span>
+      </motion.button>
 
       <div className={`d-none d-md-flex align-items-center flex-grow-1 ${suspended ? 'is-disabled-control' : ''}`} style={{ maxWidth: 480 }}>
         <GlobalSearch disabled={suspended} />
@@ -303,101 +378,162 @@ export function Navbar({ onMenuClick, sidebarCollapsed, suspended = false }) {
               </span>
             )}
           </motion.button>
-          {showNotifications && (
-            <div className="apex-notifications-panel" role="menu">
-              <div className="apex-notifications-panel-header">
-                <div className="d-flex align-items-center gap-2">
-                  <span className="fw-semibold small">Messages</span>
-                  {unreadCount > 0 && (
-                    <span className="badge bg-primary">{unreadCount} unread</span>
-                  )}
-                </div>
-                {hasItems && selectedCount > 0 ? (
-                  <NotificationBatchActions
-                    count={selectedCount}
-                    onMarkRead={() => batchMarkReadMutation.mutate()}
-                    onDelete={handleBatchDelete}
-                    onClear={clearSelection}
-                    canMarkRead={canBatchMarkRead}
-                    marking={batchMarkReadMutation.isPending}
-                    deleting={batchDeleteMutation.isPending}
-                    compact
-                  />
-                ) : hasItems && (
-                  <div className="notification-panel-bulk-actions">
+          <AnimatePresence>
+            {showNotifications && (
+              <motion.div
+                className="apex-notifications-panel"
+                role="menu"
+                variants={popoverVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                style={{ transformOrigin: 'top right' }}
+              >
+                <div className="apex-notifications-panel-header">
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="fw-semibold small">Messages</span>
                     {unreadCount > 0 && (
+                      <span className="badge bg-primary">{unreadCount} unread</span>
+                    )}
+                  </div>
+                  {hasItems && selectedCount > 0 ? (
+                    <NotificationBatchActions
+                      count={selectedCount}
+                      onMarkRead={() => batchMarkReadMutation.mutate()}
+                      onDelete={handleBatchDelete}
+                      onClear={clearSelection}
+                      canMarkRead={canBatchMarkRead}
+                      marking={batchMarkReadMutation.isPending}
+                      deleting={batchDeleteMutation.isPending}
+                      compact
+                    />
+                  ) : hasItems && (
+                    <div className="notification-panel-bulk-actions">
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          className="btn btn-link btn-sm p-0 text-decoration-none"
+                          onClick={() => markAllReadMutation.mutate()}
+                          disabled={markAllReadMutation.isPending}
+                        >
+                          Mark all read
+                        </button>
+                      )}
                       <button
                         type="button"
-                        className="btn btn-link btn-sm p-0 text-decoration-none"
-                        onClick={() => markAllReadMutation.mutate()}
-                        disabled={markAllReadMutation.isPending}
+                        className="btn btn-link btn-sm p-0 text-decoration-none text-danger"
+                        onClick={confirmDeleteAll}
+                        disabled={deleteAllMutation.isPending}
                       >
-                        Mark all read
+                        Clear all
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      className="btn btn-link btn-sm p-0 text-decoration-none text-danger"
-                      onClick={confirmDeleteAll}
-                      disabled={deleteAllMutation.isPending}
-                    >
-                      Clear all
-                    </button>
-                  </div>
-                )}
-              </div>
+                    </div>
+                  )}
+                </div>
 
-              <NotificationCapacityWarning inbox={inbox} compact />
+                <NotificationCapacityWarning inbox={inbox} compact />
 
-              <NotificationMessageList
-                pinnedItems={pinnedItems}
-                regularItems={regularItems}
-                onSelect={handleSelectNotification}
-                selectionMode={selectionMode}
-                isSelected={isSelected}
-                onToggleSelect={toggleSelection}
-                onEnterSelection={enterSelection}
-              />
+                <NotificationMessageList
+                  pinnedItems={pinnedItems}
+                  regularItems={regularItems}
+                  onSelect={handleSelectNotification}
+                  selectionMode={selectionMode}
+                  isSelected={isSelected}
+                  onToggleSelect={toggleSelection}
+                  onEnterSelection={enterSelection}
+                />
 
-              <div className="apex-notifications-panel-footer">
-                <Link to={viewAllPath} className="small" onClick={() => setShowNotifications(false)}>
-                  View all messages
-                </Link>
-              </div>
-            </div>
-          )}
+                <div className="apex-notifications-panel-footer">
+                  <Link to={viewAllPath} className="small" onClick={() => setShowNotifications(false)}>
+                    View all messages
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="position-relative" ref={userMenuRef}>
-          <button
+          <motion.button
             type="button"
             className="apex-navbar-user-chip btn d-flex align-items-center gap-2"
             onClick={toggleUserMenu}
             aria-expanded={showDropdown}
             aria-haspopup="true"
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
           >
             <UserAvatar user={user} size={32} className="apex-navbar-user-avatar" />
             <span className="apex-navbar-user-name d-none d-md-inline">
               {user?.first_name} {user?.last_name}
             </span>
-          </button>
-          {showDropdown && (
-            <div
-              className="dropdown-menu show shadow-lg border-0"
-              style={{ position: 'absolute', right: 0, top: '100%', minWidth: 200, borderRadius: 12 }}
-            >
-              <Link className="dropdown-item d-flex align-items-center gap-2" to={profilePath} onClick={() => setShowDropdown(false)}>
-                <FiUser size={14} /> My Profile
-              </Link>
-              <Link className="dropdown-item d-flex align-items-center gap-2" to={settingsPath} onClick={() => setShowDropdown(false)}>
-                <FiSettings size={14} /> Settings
-              </Link>
-              <hr className="dropdown-divider" />
-              <button className="dropdown-item d-flex align-items-center gap-2 text-danger" onClick={async () => { await logout(); notify.info('You have been signed out.'); setShowDropdown(false); }}>
-                <FiLogOut size={14} /> Logout
-              </button>
-            </div>
-          )}
+          </motion.button>
+          <AnimatePresence>
+            {showDropdown && (
+              <motion.div
+                className="dropdown-menu show shadow-lg border-0 apex-user-menu"
+                role="menu"
+                variants={popoverVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                style={{
+                  position: 'absolute',
+                  right: 0,
+                  top: 'calc(100% + 8px)',
+                  minWidth: 200,
+                  borderRadius: 12,
+                  transformOrigin: 'top right',
+                }}
+              >
+                <motion.div
+                  variants={menuListVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  <motion.div variants={menuItemVariants}>
+                    <Link
+                      className="dropdown-item d-flex align-items-center gap-2"
+                      to={profilePath}
+                      onClick={() => setShowDropdown(false)}
+                      role="menuitem"
+                    >
+                      <FiUser size={14} /> My Profile
+                    </Link>
+                  </motion.div>
+                  {canOpenSettings && (
+                    <motion.div variants={menuItemVariants}>
+                      <Link
+                        className="dropdown-item d-flex align-items-center gap-2"
+                        to={settingsPath}
+                        onClick={() => setShowDropdown(false)}
+                        role="menuitem"
+                      >
+                        <FiSettings size={14} /> Settings
+                      </Link>
+                    </motion.div>
+                  )}
+                  <motion.div variants={menuItemVariants}>
+                    <hr className="dropdown-divider" />
+                  </motion.div>
+                  <motion.div variants={menuItemVariants}>
+                    <button
+                      type="button"
+                      className="dropdown-item d-flex align-items-center gap-2 text-danger"
+                      role="menuitem"
+                      onClick={async () => {
+                        await logout();
+                        notify.info('You have been signed out.');
+                        setShowDropdown(false);
+                      }}
+                    >
+                      <FiLogOut size={14} /> Logout
+                    </button>
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
       <NotificationDetailModal

@@ -29,6 +29,7 @@ export function SuperAdminLayout() {
         <MaintenanceBanner />
         <Navbar
           sidebarCollapsed={sidebarCollapsed}
+          mobileMenuOpen={mobileOpen}
           onMenuClick={() => setMobileOpen(!mobileOpen)}
         />
         <main className={`apex-content${location.pathname.includes('/plans/') && (location.pathname.endsWith('/edit') || location.pathname.endsWith('/new')) ? ' is-plan-editor' : ''}`}>

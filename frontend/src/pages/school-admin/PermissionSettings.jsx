@@ -9,6 +9,7 @@ import ResetPermissionsModal from '../../components/ResetPermissionsModal';
 import { tenantService } from '../../services/tenantService';
 import { extractApiError, notify } from '../../utils/notify';
 import { resolveFeatureIcon } from '../../utils/featureIcons';
+import { ApexLoader } from '../../components/ApexLoader';
 
 function PermissionToggle({ checked, onChange, disabled, label, variant = 'read' }) {
   return (
@@ -264,7 +265,7 @@ export function PermissionSettings() {
   if (isLoading) {
     return (
       <div className="py-5 text-center">
-        <div className="spinner-border text-primary" role="status" />
+        <ApexLoader label="Loading…" />
       </div>
     );
   }

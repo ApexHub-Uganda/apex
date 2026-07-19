@@ -2,17 +2,14 @@ import { useTenantContext } from '../context/TenantContext';
 import { CORE_FEATURE_KEYS } from '../config/navigation';
 import UpgradeRequired from '../pages/shared/UpgradeRequired';
 import AccessDenied from '../pages/shared/AccessDenied';
+import { PageLoader } from './ApexLoader';
 
 export function FeatureGate({ featureKey, featureKeys, children }) {
   const { isFeatureEnabled, canAccessFeature, isSchoolAdmin, loading } = useTenantContext();
   const keys = (featureKeys?.length ? featureKeys : (featureKey ? [featureKey] : []));
 
   if (loading) {
-    return (
-      <div className="d-flex justify-content-center py-5">
-        <div className="spinner-border text-primary" role="status" />
-      </div>
-    );
+    return <PageLoader label="Loading…" />;
   }
 
   if (!keys.length || keys.some((k) => CORE_FEATURE_KEYS.includes(k))) {

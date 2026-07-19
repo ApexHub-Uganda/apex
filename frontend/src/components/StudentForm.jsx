@@ -25,10 +25,12 @@ const STATUS_OPTIONS = [
 ];
 
 const CURRICULUM_OPTIONS = [
-  { value: 'cbc', label: 'CBC' },
-  { value: '844', label: '8-4-4' },
+  { value: 'uneb', label: 'UNEB (Uganda)' },
+  { value: 'uganda_cbe', label: 'Uganda Competence-Based' },
   { value: 'igcse', label: 'IGCSE' },
   { value: 'ace', label: 'ACE' },
+  { value: 'cbc', label: 'CBC (Kenya)' },
+  { value: '844', label: '8-4-4' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -66,8 +68,8 @@ export function StudentForm({
     defaultValues: {
       gender: 'male',
       status: 'active',
-      nationality: 'Kenyan',
-      curriculum_pathway: 'cbc',
+      nationality: 'Ugandan',
+      curriculum_pathway: 'uneb',
       boarding_status: 'day',
       special_needs: false,
       enrollment_date: new Date().toISOString().slice(0, 10),
@@ -144,7 +146,7 @@ export function StudentForm({
       </div>
 
       {activeSection === 'identity' && (
-        <WorkspaceSection title="Student identity" description="Legal name, admission details, and NEMIS identifiers">
+        <WorkspaceSection title="Student identity" description="Legal name, admission details, and national identifiers">
           <WorkspaceFieldGrid>
             <Field
               label="Admission Number"
@@ -159,7 +161,10 @@ export function StudentForm({
                 placeholder={lockClassFields ? 'Auto-generated if empty' : undefined}
               />
             </Field>
-            <Field label="UPI / NEMIS Number" hint="Unique Personal Identifier from NEMIS">
+            <Field label="Registration / Index number" hint="UNEB candidate or school registration number">
+              <input className="form-control" {...register('registration_number')} />
+            </Field>
+            <Field label="Legacy national ID" hint="Optional legacy learner ID (e.g. former UPI)">
               <input className="form-control" {...register('upi_number')} />
             </Field>
             <Field label="First Name" required error={errors.first_name?.message}>
@@ -251,7 +256,7 @@ export function StudentForm({
       )}
 
       {activeSection === 'location' && (
-        <WorkspaceSection title="Contact & location" description="Kenya county structure and contact details">
+        <WorkspaceSection title="Contact & location" description="District, county, and contact details">
           <WorkspaceFieldGrid>
             <Field label="Phone">
               <input className="form-control" {...register('phone')} />

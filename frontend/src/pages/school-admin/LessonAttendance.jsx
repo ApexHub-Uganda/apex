@@ -12,6 +12,7 @@ import {
 } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
+import { ApexLoader } from '../../components/ApexLoader';
 
 const STATUS_OPTIONS = [
   { value: 'present', label: 'Present' },
@@ -145,7 +146,7 @@ export function LessonAttendance() {
           <ModuleEmptyState title="Select a class" message="Choose a class and subject to mark lesson attendance." />
         </div>
       ) : studentsLoading ? (
-        <div className="py-5 text-center"><div className="spinner-border text-primary" role="status" /></div>
+        <div className="py-5 text-center"><ApexLoader label="Loading…" /></div>
       ) : students.length === 0 ? (
         <div className="apex-card p-5">
           <ModuleEmptyState title="No students" message="No active students in this class." />

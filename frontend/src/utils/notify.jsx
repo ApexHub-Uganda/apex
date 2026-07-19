@@ -139,6 +139,61 @@ const swalBase = Swal.mixin({
 });
 
 export const alert = {
+  /**
+   * Non-blocking modal loader (SweetAlert2). Call alert.close() when done.
+   * Does not await — fire-and-forget so the real work can start immediately.
+   * Uses a light CSS animation (no extra JS timers).
+   */
+  loading({
+    title = 'Please wait…',
+    text = '',
+  } = {}) {
+    // Close any previous modal first so we never stack loaders
+    if (Swal.isVisible()) {
+      Swal.close();
+    }
+    const safeText = String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    return swalBase.fire({
+      title,
+      html: `
+        <div class="apex-loader" aria-hidden="true">
+          <div class="apex-loader-orbit">
+            <span class="apex-loader-orbit-ring"></span>
+            <span class="apex-loader-orbit-core"></span>
+          </div>
+          <div class="apex-loader-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+        ${safeText ? `<p class="apex-loader-caption">${safeText}</p>` : ''}
+      `,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+      showCancelButton: false,
+      showDenyButton: false,
+      focusConfirm: false,
+      customClass: {
+        popup: 'apex-swal-popup apex-swal-loading',
+        title: 'apex-swal-title',
+        htmlContainer: 'apex-swal-text apex-swal-loading-body',
+      },
+    });
+  },
+
+  /** Dismiss the current SweetAlert (loading or otherwise). Safe if none open. */
+  close() {
+    try {
+      if (Swal.isVisible()) Swal.close();
+    } catch {
+      /* ignore */
+    }
+  },
+
   success(title, text = '') {
     return swalBase.fire({
       icon: 'success',

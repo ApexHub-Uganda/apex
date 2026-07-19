@@ -48,7 +48,7 @@ class Parent(BaseModel):
     )
     address = models.TextField(blank=True)
     city = models.CharField(max_length=100, blank=True)
-    country = models.CharField(max_length=100, default="Kenya")
+    country = models.CharField(max_length=100, default="Uganda")
     preferred_contact_method = models.CharField(
         max_length=20,
         choices=[
@@ -116,29 +116,37 @@ class Student(BaseModel):
     address = models.TextField(blank=True)
     city = models.CharField(max_length=100, blank=True)
     blood_group = models.CharField(max_length=5, blank=True)
-    nationality = models.CharField(max_length=100, default="Kenyan")
+    nationality = models.CharField(max_length=100, default="Ugandan")
     religion = models.CharField(max_length=50, blank=True)
     place_of_birth = models.CharField(max_length=150, blank=True)
     previous_school = models.CharField(max_length=255, blank=True)
     national_id = models.CharField(max_length=50, blank=True)
     upi_number = models.CharField(
         max_length=50, blank=True, db_index=True,
-        help_text="NEMIS Unique Personal Identifier (UPI)",
+        help_text="Legacy national learner ID (e.g. former NEMIS UPI). Prefer registration_number.",
     )
+    registration_number = models.CharField(
+        max_length=50, blank=True, db_index=True,
+        help_text="School/national registration or index number (Uganda UNEB candidate no. when applicable).",
+    )
+    district = models.CharField(max_length=100, blank=True, help_text="Home district")
+    house = models.CharField(max_length=50, blank=True, help_text="Sports/discipline house")
     birth_certificate_number = models.CharField(max_length=50, blank=True)
     county = models.CharField(max_length=100, blank=True)
     sub_county = models.CharField(max_length=100, blank=True)
     ward = models.CharField(max_length=100, blank=True)
     curriculum_pathway = models.CharField(
-        max_length=20,
+        max_length=30,
         choices=[
-            ("cbc", "CBC"),
+            ("uneb", "UNEB (Uganda)"),
+            ("uganda_cbe", "Uganda Competence-Based"),
+            ("cbc", "CBC (Kenya)"),
             ("844", "8-4-4"),
             ("igcse", "IGCSE"),
             ("ace", "ACE"),
             ("other", "Other"),
         ],
-        default="cbc",
+        default="uneb",
         blank=True,
     )
     boarding_status = models.CharField(

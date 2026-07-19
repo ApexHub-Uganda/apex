@@ -3,6 +3,13 @@
   font-family: inherit;
 }
 
+[data-theme='dark'] .apex-toast {
+  background: var(--apex-surface-elevated, #1a2336) !important;
+  color: var(--apex-text, #e8eef7) !important;
+  border-color: var(--apex-border, #2a3548) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45) !important;
+}
+
 @keyframes apex-toast-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -66,6 +73,41 @@
 .swal2-icon {
   transform: scale(0.85);
   margin: 0.75rem auto 0.5rem !important;
+}
+
+/* Compact loading modal — minimal modern animation, no heavy chrome */
+.apex-swal-loading {
+  padding: 1.85rem 1.5rem 1.6rem !important;
+  min-width: 260px !important;
+  max-width: 320px !important;
+}
+
+.apex-swal-loading .apex-swal-title {
+  font-size: 1rem !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.01em !important;
+  margin: 0 0 0.15rem !important;
+}
+
+.apex-swal-loading .swal2-html-container,
+.apex-swal-loading .apex-swal-text,
+.apex-swal-loading-body {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 0.8125rem !important;
+}
+
+.apex-swal-loading .swal2-actions {
+  display: none !important;
+}
+
+.apex-swal-loading .swal2-loader {
+  display: none !important;
+}
+
+/* Loader visuals live in global.css (.apex-loader*). Swal modal spacing only: */
+.apex-swal-loading .apex-loader {
+  margin: 1rem auto 0.35rem;
 }
 
 /* Custom react-icons — remove default colored icon bubble */

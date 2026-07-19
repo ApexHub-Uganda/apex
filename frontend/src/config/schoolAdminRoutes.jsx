@@ -27,6 +27,7 @@ const DEDICATED_SEGMENTS = new Set([
   'parent/academics', 'parent/results',
   'core/user-accounts', 'core/campuses',
   'academics/timetable/wizard',
+  'academics/promotion', 'academics/report-cards', 'academics/dos-ops',
 ]);
 
 /** Modules that use ModuleHub as their landing page. */

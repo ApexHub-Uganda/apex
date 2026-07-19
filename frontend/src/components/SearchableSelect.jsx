@@ -145,7 +145,7 @@ export function SearchableSelect({
       </button>
 
       {open && (
-        <div className="apex-searchable-select-menu shadow-lg border rounded bg-white">
+        <div className="apex-searchable-select-menu shadow-lg border rounded">
           <div className="p-2 border-bottom">
             <div className="position-relative">
               <FiSearch className="position-absolute text-muted apex-searchable-select-search-icon" />

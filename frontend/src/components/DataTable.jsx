@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { FiSearch, FiChevronLeft, FiChevronRight, FiChevronRight as FiRowOpen, FiFilter } from 'react-icons/fi';
-import { TableSkeleton } from './LoadingSkeleton';
+import { PageLoader } from './ApexLoader';
 import { isNameColumn, isShortColumn, ROW_NUMBER_COLUMN } from '../utils/tableDisplay';
 
 /** Horizontal scroll only when the table has many columns. */
@@ -210,8 +210,16 @@ export function DataTable({
 
   if (loading) {
     return embedded
-      ? <div className="apex-table-panel apex-table-panel--embedded"><TableSkeleton rows={pageSize} cols={displayColumns.length} /></div>
-      : <TableSkeleton rows={pageSize} cols={displayColumns.length} />;
+      ? (
+        <div className="apex-table-panel apex-table-panel--embedded">
+          <PageLoader label="Loading records…" compact />
+        </div>
+      )
+      : (
+        <div className="apex-card apex-table-panel">
+          <PageLoader label="Loading records…" />
+        </div>
+      );
   }
 
   const Wrapper = embedded ? 'div' : motion.div;

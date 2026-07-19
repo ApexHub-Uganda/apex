@@ -680,16 +680,71 @@ def serialize_draft(draft: TimetableGenerationDraft) -> dict[str, Any]:
     }
 
 
-def serialize_schedule(schedule: TimetableSchedule) -> dict[str, Any]:
-    entry_count = schedule.entries.filter(is_deleted=False).count()
+def serialize_schedule(schedule: TimetableSchedule, *, user=None) -> dict[str, Any]:
+    entries_qs = schedule.entries.filter(is_deleted=False)
+    entry_count = entries_qs.count()
+    teaching_count = entries_qs.filter(is_break_slot=False, subject__isnull=False).count()
+    class_rows = list(
+        entries_qs.exclude(school_class_id=None)
+        .values("school_class_id", "school_class__name")
+        .distinct()
+    )
+    class_ids = [r["school_class_id"] for r in class_rows]
+    # Unique names preserving order
+    seen_names = set()
+    class_names = []
+    for r in class_rows:
+        n = r.get("school_class__name") or ""
+        if n and n not in seen_names:
+            seen_names.add(n)
+            class_names.append(n)
+        if len(class_names) >= 12:
+            break
+    is_admin = bool(user and user_is_school_admin(user))
+    is_pub = schedule.is_published
+    can_write = False
+    if user is not None:
+        if is_admin:
+            can_write = True
+        else:
+            can_write = user_can_access_feature(
+                getattr(user, "tenant", None), user, "timetables", require_write=True,
+            )
+    # Draft: any writer may edit. Published: school admin only.
+    can_edit = bool(can_write and (not is_pub or is_admin))
+    can_delete = bool(is_admin or (can_write and not is_pub))
+    can_unpublish = bool(is_admin and is_pub)
+    can_publish = bool(can_write and not is_pub and entry_count > 0)
+
+    creator = getattr(schedule, "created_by", None)
+    creator_name = ""
+    if creator is not None:
+        creator_name = (
+            (getattr(creator, "get_full_name", None) and creator.get_full_name())
+            or getattr(creator, "email", "")
+            or str(getattr(creator, "id", ""))
+        )
+    publisher = getattr(schedule, "published_by", None)
+    publisher_name = ""
+    if publisher is not None:
+        publisher_name = (
+            (getattr(publisher, "get_full_name", None) and publisher.get_full_name())
+            or getattr(publisher, "email", "")
+            or ""
+        )
+
     return {
         "id": str(schedule.id),
         "name": schedule.name,
         "schedule_type": schedule.schedule_type,
         "status": schedule.status,
+        "is_published": is_pub,
         "is_locked": schedule.is_locked,
         "term_id": str(schedule.term_id) if schedule.term_id else None,
         "term_name": schedule.term.name if schedule.term_id else "",
+        "academic_year_name": (
+            schedule.academic_year.name if schedule.academic_year_id else ""
+        ),
         "examination_session_id": str(schedule.examination_session_id) if schedule.examination_session_id else None,
         "examination_session_name": (
             schedule.examination_session.name if schedule.examination_session_id else ""
@@ -699,6 +754,21 @@ def serialize_schedule(schedule: TimetableSchedule) -> dict[str, Any]:
         "config": schedule.config,
         "stats": schedule.stats,
         "entry_count": entry_count,
+        "teaching_count": teaching_count,
+        "class_count": len(class_ids),
+        "class_names": [n for n in class_names if n],
         "applied_at": schedule.applied_at.isoformat() if schedule.applied_at else None,
+        "published_at": schedule.published_at.isoformat() if getattr(schedule, "published_at", None) else None,
         "created_at": schedule.created_at.isoformat() if schedule.created_at else None,
+        "updated_at": schedule.updated_at.isoformat() if schedule.updated_at else None,
+        "created_by_name": creator_name,
+        "published_by_name": publisher_name,
+        "permissions": {
+            "can_edit": can_edit,
+            "can_delete": can_delete,
+            "can_publish": can_publish,
+            "can_unpublish": can_unpublish,
+            "can_print": True,
+            "can_preview": True,
+        },
     }

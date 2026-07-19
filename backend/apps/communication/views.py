@@ -63,6 +63,16 @@ class NotificationViewSet(BaseModelViewSet):
     permission_classes = [IsAuthenticated, TenantActivePermission]
     filterset_fields = ["is_read", "notification_type"]
 
+    def get_permissions(self):
+        """
+        Mark-as-read is personal inbox state (not content creation).
+        Any authenticated tenant user may update read status on their own rows.
+        """
+        action = getattr(self, "action", None)
+        if action in {"mark_read", "mark_all_read", "summary"}:
+            return [IsAuthenticated(), TenantActivePermission()]
+        return super().get_permissions()
+
     def get_queryset(self):
         return Notification.objects.filter(recipient=self.request.user, is_deleted=False)
 
@@ -71,8 +81,8 @@ class NotificationViewSet(BaseModelViewSet):
         n = self.get_object()
         n.is_read = True
         n.read_at = timezone.now()
-        n.save()
-        return Response(NotificationSerializer(n).data)
+        n.save(update_fields=["is_read", "read_at", "updated_at"])
+        return Response({"success": True, "data": NotificationSerializer(n).data})
 
     @action(detail=False, methods=["post"])
     def mark_all_read(self, request: Request) -> Response:

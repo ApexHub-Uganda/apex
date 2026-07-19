@@ -7,6 +7,7 @@ import WorkspaceShell, { WorkspaceSection } from '../../components/WorkspaceShel
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { academicWorkspaceService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
+import { ApexLoader } from '../../components/ApexLoader';
 
 function StatTile({ label, value, accent = 'primary' }) {
   return (
@@ -65,7 +66,7 @@ export function AcademicRoleWorkspace({
   if (isLoading) {
     return (
       <div className="py-5 text-center">
-        <div className="spinner-border text-primary" role="status" />
+        <ApexLoader label="Loading…" />
       </div>
     );
   }
@@ -109,6 +110,21 @@ export function AcademicRoleWorkspace({
         {counts.lesson_sessions_today != null && (
           <div className="col-6 col-md-3">
             <StatTile label="Lessons today" value={counts.lesson_sessions_today} accent="success" />
+          </div>
+        )}
+        {counts.report_cards_generated != null && (
+          <div className="col-6 col-md-3">
+            <StatTile label="Reports generated" value={counts.report_cards_generated} accent="info" />
+          </div>
+        )}
+        {counts.report_cards_draft != null && (
+          <div className="col-6 col-md-3">
+            <StatTile label="Reports unpublished" value={counts.report_cards_draft} accent="warning" />
+          </div>
+        )}
+        {counts.report_cards_published != null && (
+          <div className="col-6 col-md-3">
+            <StatTile label="Reports published" value={counts.report_cards_published} accent="success" />
           </div>
         )}
       </div>
@@ -189,8 +205,8 @@ export function AcademicRoleWorkspace({
             <Link to="/school-admin/academics/discipline" className="btn btn-outline-secondary btn-sm">
               Discipline remarks
             </Link>
-            <Link to="/school-admin/examinations/class-report-cards" className="btn btn-outline-secondary btn-sm">
-              Class report cards
+            <Link to="/school-admin/academics/report-cards" className="btn btn-outline-secondary btn-sm">
+              Report cards
             </Link>
             <Link to="/school-admin/attendance" className="btn btn-outline-secondary btn-sm">
               Class attendance
@@ -207,6 +223,9 @@ export function AcademicRoleWorkspace({
             canReadFeature('teacher_assignments') && { label: 'Teaching assignments', path: '/school-admin/academics/subject-assignments' },
             canReadFeature('timetables') && { label: 'Timetable wizard', path: '/school-admin/academics/timetable/wizard' },
             canReadFeature('examination_sessions') && { label: 'Exam sessions', path: '/school-admin/examinations/sessions' },
+            canReadFeature('report_cards') && { label: 'Report cards', path: '/school-admin/academics/report-cards' },
+            canReadFeature('student_promotion') && { label: 'Promotion', path: '/school-admin/academics/promotion' },
+            canReadFeature('dos_workspace') && { label: 'DoS analytics', path: '/school-admin/academics/dos-ops' },
             canReadFeature('report_cards') && { label: 'Report cards', path: '/school-admin/examinations/report-cards' },
           ].filter(Boolean).map((item) => (
             <div key={item.path} className="col-md-4">

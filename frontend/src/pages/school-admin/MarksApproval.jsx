@@ -7,6 +7,7 @@ import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { marksApprovalService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
+import { ApexLoader } from '../../components/ApexLoader';
 
 export function MarksApproval() {
   const queryClient = useQueryClient();
@@ -106,7 +107,7 @@ export function MarksApproval() {
       )}
 
       {isLoading ? (
-        <div className="py-5 text-center"><div className="spinner-border text-primary" role="status" /></div>
+        <div className="py-5 text-center"><ApexLoader label="Loading…" /></div>
       ) : results.length === 0 ? (
         <div className="apex-card p-5">
           <ModuleEmptyState

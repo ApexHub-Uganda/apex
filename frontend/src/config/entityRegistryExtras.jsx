@@ -152,11 +152,6 @@ export const ENTITY_REGISTRY_EXTRAS = {
     { to: '/school-admin/hostel', label: 'Hostels' },
   ),
 
-  student_promotion: redirectEntry(
-    '/school-admin/students',
-    'Promote students to the next class or stream',
-    { to: '/school-admin/students', label: 'Students' },
-  ),
   positions: redirectEntry(
     '/school-admin/hr/leave',
     'Staff positions and job titles',
@@ -211,32 +206,26 @@ export const ENTITY_REGISTRY_EXTRAS = {
     'Book reservations and hold requests',
     { to: '/school-admin/library', label: 'Library' },
   ),
-  result_processing: redirectEntry(
-    '/school-admin/examinations/report-cards',
-    'Process exam results and publish report cards',
-    { to: '/school-admin/examinations', label: 'Examinations' },
-  ),
-
   // ── Academics ─────────────────────────────────────────────────────────
   periods: {
     service: periodsService,
     queryKey: ['periods'],
     createLabel: 'Add Period',
-    subtitle: 'Daily timetable periods and break slots',
-    backLink: { to: '/school-admin/academics', label: 'Academics' },
+    subtitle: 'School-wide bell schedule (same from–to times every day). Prefer Timetable builder for bulk edit.',
+    backLink: { to: '/school-admin/academics/timetable/wizard', label: 'Timetable builder' },
     columns: [
       { key: 'name', label: 'Period', accessor: 'name', sortable: true },
-      { key: 'start_time', label: 'Starts', accessor: 'start_time' },
-      { key: 'end_time', label: 'Ends', accessor: 'end_time' },
+      { key: 'start_time', label: 'From', accessor: 'start_time' },
+      { key: 'end_time', label: 'To', accessor: 'end_time' },
       { key: 'sort_order', label: 'Order', accessor: 'sort_order' },
       { key: 'is_break', label: 'Break', render: (row) => yesNo(row.is_break) },
     ],
     formFields: [
-      { name: 'name', label: 'Period Name', required: true, placeholder: 'e.g. Period 1' },
-      { name: 'start_time', label: 'Start Time', type: 'time', required: true },
-      { name: 'end_time', label: 'End Time', type: 'time', required: true },
+      { name: 'name', label: 'Name', required: true, placeholder: 'e.g. Period 1, or Lunch / Tea break if break' },
+      { name: 'start_time', label: 'From', type: 'time', required: true },
+      { name: 'end_time', label: 'To', type: 'time', required: true },
       { name: 'sort_order', label: 'Sort Order', type: 'number' },
-      { name: 'is_break', label: 'Break Period', type: 'checkbox', checkboxLabel: 'This is a break / recess period' },
+      { name: 'is_break', label: 'Break Period', type: 'checkbox', checkboxLabel: 'This is a break (use Name for Lunch, Tea, Assembly…)' },
     ],
     emptyForm: { name: '', start_time: '', end_time: '', sort_order: 1, is_break: false },
   },
@@ -430,8 +419,9 @@ export const ENTITY_REGISTRY_EXTRAS = {
       { name: 'term', label: 'Term', type: 'select', optionsFrom: 'terms' },
     ],
     emptyForm: {
-      student: '', school_class: '', remark_type: 'warning', title: '',
+      student: '', school_class: '', remark_type: 'warning', status: 'open', title: '',
       description: '', incident_date: '', subject: '', term: '',
+      suspension_days: '', parent_meeting_on: '', counsellor_referral: false, conduct_points: 0,
     },
   },
 
@@ -439,8 +429,8 @@ export const ENTITY_REGISTRY_EXTRAS = {
     service: reportCardsService,
     queryKey: ['report-cards'],
     createLabel: 'Generate Report Card',
-    subtitle: 'Term report cards with averages and rankings',
-    backLink: { to: '/school-admin/examinations', label: 'Examinations' },
+    subtitle: 'Prefer Academics → Report Cards for class-level generation & broadsheets',
+    backLink: { to: '/school-admin/academics/report-cards', label: 'Report card pipeline' },
     columns: [
       { key: 'student', label: 'Student', accessor: 'student' },
       { key: 'term', label: 'Term', accessor: 'term' },

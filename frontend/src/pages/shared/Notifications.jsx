@@ -97,7 +97,8 @@ export function Notifications() {
       ? platformNotificationsService.markRead(itemId)
       : notificationsService.markRead(itemId)),
     onSuccess: () => invalidateAll(),
-    onError: (err) => notify.error(extractApiError(err, 'Unable to mark message as read.')),
+    // Read-state is personal; avoid alarming toasts if a race/network blip occurs
+    onError: () => { /* optimistic UI already updated */ },
   });
 
   const confirmDeleteAll = async () => {
@@ -216,6 +217,10 @@ export function Notifications() {
   const handleSelectNotification = (item) => {
     if (selectionMode) return;
     setSelectedNotification(item);
+    // Auto mark-as-read on open (detail modal also does this; belt-and-braces)
+    if (item && !item.is_read && canMarkReadItem(item)) {
+      handleMarkReadItem(item);
+    }
   };
 
   return (

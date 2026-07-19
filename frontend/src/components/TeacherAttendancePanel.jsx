@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FiArrowRight, FiUsers } from 'react-icons/fi';
 import { classAttendanceService } from '../services/moduleService';
 import ModuleEmptyState from './ModuleEmptyState';
+import { PageLoader } from './ApexLoader';
 
 export function TeacherAttendancePanel() {
   const { data: options, isLoading } = useQuery({
@@ -26,7 +27,7 @@ export function TeacherAttendancePanel() {
       </div>
 
       {isLoading ? (
-        <div className="py-4 text-center"><div className="spinner-border spinner-border-sm text-primary" role="status" /></div>
+        <PageLoader label="Loading classes…" size="sm" compact />
       ) : classes.length === 0 ? (
         <ModuleEmptyState
           title="No classes assigned"

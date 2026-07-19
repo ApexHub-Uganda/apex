@@ -49,7 +49,7 @@ export function StaffOnboardForm({
       has_portal_access: true,
       employment_type: 'full_time',
       status: 'active',
-      nationality: 'Kenyan',
+      nationality: 'Ugandan',
       portal_role: 'teacher',
       date_joined: new Date().toISOString().slice(0, 10),
       ...initialValues,

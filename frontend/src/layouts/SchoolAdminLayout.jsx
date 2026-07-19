@@ -11,6 +11,7 @@ import { buildSchoolAdminNav } from '../config/navigation';
 import { filterSchoolAdminNavItems } from '../utils/navAccess';
 import { useAuth } from '../hooks/useAuth';
 import { useTenant } from '../hooks/useTenant';
+import { PageLoader } from '../components/ApexLoader';
 
 export function SchoolAdminLayout() {
   const location = useLocation();
@@ -64,6 +65,7 @@ export function SchoolAdminLayout() {
       <div className="apex-main">
         <Navbar
           sidebarCollapsed={sidebarCollapsed}
+          mobileMenuOpen={mobileOpen}
           onMenuClick={() => setMobileOpen((open) => !open)}
           suspended={isSchoolSuspended}
         />
@@ -83,7 +85,7 @@ export function SchoolAdminLayout() {
             >
               {tenantLoading && !tenant ? (
                 <div className="py-5 text-center">
-                  <div className="spinner-border text-primary" role="status" />
+                  <PageLoader label="Loading…" compact />
                 </div>
               ) : (
                 <>

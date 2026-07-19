@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import {
   FiSave, FiDroplet, FiShield, FiImage, FiFileText, FiMapPin, FiMail, FiPhone, FiGlobe, FiRotateCcw,
 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import { useTenant } from '../../hooks/useTenant';
+import { useAuth } from '../../hooks/useAuth';
 import { tenantService } from '../../services/tenantService';
 import { notify } from '../../utils/notify';
 
@@ -37,6 +38,8 @@ const applyLiveTheme = (colors) => {
 
 export function SchoolAdminSettings() {
   const { tenant, refetch, isSchoolAdmin } = useTenant();
+  const { isSchoolAdmin: authIsSchoolAdmin, isSuperAdmin } = useAuth();
+  const canManageSettings = Boolean(isSchoolAdmin || authIsSchoolAdmin || isSuperAdmin);
   const queryClient = useQueryClient();
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(tenant?.logo || null);
@@ -49,7 +52,7 @@ export function SchoolAdminSettings() {
     phone: tenant?.phone || '',
     address: tenant?.address || '',
     city: tenant?.city || '',
-    country: tenant?.country || 'Kenya',
+    country: tenant?.country || 'Uganda',
     website: tenant?.website || '',
     tagline: tenant?.tagline || '',
     timezone: tenant?.timezone || 'Africa/Nairobi',
@@ -181,6 +184,12 @@ export function SchoolAdminSettings() {
   );
 
   const saving = isSubmitting || saveMutation.isPending;
+
+  // Defense in depth: never render school settings UI for non-admins
+  // (route guard also enforces school_admin; keep this after all hooks)
+  if (!canManageSettings) {
+    return <Navigate to="/school-admin" replace />;
+  }
 
   return (
     <div>

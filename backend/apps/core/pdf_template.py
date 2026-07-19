@@ -34,7 +34,7 @@ from zoneinfo import ZoneInfo
 
 from django.utils import timezone
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, landscape as rl_landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
@@ -63,7 +63,8 @@ BOTTOM_MARGIN = 22 * mm
 
 HEADER_TOP_PAD = 10 * mm
 LOGO_SIZE = 18 * mm
-QR_SIZE = 18 * mm
+# Slightly larger than the logo so the verification code is obvious on printouts.
+QR_SIZE = 20 * mm
 HEADER_RULE_Y = PAGE_HEIGHT - 34 * mm
 FOOTER_RULE_Y = 16 * mm
 
@@ -79,6 +80,9 @@ class PDFDocumentContext:
     subtitle: str = ""
     printed_at: datetime | None = None
     content_width: float = PAGE_WIDTH - LEFT_MARGIN - RIGHT_MARGIN
+    page_width: float = PAGE_WIDTH
+    page_height: float = PAGE_HEIGHT
+    orientation: str = "portrait"
 
     @property
     def primary(self) -> colors.Color:
@@ -111,27 +115,59 @@ def encode_document_qr_payload(
     printed_at: datetime | None = None,
 ) -> str:
     """
-    Compact JSON payload for the header QR code.
+    Compact professional JSON for the header QR.
 
-    Callers put document-specific keys in *document_meta*
-    (e.g. student admission no., result term, letter ref).
+    Default envelope is minimal (school code only). Callers add a short set of
+    fields via *document_meta* — e.g. document name, status, term, class.
+    Long IDs, timestamps, and audit fields do not belong in a print QR.
     """
-    payload = {
-        "v": 1,
-        "type": document_type or "document",
-        "school": branding.get("school_code") or branding.get("school_name"),
-        "school_id": branding.get("school_id"),
-        "issued_at": (printed_at or timezone.now()).isoformat(),
-    }
-    if document_meta:
-        # Keep QR compact — string values only, shallow.
-        for key, value in document_meta.items():
-            if value is None:
-                continue
-            if isinstance(value, (str, int, float, bool)):
-                payload[str(key)[:40]] = value
-            else:
-                payload[str(key)[:40]] = str(value)[:120]
+    school = (branding.get("school_code") or branding.get("school_name") or "").strip()
+    payload: dict[str, Any] = {}
+    if school:
+        payload["school"] = school[:40]
+
+    # Preferred short keys from meta (order preserved for stable scanning UX)
+    preferred = ("name", "document", "status", "term", "class", "classes", "student", "ref")
+    meta = dict(document_meta or {})
+
+    def _put(key: str, value: Any) -> None:
+        if value is None:
+            return
+        if isinstance(value, bool):
+            text = "yes" if value else "no"
+        elif isinstance(value, (int, float)):
+            text = str(value)
+        else:
+            text = str(value).strip()
+        if not text or text.lower() in ("none", "null", "—", "-"):
+            return
+        payload[str(key)[:24]] = text[:80]
+
+    for key in preferred:
+        if key in meta:
+            _put(key, meta.pop(key))
+
+    # "name" is the document title; fall back to a clean document_type label
+    if "name" not in payload and "document" not in payload:
+        label = (document_type or "document").replace("_", " ").strip()
+        if label:
+            _put("name", label.title()[:80])
+
+    # Any remaining short meta (callers may pass a few extras deliberately)
+    for key, value in meta.items():
+        if str(key).startswith("_"):
+            continue
+        # Skip heavy/audit keys that bloat QR codes
+        if str(key).lower() in {
+            "v", "school_id", "schedule_id", "issued_at", "created_at", "published_at",
+            "created_by", "published_by", "lessons", "slots", "class_count", "kind",
+            "doc", "scope", "scope_label", "date_from", "date_to", "session",
+        }:
+            continue
+        _put(str(key), value)
+
+    # printed_at intentionally omitted — keep QR short and professional
+    _ = printed_at
     return json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
 
 
@@ -139,19 +175,159 @@ def _make_qr_image(data: str, box_size: int = 4):
     """Return a PIL Image for the QR payload (or None on failure)."""
     try:
         import qrcode
-        from qrcode.constants import ERROR_CORRECT_M
+        from qrcode.constants import ERROR_CORRECT_L, ERROR_CORRECT_M
 
-        qr = qrcode.QRCode(
-            version=None,
-            error_correction=ERROR_CORRECT_M,
-            box_size=box_size,
-            border=1,
-        )
-        qr.add_data(data)
-        qr.make(fit=True)
-        return qr.make_image(fill_color="black", back_color="white").convert("RGB")
+        # Prefer M for denser recovery; fall back to L if payload is large.
+        for level in (ERROR_CORRECT_M, ERROR_CORRECT_L):
+            try:
+                qr = qrcode.QRCode(
+                    version=None,
+                    error_correction=level,
+                    box_size=box_size,
+                    border=1,
+                )
+                qr.add_data(data)
+                qr.make(fit=True)
+                return qr.make_image(fill_color="black", back_color="white").convert("RGB")
+            except Exception:
+                continue
+        return None
     except Exception:
         return None
+
+
+def _qr_matrix(data: str):
+    """
+    Build a QR boolean matrix for the payload.
+
+    Prefer the optional qrcode package; returns None if unavailable.
+    """
+    try:
+        import qrcode
+        from qrcode.constants import ERROR_CORRECT_L, ERROR_CORRECT_M
+
+        for level in (ERROR_CORRECT_M, ERROR_CORRECT_L):
+            try:
+                qr = qrcode.QRCode(
+                    version=None,
+                    error_correction=level,
+                    box_size=1,
+                    border=1,
+                )
+                qr.add_data(data)
+                qr.make(fit=True)
+                return qr.get_matrix()
+            except Exception:
+                continue
+    except Exception:
+        return None
+    return None
+
+
+def _draw_qr_pad(c: canvas.Canvas, x: float, y: float, size: float) -> None:
+    """White plate + border behind the QR so modules stay legible on any header."""
+    pad = 1.5
+    c.setFillColor(colors.white)
+    c.roundRect(x - pad, y - pad, size + 2 * pad, size + 2 * pad, 1.5, fill=1, stroke=0)
+    c.setStrokeColor(colors.HexColor("#CBD5E1"))
+    c.setLineWidth(0.6)
+    c.roundRect(x - pad, y - pad, size + 2 * pad, size + 2 * pad, 1.5, fill=0, stroke=1)
+
+
+def _draw_qr_reportlab_native(c: canvas.Canvas, data: str, x: float, y: float, size: float) -> bool:
+    """
+    Draw QR using ReportLab's built-in barcode QR (no third-party qrcode package).
+
+    This is the primary path — works in every env that already has reportlab.
+    """
+    try:
+        from reportlab.graphics.barcode.qr import QrCodeWidget
+        from reportlab.graphics.shapes import Drawing
+        from reportlab.graphics import renderPDF
+
+        widget = QrCodeWidget(data)
+        bounds = widget.getBounds()
+        bw = float(bounds[2] - bounds[0]) or 1.0
+        bh = float(bounds[3] - bounds[1]) or 1.0
+        # Scale widget into a Drawing of exactly *size* × *size*
+        drawing = Drawing(size, size, transform=[size / bw, 0, 0, size / bh, 0, 0])
+        drawing.add(widget)
+        _draw_qr_pad(c, x, y, size)
+        renderPDF.draw(drawing, c, x, y)
+        return True
+    except Exception:
+        return False
+
+
+def _draw_qr_matrix_modules(c: canvas.Canvas, matrix, x: float, y: float, size: float) -> bool:
+    """Paint a boolean QR matrix as black vector modules."""
+    if not matrix:
+        return False
+    n = len(matrix)
+    if n <= 0:
+        return False
+    _draw_qr_pad(c, x, y, size)
+    module = size / float(n)
+    cell = module + 0.08
+    c.setFillColor(colors.black)
+    for row_i, row in enumerate(matrix):
+        py = y + (n - 1 - row_i) * module
+        for col_i, dark in enumerate(row):
+            if dark:
+                c.rect(x + col_i * module, py, cell, cell, fill=1, stroke=0)
+    return True
+
+
+def _draw_qr_image_fallback(c: canvas.Canvas, data: str, x: float, y: float, size: float) -> bool:
+    """PNG path via optional qrcode package (no mask — viewers hide masked B&W)."""
+    qr_img = _make_qr_image(data)
+    if qr_img is None:
+        return False
+    try:
+        buf = io.BytesIO()
+        qr_img.convert("RGB").save(buf, format="PNG")
+        buf.seek(0)
+        _draw_qr_pad(c, x, y, size)
+        c.drawImage(
+            ImageReader(buf),
+            x,
+            y,
+            width=size,
+            height=size,
+            preserveAspectRatio=True,
+            mask=None,
+        )
+        return True
+    except Exception:
+        return False
+
+
+def _draw_qr_code(c: canvas.Canvas, data: str, x: float, y: float, size: float) -> bool:
+    """
+    Draw a scannable QR at (x, y) bottom-left, *size* points square.
+
+    Priority:
+      1) ReportLab built-in QrCodeWidget (always available with reportlab)
+      2) Optional qrcode package matrix
+      3) Optional qrcode PNG image
+      4) Visible hollow placeholder (last resort)
+    """
+    if _draw_qr_reportlab_native(c, data, x, y, size):
+        return True
+    if _draw_qr_matrix_modules(c, _qr_matrix(data), x, y, size):
+        return True
+    if _draw_qr_image_fallback(c, data, x, y, size):
+        return True
+
+    # Last-resort placeholder — still visible so chrome never looks "empty"
+    _draw_qr_pad(c, x, y, size)
+    c.setStrokeColor(colors.HexColor("#64748B"))
+    c.setLineWidth(0.9)
+    c.rect(x, y, size, size, stroke=1, fill=0)
+    c.setFont("Helvetica-Bold", 7)
+    c.setFillColor(colors.HexColor("#475569"))
+    c.drawCentredString(x + size / 2, y + size / 2 - 2, "QR")
+    return False
 
 
 def _draw_logo_or_placeholder(c: canvas.Canvas, branding: dict[str, Any], x: float, y: float, size: float) -> None:
@@ -187,44 +363,37 @@ def _draw_header(c: canvas.Canvas, ctx: PDFDocumentContext) -> None:
     branding = ctx.branding
     primary_hex = branding["primary_color"]
     primary = colors.HexColor(primary_hex)
+    page_w = getattr(ctx, "page_width", PAGE_WIDTH) or PAGE_WIDTH
+    page_h = getattr(ctx, "page_height", PAGE_HEIGHT) or PAGE_HEIGHT
+    header_rule_y = page_h - 34 * mm
 
     # White page already; draw chrome only.
     left = LEFT_MARGIN
-    right = PAGE_WIDTH - RIGHT_MARGIN
+    right = page_w - RIGHT_MARGIN
     usable = right - left
 
     logo_x = left
-    logo_y = PAGE_HEIGHT - HEADER_TOP_PAD - LOGO_SIZE
+    logo_y = page_h - HEADER_TOP_PAD - LOGO_SIZE
     _draw_logo_or_placeholder(c, branding, logo_x, logo_y, LOGO_SIZE)
 
-    # QR on the right
+    # QR on the right — ReportLab-native first (works without optional qrcode package)
+    # Align QR bottom with logo bottom so both sit in the header band.
     qr_x = right - QR_SIZE
-    qr_y = logo_y
+    qr_y = page_h - HEADER_TOP_PAD - QR_SIZE
     qr_payload = encode_document_qr_payload(
         branding=branding,
         document_type=ctx.document_type,
         document_meta=ctx.document_meta,
         printed_at=ctx.printed_at,
     )
-    qr_img = _make_qr_image(qr_payload)
-    if qr_img is not None:
-        buf = io.BytesIO()
-        qr_img.save(buf, format="PNG")
-        buf.seek(0)
-        c.drawImage(ImageReader(buf), qr_x, qr_y, width=QR_SIZE, height=QR_SIZE, mask="auto")
-    else:
-        c.setStrokeColor(colors.HexColor("#CBD5E1"))
-        c.rect(qr_x, qr_y, QR_SIZE, QR_SIZE, stroke=1, fill=0)
-        c.setFont("Helvetica", 6)
-        c.setFillColor(colors.HexColor("#94A3B8"))
-        c.drawCentredString(qr_x + QR_SIZE / 2, qr_y + QR_SIZE / 2 - 2, "QR")
+    _draw_qr_code(c, qr_payload, qr_x, qr_y, QR_SIZE)
 
     # Center professional info (between logo and QR)
     mid_left = left + LOGO_SIZE + 4 * mm
     mid_right = qr_x - 4 * mm
     mid_width = max(40, mid_right - mid_left)
     center_x = mid_left + mid_width / 2
-    text_top = PAGE_HEIGHT - HEADER_TOP_PAD - 2 * mm
+    text_top = page_h - HEADER_TOP_PAD - 2 * mm
 
     c.setFillColor(primary)
     c.setFont("Helvetica-Bold", 13)
@@ -251,18 +420,19 @@ def _draw_header(c: canvas.Canvas, ctx: PDFDocumentContext) -> None:
     # Header underline (school primary colour)
     c.setStrokeColor(primary)
     c.setLineWidth(1.6)
-    c.line(left, HEADER_RULE_Y, right, HEADER_RULE_Y)
+    c.line(left, header_rule_y, right, header_rule_y)
     # Thin secondary accent line under primary rule
     c.setStrokeColor(colors.HexColor(branding["secondary_color"]))
     c.setLineWidth(0.6)
-    c.line(left, HEADER_RULE_Y - 2.2, right, HEADER_RULE_Y - 2.2)
+    c.line(left, header_rule_y - 2.2, right, header_rule_y - 2.2)
 
 
 def _draw_footer(c: canvas.Canvas, ctx: PDFDocumentContext, page_number: int, page_count: int | None = None) -> None:
     branding = ctx.branding
     primary = colors.HexColor(branding["primary_color"])
+    page_w = getattr(ctx, "page_width", PAGE_WIDTH) or PAGE_WIDTH
     left = LEFT_MARGIN
-    right = PAGE_WIDTH - RIGHT_MARGIN
+    right = page_w - RIGHT_MARGIN
 
     # Footer underline
     c.setStrokeColor(primary)
@@ -421,13 +591,20 @@ def build_branded_pdf(
     title: str = "",
     subtitle: str = "",
     request=None,
+    orientation: str = "portrait",
 ) -> bytes:
     """
-    Build a complete A4 branded PDF.
+    Build a complete A4 branded PDF (portrait by default; landscape supported).
 
     *build_story(ctx, styles)* must return a sequence of ReportLab flowables
     for the document body only (header/footer are drawn automatically).
     """
+    orientation = (orientation or "portrait").lower()
+    if orientation not in ("portrait", "landscape"):
+        orientation = "portrait"
+    pagesize = rl_landscape(A4) if orientation == "landscape" else A4
+    page_w, page_h = pagesize
+
     branding = build_tenant_branding(tenant, request=request)
     printed_at = _resolve_print_datetime(branding.get("timezone"))
     ctx = PDFDocumentContext(
@@ -437,13 +614,17 @@ def build_branded_pdf(
         title=title,
         subtitle=subtitle,
         printed_at=printed_at,
+        content_width=page_w - LEFT_MARGIN - RIGHT_MARGIN,
+        page_width=page_w,
+        page_height=page_h,
+        orientation=orientation,
     )
     styles = get_pdf_styles(ctx)
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
-        pagesize=A4,
+        pagesize=pagesize,
         leftMargin=LEFT_MARGIN,
         rightMargin=RIGHT_MARGIN,
         topMargin=TOP_MARGIN,
@@ -467,7 +648,7 @@ def build_branded_pdf(
         canv.saveState()
         # Ensure white page background
         canv.setFillColor(colors.white)
-        canv.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=1, stroke=0)
+        canv.rect(0, 0, page_w, page_h, fill=1, stroke=0)
         page_state["count"] = doc_.page
         _draw_header(canv, ctx)
         _draw_footer(canv, ctx, page_number=doc_.page)

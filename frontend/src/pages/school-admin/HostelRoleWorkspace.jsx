@@ -5,6 +5,7 @@ import WorkspaceShell, { WorkspaceSection } from '../../components/WorkspaceShel
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { hostelWorkspaceService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
+import { ApexLoader } from '../../components/ApexLoader';
 
 function StatTile({ label, value, accent = 'primary' }) {
   return (
@@ -36,7 +37,7 @@ export function HostelRoleWorkspace({
   if (isLoading) {
     return (
       <div className="py-5 text-center">
-        <div className="spinner-border text-primary" role="status" />
+        <ApexLoader label="Loading…" />
       </div>
     );
   }

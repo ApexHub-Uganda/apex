@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FiAlertTriangle, FiTrash2 } from 'react-icons/fi';
 import Modal from './Modal';
+import { ApexLoader, InlineLoader } from './ApexLoader';
 
 const STEPS = ['review', 'confirm', 'execute'];
 
@@ -105,7 +106,7 @@ export function SchoolDeleteModal({
         <div>
           {previewLoading ? (
             <div className="text-center py-4">
-              <div className="spinner-border text-danger" role="status" />
+              <ApexLoader label="Loading…" />
               <p className="text-muted small mt-2 mb-0">Analyzing school data…</p>
             </div>
           ) : preview ? (
@@ -209,7 +210,7 @@ export function SchoolDeleteModal({
           </p>
           {deleting && (
             <div className="mt-3">
-              <div className="spinner-border spinner-border-sm text-danger" role="status" />
+              <InlineLoader label="Loading" />
               <span className="small text-muted ms-2">Removing school and associated data…</span>
             </div>
           )}

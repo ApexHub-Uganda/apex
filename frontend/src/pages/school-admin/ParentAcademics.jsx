@@ -5,6 +5,7 @@ import { FiAward, FiBookOpen, FiLock } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { parentPortalService } from '../../services/moduleService';
+import { ApexLoader } from '../../components/ApexLoader';
 
 const formatPct = (v) => {
   const n = Number(v);
@@ -31,7 +32,7 @@ export function ParentAcademics() {
   if (isLoading) {
     return (
       <div className="py-5 text-center">
-        <div className="spinner-border text-primary" role="status" />
+        <ApexLoader label="Loading…" />
       </div>
     );
   }

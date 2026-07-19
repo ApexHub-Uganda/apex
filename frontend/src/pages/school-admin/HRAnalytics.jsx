@@ -4,6 +4,7 @@ import { FiArrowLeft } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import { hrAnalyticsService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
+import { ApexLoader } from '../../components/ApexLoader';
 
 function StatCard({ label, value }) {
   return (
@@ -39,7 +40,7 @@ export function HRAnalytics() {
       {isError && <div className="alert alert-danger">Unable to load HR analytics.</div>}
 
       {isLoading ? (
-        <div className="py-5 text-center"><div className="spinner-border text-primary" role="status" /></div>
+        <div className="py-5 text-center"><ApexLoader label="Loading…" /></div>
       ) : (
         <>
           <div className="row g-3 mb-4">

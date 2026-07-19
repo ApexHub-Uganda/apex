@@ -322,17 +322,72 @@ export const teachingAssignmentsService = {
 };
 export const timetablesService = createCrudService('/academics/timetables/');
 export const timetableWizardService = {
+  // Class-by-class grid builder (primary wizard)
+  getWizardContext: () => api.get('/academics/timetables/wizard/context/').then((r) => unwrapData(r)),
+  syncPeriods: (periods) => api.post('/academics/timetables/wizard/periods/', { periods }).then((r) => unwrapData(r)),
+  getClassGrid: (params = {}) => api.get('/academics/timetables/wizard/grid/', { params }).then((r) => unwrapData(r)),
+  saveClassGrid: (payload) => api.post('/academics/timetables/wizard/grid/', payload).then((r) => unwrapData(r)),
+  validateGrid: (payload) => api.post('/academics/timetables/wizard/validate/', payload).then((r) => unwrapData(r)),
+  defaultTeacher: (params = {}) => api.get('/academics/timetables/wizard/default-teacher/', { params }).then((r) => unwrapData(r)),
+  publish: (payload = {}) => api.post('/academics/timetables/wizard/publish/', payload).then((r) => unwrapData(r)),
+  unpublish: (payload = {}) => api.post('/academics/timetables/wizard/unpublish/', payload).then((r) => unwrapData(r)),
+  createDraft: (payload = {}) => api.post('/academics/timetables/wizard/create-draft/', payload).then((r) => unwrapData(r)),
+  printPdf: async (params = {}) => {
+    const search = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v == null || v === '') return;
+      if (Array.isArray(v)) v.forEach((item) => search.append(k, item));
+      else search.append(k, v);
+    });
+    const r = await api.get(`/academics/timetables/print.pdf?${search.toString()}`, { responseType: 'blob' });
+    // Guard: API may return JSON error with blob content-type mishandled
+    if (r.data instanceof Blob && r.data.type && r.data.type.includes('application/json')) {
+      const text = await r.data.text();
+      let msg = 'Print failed.';
+      try { msg = JSON.parse(text)?.message || msg; } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+    return r.data;
+  },
+  // Legacy auto-generator (still available)
   getContext: () => api.get('/academics/timetables/generate/context/').then((r) => unwrapData(r)),
   generate: (payload) => api.post('/academics/timetables/generate/', payload).then((r) => unwrapData(r)),
   getDraft: (id) => api.get(`/academics/timetables/generate/${id}/`).then((r) => unwrapData(r)),
   regenerate: (id) => api.post(`/academics/timetables/generate/${id}/`, { action: 'regenerate' }).then((r) => unwrapData(r)),
   apply: (id) => api.post(`/academics/timetables/generate/${id}/`, { action: 'apply' }).then((r) => unwrapData(r)),
   listSchedules: (params = {}) => api.get('/academics/timetable-schedules/', { params }).then((r) => {
-    const data = unwrapData(r);
-    return Array.isArray(data) ? data : (data?.results || data || []);
+    const body = r?.data ?? r;
+    const data = body?.data ?? body;
+    const list = Array.isArray(data) ? data : (data?.results || []);
+    return {
+      results: list,
+      summary: body?.summary || { total: list.length, drafts: 0, published: 0 },
+    };
   }),
   getSchedule: (id) => api.get(`/academics/timetable-schedules/${id}/`).then((r) => unwrapData(r)),
   deleteSchedule: (id) => api.delete(`/academics/timetable-schedules/${id}/`).then((r) => unwrapData(r)),
+  // Examination timetable (date + time, free invigilator pick)
+  getExamContext: () => api.get('/academics/timetables/exam/context/').then((r) => unwrapData(r)),
+  createExamDraft: (payload = {}) => api.post('/academics/timetables/exam/create-draft/', payload).then((r) => unwrapData(r)),
+  getExamSlots: (params = {}) => api.get('/academics/timetables/exam/slots/', { params }).then((r) => unwrapData(r)),
+  saveExamSlots: (payload) => api.post('/academics/timetables/exam/slots/', payload).then((r) => unwrapData(r)),
+  validateExamSlots: (payload) => api.post('/academics/timetables/exam/validate/', payload).then((r) => unwrapData(r)),
+  publishExam: (payload = {}) => api.post('/academics/timetables/exam/publish/', payload).then((r) => unwrapData(r)),
+  printExamPdf: async (params = {}) => {
+    const search = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v == null || v === '') return;
+      search.append(k, v);
+    });
+    const r = await api.get(`/academics/timetables/exam/print.pdf?${search.toString()}`, { responseType: 'blob' });
+    if (r.data instanceof Blob && r.data.type && r.data.type.includes('application/json')) {
+      const text = await r.data.text();
+      let msg = 'Print failed.';
+      try { msg = JSON.parse(text)?.message || msg; } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+    return r.data;
+  },
 };
 export const feeCategoriesService = createCrudService('/finance/fee-categories/');
 export const feeStructuresService = createCrudService('/finance/fee-structures/');
@@ -477,7 +532,68 @@ export const assignmentGradeService = {
       return { ...(body?.data ?? body), message: body?.message };
     }),
 };
+
+export const promotionService = {
+  context: () => api.get('/academics/promotion/context/').then((r) => unwrapData(r)),
+  preview: (payload) => api.post('/academics/promotion/preview/', payload).then((r) => unwrapData(r)),
+  commit: (batchId) => api.post(`/academics/promotion/${batchId}/commit/`).then((r) => unwrapData(r)),
+  undo: (batchId) => api.post(`/academics/promotion/${batchId}/undo/`).then((r) => unwrapData(r)),
+};
+export const academicReportCardsService = {
+  latest: (params = {}) => api.get('/academics/report-cards/latest/', { params }).then((r) => unwrapData(r)),
+  generate: (payload) => api.post('/academics/report-cards/generate/', payload).then((r) => unwrapData(r)),
+  publish: (payload) => api.post('/academics/report-cards/publish/', payload).then((r) => unwrapData(r)),
+  pdf: (id) => api.get(`/academics/report-cards/${id}/pdf/`, { responseType: 'blob' }).then(async (r) => {
+    const blob = r.data;
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `report-card-${id}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  }),
+  broadsheet: (params = {}) => api.get('/academics/report-cards/broadsheet.pdf', { params, responseType: 'blob' }).then(async (r) => {
+    const blob = r.data;
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'class-broadsheet.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  }),
+};
 export const reportCardsService = createCrudService('/examinations/report-cards/');
+
+export const dosOpsService = {
+  performance: (params = {}) => api.get('/academics/dos/performance/', { params }).then((r) => unwrapData(r)),
+  completeness: (params = {}) => api.get('/academics/dos/marks-completeness/', { params }).then((r) => unwrapData(r)),
+  teacherLoad: () => api.get('/academics/dos/teacher-load/').then((r) => unwrapData(r)),
+  reportStatus: (params = {}) => api.get('/academics/dos/report-status/', { params }).then((r) => unwrapData(r)),
+  seedUganda: () => api.post('/academics/uganda-seed/').then((r) => unwrapData(r)),
+  unebCsv: async (params = {}) => {
+    const r = await api.get('/academics/dos/uneb-candidates.csv', { params, responseType: 'blob' });
+    return r.data;
+  },
+};
+
+export const assessmentSchemesService = createCrudService('/academics/assessment-schemes/');
+export const subjectCombinationsService = createCrudService('/academics/subject-combinations/');
+export const subjectRegistrationsService = createCrudService('/academics/subject-registrations/');
+
+export const academicCertificatesService = {
+  leaving: async (studentId, params = {}) => {
+    const r = await api.get(`/academics/certificates/${studentId}/leaving.pdf`, { params, responseType: 'blob' });
+    return r.data;
+  },
+  transcript: async (studentId) => {
+    const r = await api.get(`/academics/certificates/${studentId}/transcript.pdf`, { responseType: 'blob' });
+    return r.data;
+  },
+};
 export const examsService = {
   ...createCrudService('/examinations/exams/'),
   publish: (id) => api.post(`/examinations/exams/${id}/publish/`).then((r) => {
@@ -742,4 +858,5 @@ export default {
   notificationsService,
   notificationFeedService,
 };
+
 

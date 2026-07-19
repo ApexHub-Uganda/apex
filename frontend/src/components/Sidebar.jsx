@@ -434,7 +434,7 @@ export function Sidebar({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
             onClick={closeSidebar}
             aria-hidden
           />
@@ -443,12 +443,18 @@ export function Sidebar({
 
       <motion.aside
         ref={sidebarRef}
-        className={`apex-sidebar ${showCollapsed ? 'is-collapsed' : ''} ${isMobile ? 'is-mobile' : ''} ${disabled ? 'is-disabled' : ''}`}
+        className={`apex-sidebar ${showCollapsed ? 'is-collapsed' : ''} ${isMobile ? 'is-mobile' : ''} ${isMobile && mobileOpen ? 'is-mobile-open' : ''} ${disabled ? 'is-disabled' : ''}`}
+        initial={false}
         animate={{
-          width: sidebarWidth,
+          width: isMobile ? SIDEBAR_WIDTH_EXPANDED : sidebarWidth,
           x: isMobile && !mobileOpen ? -SIDEBAR_WIDTH_EXPANDED : 0,
         }}
-        transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
+        transition={
+          isMobile
+            ? { type: 'spring', stiffness: 380, damping: 34, mass: 0.85 }
+            : { duration: 0.28, ease: [0.4, 0, 0.2, 1] }
+        }
+        style={isMobile ? { width: SIDEBAR_WIDTH_EXPANDED } : undefined}
         onMouseEnter={() => {
           if (showCollapsed && !isMobile) cancelFlyoutClose();
         }}

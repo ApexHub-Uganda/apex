@@ -136,7 +136,35 @@ def build_academic_workspace(*, tenant, user) -> dict[str, Any]:
             is_deleted=False,
         ).count()
 
+    # Report card generation status for DoS / class teachers
+    try:
+        from apps.examinations.models import ReportCard
+        from apps.academics.singleton import get_active_term
+        active_term = get_active_term(tenant)
+        if active_term and (
+            _feature_enabled(perms, "report_cards")
+            or _feature_enabled(perms, "class_report_cards")
+            or _feature_enabled(perms, "dos_workspace")
+        ):
+            rc_qs = ReportCard.objects.filter(
+                tenant=tenant, term=active_term, is_deleted=False, is_latest=True,
+            )
+            if class_ids and not is_school_wide:
+                rc_qs = rc_qs.filter(school_class_id__in=class_ids)
+            payload["counts"]["report_cards_generated"] = rc_qs.count()
+            payload["counts"]["report_cards_published"] = rc_qs.filter(is_published=True).count()
+            payload["counts"]["report_cards_draft"] = rc_qs.filter(is_published=False).count()
+            payload["queues"]["report_cards"] = {
+                "generated": payload["counts"]["report_cards_generated"],
+                "published": payload["counts"]["report_cards_published"],
+                "draft": payload["counts"]["report_cards_draft"],
+                "path": "/school-admin/academics/report-cards",
+            }
+    except Exception:
+        pass
+
     if role == UserRole.TEACHER and _feature_enabled(perms, "teacher_workspace"):
+
         payload["quick_links"] = [
             {"label": "Marks Entry", "path": "/school-admin/examinations/marks", "feature_key": "marks_entry"},
             {"label": "Lesson Attendance", "path": "/school-admin/attendance/lessons", "feature_key": "lesson_attendance"},
@@ -146,6 +174,7 @@ def build_academic_workspace(*, tenant, user) -> dict[str, Any]:
         payload["quick_links"] = [
             {"label": "Class Notices", "path": "/school-admin/academics/class-notices", "feature_key": "class_notices"},
             {"label": "Discipline", "path": "/school-admin/academics/discipline", "feature_key": "discipline_remarks"},
+            {"label": "Report Cards", "path": "/school-admin/academics/report-cards", "feature_key": "report_cards"},
             {"label": "Marks Entry", "path": "/school-admin/examinations/marks", "feature_key": "marks_entry"},
             {"label": "Lesson Attendance", "path": "/school-admin/attendance/lessons", "feature_key": "lesson_attendance"},
         ]
@@ -155,7 +184,7 @@ def build_academic_workspace(*, tenant, user) -> dict[str, Any]:
             {"label": "Subjects", "path": "/school-admin/academics/subjects", "feature_key": "subjects"},
             {"label": "Assessments", "path": "/school-admin/examinations/assessments", "feature_key": "assessment_management"},
             {"label": "Marks Entry", "path": "/school-admin/examinations/marks", "feature_key": "marks_entry"},
-            {"label": "Report Cards", "path": "/school-admin/examinations/report-cards", "feature_key": "report_cards"},
+            {"label": "Report Cards", "path": "/school-admin/academics/report-cards", "feature_key": "report_cards"},
         ]
         if ctx and ctx.department_subject_ids:
             payload["counts"]["department_subjects"] = len(ctx.department_subject_ids)
@@ -165,6 +194,9 @@ def build_academic_workspace(*, tenant, user) -> dict[str, Any]:
             {"label": "Teacher Assignments", "path": "/school-admin/academics/subject-assignments", "feature_key": "teacher_assignments"},
             {"label": "Exam Sessions", "path": "/school-admin/examinations/sessions", "feature_key": "examination_sessions"},
             {"label": "Marks Approval", "path": "/school-admin/examinations/approval", "feature_key": "marks_approval"},
+            {"label": "Report Cards", "path": "/school-admin/academics/report-cards", "feature_key": "report_cards"},
+            {"label": "Promotion", "path": "/school-admin/academics/promotion", "feature_key": "student_promotion"},
+            {"label": "DoS Analytics", "path": "/school-admin/academics/dos-ops", "feature_key": "dos_workspace"},
             {"label": "Timetable Wizard", "path": "/school-admin/academics/timetable/wizard", "feature_key": "timetables"},
             {"label": "Terms", "path": "/school-admin/academics/terms", "feature_key": "terms"},
             {"label": "Assessments", "path": "/school-admin/examinations/assessments", "feature_key": "assessment_management"},

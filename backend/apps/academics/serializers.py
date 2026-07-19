@@ -3,6 +3,7 @@ from rest_framework import serializers
 from apps.staff.models import Teacher
 from apps.academics.models import (
     AcademicYear,
+    AssessmentScheme,
     Assignment,
     Class,
     ClassNotice,
@@ -11,9 +12,12 @@ from apps.academics.models import (
     Department,
     DisciplineRemark,
     Homework,
+    HomeworkSubmission,
     Period,
     Stream,
+    StudentSubjectRegistration,
     Subject,
+    SubjectCombination,
     SubjectPaper,
     TeachingAssignment,
     Term,
@@ -259,8 +263,8 @@ class SubjectSerializer(serializers.ModelSerializer):
 
 class TimetableSerializer(serializers.ModelSerializer):
     school_class_name = serializers.CharField(source="school_class.name", read_only=True)
-    subject_name = serializers.CharField(source="subject.name", read_only=True)
-    subject_code = serializers.CharField(source="subject.code", read_only=True)
+    subject_name = serializers.SerializerMethodField()
+    subject_code = serializers.SerializerMethodField()
     teacher_name = serializers.SerializerMethodField()
     period_name = serializers.CharField(source="period.name", read_only=True)
     stream_name = serializers.CharField(source="stream.name", read_only=True)
@@ -271,6 +275,14 @@ class TimetableSerializer(serializers.ModelSerializer):
         model = Timetable
         fields = "__all__"
         read_only_fields = READ_ONLY
+
+    def get_subject_name(self, obj) -> str:
+        if obj.subject_id:
+            return obj.subject.name
+        return obj.slot_label or ("Break" if obj.is_break_slot else "")
+
+    def get_subject_code(self, obj) -> str:
+        return obj.subject.code if obj.subject_id else ""
 
     def get_teacher_name(self, obj) -> str:
         if not obj.teacher_id:
@@ -382,6 +394,54 @@ class AssignmentSerializer(serializers.ModelSerializer):
 class HomeworkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Homework
+        fields = "__all__"
+        read_only_fields = READ_ONLY
+
+
+class HomeworkSubmissionSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source="student.full_name", read_only=True)
+    homework_title = serializers.CharField(source="homework.title", read_only=True)
+
+    class Meta:
+        model = HomeworkSubmission
+        fields = "__all__"
+        read_only_fields = READ_ONLY
+
+
+class AssessmentSchemeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssessmentScheme
+        fields = "__all__"
+        read_only_fields = READ_ONLY
+
+    def create(self, validated_data):
+        if validated_data.get("is_default"):
+            tenant = self.context["request"].user.tenant
+            AssessmentScheme.objects.filter(tenant=tenant, is_default=True, is_deleted=False).update(is_default=False)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if validated_data.get("is_default"):
+            AssessmentScheme.objects.filter(
+                tenant=instance.tenant, is_default=True, is_deleted=False,
+            ).exclude(pk=instance.pk).update(is_default=False)
+        return super().update(instance, validated_data)
+
+
+class SubjectCombinationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubjectCombination
+        fields = "__all__"
+        read_only_fields = READ_ONLY
+
+
+class StudentSubjectRegistrationSerializer(serializers.ModelSerializer):
+    student_name = serializers.CharField(source="student.full_name", read_only=True)
+    subject_name = serializers.CharField(source="subject.name", read_only=True)
+    subject_code = serializers.CharField(source="subject.code", read_only=True)
+
+    class Meta:
+        model = StudentSubjectRegistration
         fields = "__all__"
         read_only_fields = READ_ONLY
 

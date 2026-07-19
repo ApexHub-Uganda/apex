@@ -2,6 +2,7 @@ import { useTenantContext } from '../context/TenantContext';
 import { SCHOOL_MODULES } from '../config/schoolModules';
 import AccessDenied from '../pages/shared/AccessDenied';
 import UpgradeRequired from '../pages/shared/UpgradeRequired';
+import { PageLoader } from './ApexLoader';
 
 export function ModuleHubGate({ moduleKey, children }) {
   const {
@@ -13,11 +14,7 @@ export function ModuleHubGate({ moduleKey, children }) {
   } = useTenantContext();
 
   if (loading) {
-    return (
-      <div className="d-flex justify-content-center py-5">
-        <div className="spinner-border text-primary" role="status" />
-      </div>
-    );
+    return <PageLoader label="Loading…" />;
   }
 
   const module = moduleMenu.find((entry) => entry.key === moduleKey)

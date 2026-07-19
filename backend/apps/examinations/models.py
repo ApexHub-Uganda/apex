@@ -216,18 +216,74 @@ class Grade(BaseModel):
         unique_together = [("tenant", "exam", "student")]
         ordering = ["-score"]
 
+
 class ReportCard(BaseModel):
     student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="report_cards")
     term = models.ForeignKey("academics.Term", on_delete=models.CASCADE, related_name="report_cards")
     school_class = models.ForeignKey("academics.Class", on_delete=models.CASCADE, related_name="report_cards")
+    stream = models.ForeignKey(
+        "academics.Stream", on_delete=models.SET_NULL, null=True, blank=True, related_name="report_cards",
+    )
+    academic_year = models.ForeignKey(
+        "academics.AcademicYear", on_delete=models.SET_NULL, null=True, blank=True, related_name="report_cards",
+    )
+    version = models.PositiveIntegerField(default=1)
+    is_latest = models.BooleanField(default=True, db_index=True)
     total_score = models.DecimalField(max_digits=7, decimal_places=2, default=0)
     average_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     rank = models.PositiveIntegerField(null=True, blank=True)
+    stream_rank = models.PositiveIntegerField(null=True, blank=True)
+    class_size = models.PositiveIntegerField(null=True, blank=True)
+    stream_size = models.PositiveIntegerField(null=True, blank=True)
+    aggregate_points = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    division = models.CharField(max_length=20, blank=True)
     remarks = models.TextField(blank=True)
     teacher_remarks = models.TextField(blank=True)
     principal_remarks = models.TextField(blank=True)
+    dos_remarks = models.TextField(blank=True)
     is_published = models.BooleanField(default=False)
+    published_at = models.DateTimeField(null=True, blank=True)
+    published_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="published_report_cards",
+    )
+    days_present = models.PositiveIntegerField(default=0)
+    days_absent = models.PositiveIntegerField(default=0)
+    days_late = models.PositiveIntegerField(default=0)
+    days_excused = models.PositiveIntegerField(default=0)
+    next_term_opens = models.DateField(null=True, blank=True)
+    generation_meta = models.JSONField(default=dict, blank=True)
 
     class Meta:
-        unique_together = [("tenant", "student", "term")]
-        ordering = ["-term__start_date"]
+        ordering = ["-term__start_date", "-version"]
+        indexes = [
+            models.Index(fields=["tenant", "term", "school_class", "is_latest"]),
+            models.Index(fields=["tenant", "student", "term", "is_latest"]),
+            models.Index(fields=["tenant", "is_published", "is_latest"]),
+        ]
+
+
+class ReportCardSubjectLine(BaseModel):
+    """Per-subject breakdown line on a generated report card."""
+
+    report_card = models.ForeignKey(ReportCard, on_delete=models.CASCADE, related_name="subject_lines")
+    subject = models.ForeignKey(
+        "academics.Subject", on_delete=models.SET_NULL, null=True, blank=True, related_name="report_card_lines",
+    )
+    subject_name = models.CharField(max_length=120)
+    subject_code = models.CharField(max_length=30, blank=True)
+    paper_breakdown = models.JSONField(default=list, blank=True)
+    ca_score = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    exam_score = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    total_score = models.DecimalField(max_digits=6, decimal_places=2, default=0)
+    max_score = models.DecimalField(max_digits=6, decimal_places=2, default=100)
+    grade = models.CharField(max_length=10, blank=True)
+    grade_point = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
+    remarks = models.CharField(max_length=120, blank=True)
+    sort_order = models.PositiveSmallIntegerField(default=1)
+
+    class Meta:
+        ordering = ["sort_order", "subject_name"]

@@ -164,7 +164,7 @@ export function Terms() {
 
       <PageHeader
         title="Terms"
-        subtitle="Kenyan 3-term calendar — reporting dates, mid-term breaks, and term numbers"
+        subtitle="Uganda 3-term calendar — reporting dates, mid-term breaks, and term numbers"
         actions={canCreate && (
           <button type="button" className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1" onClick={openCreate}>
             <FiPlus size={16} /> Add Term

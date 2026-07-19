@@ -126,7 +126,13 @@ class TenantActivePermission(BasePermission):
 def mutation_requires_write(request: Request, view: APIView) -> bool:
     """True when the request mutates data (POST/PUT/PATCH/DELETE or write viewset actions)."""
     action = getattr(view, "action", None)
-    if action in {"prefects", "remove_prefect"}:
+    # Personal inbox read-state is not "creating content" — any recipient may mark read.
+    if action in {
+        "prefects",
+        "remove_prefect",
+        "mark_read",
+        "mark_all_read",
+    }:
         return False
     if request.method not in SAFE_METHODS:
         return True

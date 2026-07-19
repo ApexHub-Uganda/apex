@@ -197,8 +197,8 @@ def build_parent_academics_bundle(*, tenant, user, student_id: str | None = None
         if can_results:
             if clearance["results_allowed"]:
                 cards = ReportCard.objects.filter(
-                    tenant=tenant, student=child, is_deleted=False, is_published=True,
-                ).select_related("term", "school_class").order_by("-term__start_date")[:10]
+                    tenant=tenant, student=child, is_deleted=False, is_published=True, is_latest=True,
+                ).select_related("term", "school_class", "stream").prefetch_related("subject_lines").order_by("-term__start_date")[:10]
                 grades = Grade.objects.filter(
                     tenant=tenant, student=child, is_deleted=False,
                     exam__lifecycle_status="published",
@@ -208,13 +208,29 @@ def build_parent_academics_bundle(*, tenant, user, student_id: str | None = None
                     "locked": False,
                     "report_cards": [
                         {
+                            "id": str(c.id),
                             "term": c.term.name if c.term_id else "",
                             "class_name": c.school_class.name if c.school_class_id else "",
+                            "stream_name": c.stream.name if getattr(c, "stream_id", None) else "",
                             "average_score": str(c.average_score),
                             "total_score": str(c.total_score),
                             "rank": c.rank,
+                            "stream_rank": getattr(c, "stream_rank", None),
+                            "days_present": getattr(c, "days_present", 0),
+                            "days_absent": getattr(c, "days_absent", 0),
                             "teacher_remarks": c.teacher_remarks,
                             "principal_remarks": c.principal_remarks,
+                            "dos_remarks": getattr(c, "dos_remarks", "") or "",
+                            "subjects": [
+                                {
+                                    "name": ln.subject_name,
+                                    "total": str(ln.total_score),
+                                    "grade": ln.grade,
+                                    "ca": str(ln.ca_score) if ln.ca_score is not None else None,
+                                    "exam": str(ln.exam_score) if ln.exam_score is not None else None,
+                                }
+                                for ln in c.subject_lines.filter(is_deleted=False).order_by("sort_order")
+                            ],
                         }
                         for c in cards
                     ],
@@ -244,3 +260,4 @@ def build_parent_academics_bundle(*, tenant, user, student_id: str | None = None
         rows.append(bundle)
 
     return {"children": rows, "count": len(rows), "view": "parent_academics", "denied": False}
+

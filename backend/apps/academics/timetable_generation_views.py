@@ -122,28 +122,100 @@ class TimetableScheduleViewSet(viewsets.ModelViewSet):
         user = self.request.user
         qs = TimetableSchedule.objects.filter(is_deleted=False).select_related(
             "term", "examination_session", "academic_year", "applied_by",
+            "created_by", "published_by",
         )
         if user_is_school_admin(user) and not user.tenant_id:
             return qs
-        return qs.filter(tenant=user.tenant)
+        qs = qs.filter(tenant=user.tenant)
+        # Teachers / non-writers only see published schedules
+        from apps.tenants.role_permissions import user_can_access_feature
+        can_write = user_is_school_admin(user) or user_can_access_feature(
+            user.tenant, user, "timetables", require_write=True,
+        )
+        if not can_write:
+            qs = qs.filter(status__in=[
+                TimetableSchedule.STATUS_PUBLISHED,
+                TimetableSchedule.STATUS_ACTIVE,
+            ])
+        return qs
 
     def list(self, request, *args, **kwargs):
-        qs = self.filter_queryset(self.get_queryset())
-        data = [serialize_schedule(s) for s in qs[:50]]
-        return Response({"success": True, "data": data, "count": len(data)})
+        qs = self.filter_queryset(self.get_queryset()).order_by("-updated_at", "-created_at")
+        data = [serialize_schedule(s, user=request.user) for s in qs[:50]]
+        drafts = [d for d in data if d["status"] == "draft"]
+        published = [d for d in data if d.get("is_published")]
+        return Response({
+            "success": True,
+            "data": data,
+            "count": len(data),
+            "summary": {
+                "total": len(data),
+                "drafts": len(drafts),
+                "published": len(published),
+            },
+        })
 
     def retrieve(self, request, *args, **kwargs):
         schedule = self.get_object()
-        payload = serialize_schedule(schedule)
+        # Non-writers may only retrieve published schedules
+        if not schedule.is_published:
+            from apps.tenants.role_permissions import user_can_access_feature
+            can_write = user_is_school_admin(request.user) or user_can_access_feature(
+                request.user.tenant, request.user, "timetables", require_write=True,
+            )
+            if not can_write:
+                return Response(
+                    {"success": False, "message": "This timetable is not published."},
+                    status=403,
+                )
+        payload = serialize_schedule(schedule, user=request.user)
         entries = Timetable.objects.filter(
             schedule=schedule, is_deleted=False,
-        ).select_related("school_class", "subject", "teacher__staff", "period", "stream")
+        ).select_related(
+            "school_class", "subject", "teacher__staff", "period", "stream",
+        ).order_by("school_class__name", "day_of_week", "start_time", "stream__name")
         payload["entries"] = TimetableSerializer(entries, many=True).data
+        # Compact class-grouped preview for UI
+        by_class: dict = {}
+        for e in entries:
+            ck = str(e.school_class_id)
+            if ck not in by_class:
+                by_class[ck] = {
+                    "school_class_id": ck,
+                    "school_class_name": e.school_class.name if e.school_class_id else "",
+                    "slots": [],
+                }
+            by_class[ck]["slots"].append({
+                "day_of_week": e.day_of_week,
+                "day_label": dict(enumerate(
+                    ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                )).get(e.day_of_week, ""),
+                "exam_date": str(e.exam_date) if e.exam_date else None,
+                "start_time": e.start_time.strftime("%H:%M") if e.start_time else "",
+                "end_time": e.end_time.strftime("%H:%M") if e.end_time else "",
+                "period_name": e.period.name if e.period_id else "",
+                "stream_name": e.stream.name if e.stream_id else "",
+                "room": e.room or "",
+                "is_break": e.is_break_slot,
+                "subject": e.display_subject or (e.subject.name if e.subject_id else e.slot_label or ""),
+                "teacher_id": str(e.teacher_id) if e.teacher_id else None,
+                "teacher": e.display_teacher or (
+                    e.teacher.staff.full_name if e.teacher_id and getattr(e.teacher, "staff_id", None) else ""
+                ),
+            })
+        payload["preview_by_class"] = list(by_class.values())
+        from apps.academics.scoping import get_teacher_for_user
+        from apps.academics.services.timetable_builder import _teacher_name
+        viewer = get_teacher_for_user(request.user)
+        payload["viewer_teacher_id"] = str(viewer.id) if viewer else None
+        payload["viewer_teacher_name"] = _teacher_name(viewer) if viewer else ""
         return Response({"success": True, "data": payload})
 
     def destroy(self, request, *args, **kwargs):
         schedule = self.get_object()
-        if schedule.is_locked or schedule.status == TimetableSchedule.STATUS_ACTIVE:
+        if schedule.is_published or schedule.is_locked or schedule.status in (
+            TimetableSchedule.STATUS_ACTIVE, TimetableSchedule.STATUS_PUBLISHED,
+        ):
             assert_timetable_admin_lock(request.user)
         schedule.status = TimetableSchedule.STATUS_ARCHIVED
         schedule.is_deleted = True

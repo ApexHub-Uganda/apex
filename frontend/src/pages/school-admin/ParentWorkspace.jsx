@@ -10,6 +10,7 @@ import DataTable from '../../components/DataTable';
 import StatusBadge from '../../components/StatusBadge';
 import { parentsService, studentsService } from '../../services/moduleService';
 import { extractApiError, notify } from '../../utils/notify';
+import { ApexLoader } from '../../components/ApexLoader';
 
 export function ParentWorkspace() {
   const { parentId } = useParams();
@@ -101,7 +102,7 @@ export function ParentWorkspace() {
   });
 
   if (isEdit && isLoading) {
-    return <div className="py-5 text-center"><div className="spinner-border text-primary" role="status" /></div>;
+    return <div className="py-5 text-center"><ApexLoader label="Loading…" /></div>;
   }
 
   if (isEdit && isError) {

@@ -167,6 +167,45 @@ a:hover {
   transition: transform var(--apex-transition), box-shadow var(--apex-transition);
 }
 
+/* Modal overlay — frosted dim, not solid black */
+.apex-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  /* Override Bootstrap .modal-backdrop.show { opacity: 0.5 } stacking */
+  opacity: 1 !important;
+}
+
+.apex-modal-content {
+  border-radius: var(--apex-radius-lg) !important;
+  background: var(--apex-surface);
+  color: var(--apex-text);
+  border: 1px solid color-mix(in srgb, var(--apex-border) 80%, transparent);
+  box-shadow:
+    0 4px 6px -1px rgba(15, 23, 42, 0.08),
+    0 24px 48px -12px rgba(15, 23, 42, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+/* Bootstrap modals used outside our Modal component */
+.modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.42) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.modal-backdrop.show {
+  opacity: 1 !important;
+}
+
+.modal-content {
+  box-shadow:
+    0 4px 6px -1px rgba(15, 23, 42, 0.08),
+    0 24px 48px -12px rgba(15, 23, 42, 0.28);
+}
+
 .apex-card:hover {
   box-shadow: var(--apex-shadow-lg);
 }
@@ -445,6 +484,12 @@ a:hover {
 
 .apex-sidebar.is-mobile {
   box-shadow: 8px 0 32px rgba(15, 23, 42, 0.2);
+  /* Keep full width while sliding; position driven by transform */
+  will-change: transform;
+}
+
+.apex-sidebar.is-mobile:not(.is-mobile-open) {
+  pointer-events: none;
 }
 
 .apex-sidebar-overlay {
@@ -453,6 +498,7 @@ a:hover {
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(2px);
   z-index: 1039;
+  will-change: opacity;
 }
 
 .apex-sidebar-header {
@@ -870,6 +916,101 @@ a:hover {
   border: 1px solid var(--apex-border);
   border-radius: 12px;
   box-shadow: var(--apex-shadow-lg);
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* Profile menu — match notification popover polish */
+.apex-user-menu {
+  z-index: 1060;
+  padding: 0.4rem 0 !important;
+  margin: 0 !important;
+  border: 1px solid var(--apex-border) !important;
+  box-shadow: var(--apex-shadow-lg) !important;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.apex-user-menu .dropdown-item {
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  border-radius: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.apex-user-menu .dropdown-divider {
+  margin: 0.35rem 0;
+}
+
+/* Mobile hamburger → close morph (visibility via Bootstrap d-lg-none only) */
+.apex-menu-toggle {
+  width: 40px;
+  height: 40px;
+  /* Do NOT set display here — d-lg-none must hide this on large screens */
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px !important;
+  text-decoration: none !important;
+  transition: background 0.18s ease;
+}
+
+@media (max-width: 991.98px) {
+  .apex-menu-toggle.d-lg-none {
+    display: inline-flex !important;
+  }
+}
+
+.apex-menu-toggle:hover,
+.apex-menu-toggle:focus-visible {
+  background: var(--apex-bg) !important;
+}
+
+.apex-menu-toggle-bars {
+  position: relative;
+  width: 20px;
+  height: 14px;
+  display: block;
+}
+
+.apex-menu-toggle-bars span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition:
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.18s ease,
+    top 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: center;
+}
+
+.apex-menu-toggle-bars span:nth-child(1) { top: 0; }
+.apex-menu-toggle-bars span:nth-child(2) { top: 6px; }
+.apex-menu-toggle-bars span:nth-child(3) { top: 12px; }
+
+.apex-menu-toggle.is-open .apex-menu-toggle-bars span:nth-child(1) {
+  top: 6px;
+  transform: rotate(45deg);
+}
+
+.apex-menu-toggle.is-open .apex-menu-toggle-bars span:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0.4);
+}
+
+.apex-menu-toggle.is-open .apex-menu-toggle-bars span:nth-child(3) {
+  top: 6px;
+  transform: rotate(-45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apex-menu-toggle-bars span,
+  .apex-user-menu,
+  .apex-notifications-panel {
+    transition: none !important;
+  }
 }
 
 .apex-notifications-panel .notification-message-list,
@@ -2699,7 +2840,9 @@ h6 .verified-name-inline {
   right: 0;
   margin-top: 4px;
   overflow: hidden;
-  background: var(--apex-surface, #fff);
+  background: var(--apex-surface-elevated, var(--apex-surface, #fff));
+  border-color: var(--apex-border);
+  color: var(--apex-text);
 }
 
 .apex-searchable-select-search-icon {
@@ -5026,4 +5169,188 @@ h6 .verified-name-inline {
   padding: 1rem;
   background: var(--apex-surface, #fff);
   height: 100%;
+}
+/* —— ApexLoader (module data loads + print modal) —— */
+.apex-page-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  padding: 2.5rem 1rem;
+  width: 100%;
+}
+
+.apex-page-loader--compact {
+  min-height: 96px;
+  padding: 1.25rem 0.75rem;
+}
+
+.apex-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 0 auto;
+  user-select: none;
+  pointer-events: none;
+}
+
+.apex-loader-orbit {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.apex-loader--sm .apex-loader-orbit {
+  width: 28px;
+  height: 28px;
+}
+
+.apex-loader--sm .apex-loader-orbit-core {
+  inset: 8px;
+}
+
+.apex-loader--sm .apex-loader-dots {
+  gap: 4px;
+  height: 6px;
+}
+
+.apex-loader--sm .apex-loader-dots span {
+  width: 4px;
+  height: 4px;
+}
+
+.apex-loader--sm .apex-loader-caption {
+  font-size: 0.75rem !important;
+}
+
+.apex-loader--lg .apex-loader-orbit {
+  width: 56px;
+  height: 56px;
+}
+
+.apex-loader--lg .apex-loader-orbit-core {
+  inset: 16px;
+}
+
+.apex-loader--inline {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  vertical-align: middle;
+}
+
+.apex-loader--inline .apex-loader-orbit {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.apex-loader--inline .apex-loader-orbit-core {
+  inset: 3px;
+}
+
+.apex-loader--inline .apex-loader-dots {
+  display: none;
+}
+
+.apex-loader-orbit-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--apex-primary) 12%, transparent);
+  border-top-color: var(--apex-primary);
+  border-right-color: color-mix(in srgb, var(--apex-primary) 45%, transparent);
+  animation: apex-loader-spin 0.85s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+  will-change: transform;
+}
+
+.apex-loader-orbit-core {
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--apex-primary-light) 0%, var(--apex-primary) 70%, var(--apex-primary-dark) 100%);
+  opacity: 0.9;
+  animation: apex-loader-breathe 1.4s ease-in-out infinite;
+  will-change: transform, opacity;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--apex-primary) 20%, transparent);
+}
+
+.apex-loader-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 8px;
+}
+
+.apex-loader-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--apex-primary);
+  opacity: 0.25;
+  animation: apex-loader-dot 1.2s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.apex-loader-dots span:nth-child(2) { animation-delay: 0.15s; }
+.apex-loader-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+.apex-loader-caption {
+  margin: 0.15rem 0 0 !important;
+  padding: 0 !important;
+  font-size: 0.8125rem !important;
+  line-height: 1.45 !important;
+  color: var(--apex-text-muted) !important;
+  font-weight: 450 !important;
+  text-align: center;
+}
+
+@keyframes apex-loader-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes apex-loader-breathe {
+  0%, 100% {
+    transform: scale(0.88);
+    opacity: 0.65;
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 12px 2px color-mix(in srgb, var(--apex-primary) 18%, transparent);
+  }
+}
+
+@keyframes apex-loader-dot {
+  0%, 80%, 100% {
+    transform: translateY(0) scale(0.85);
+    opacity: 0.22;
+  }
+  40% {
+    transform: translateY(-3px) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apex-loader-orbit-ring,
+  .apex-loader-orbit-core,
+  .apex-loader-dots span {
+    animation: none !important;
+  }
+  .apex-loader-orbit-ring {
+    border-top-color: var(--apex-primary);
+    opacity: 0.85;
+  }
+  .apex-loader-orbit-core {
+    opacity: 0.9;
+    transform: none;
+  }
+  .apex-loader-dots span {
+    opacity: 0.55;
+  }
 }

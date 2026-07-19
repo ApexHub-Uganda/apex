@@ -6,6 +6,7 @@ import DataTable from '../../components/DataTable';
 import SearchableSelect from '../../components/SearchableSelect';
 import { parentFeeStatementsService, financeDocumentsService } from '../../services/moduleService';
 import { notify } from '../../utils/notify';
+import { ApexLoader } from '../../components/ApexLoader';
 
 const formatUGX = (amount) => {
   const n = Number(amount);
@@ -67,7 +68,7 @@ export function ParentFeeStatements() {
       {isError && <div className="alert alert-danger">Unable to load fee statements.</div>}
 
       {isLoading ? (
-        <div className="py-5 text-center"><div className="spinner-border text-primary" role="status" /></div>
+        <div className="py-5 text-center"><ApexLoader label="Loading…" /></div>
       ) : children.length === 0 ? (
         <div className="apex-card p-5">
           <ModuleEmptyState

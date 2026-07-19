@@ -8,6 +8,7 @@ import UserDeleteDangerZone from '../../components/UserDeleteDangerZone';
 import { studentsService } from '../../services/moduleService';
 import { useAuth } from '../../hooks/useAuth';
 import { extractApiError, notify } from '../../utils/notify';
+import { ApexLoader } from '../../components/ApexLoader';
 
 export function StudentWorkspace() {
   const { studentId } = useParams();
@@ -104,7 +105,7 @@ export function StudentWorkspace() {
   if (isEdit && isLoading) {
     return (
       <div className="py-5 text-center">
-        <div className="spinner-border text-primary" role="status" />
+        <ApexLoader label="Loading…" />
       </div>
     );
   }
@@ -144,7 +145,7 @@ export function StudentWorkspace() {
       backLabel={backLabel}
       title={isEdit ? `Edit ${student?.full_name || 'Student'}` : 'Add Student'}
       subtitle={isEdit
-        ? 'Complete learner profile — UPI, parents, boarding, and other details.'
+        ? 'Complete learner profile — registration number, parents, boarding, and other details.'
         : enrollmentTarget
           ? `Enroll a student into ${enrollmentTarget}. Other profile details can be completed later.`
           : 'Enter essentials now. Class teachers can complete the full profile after enrollment.'}

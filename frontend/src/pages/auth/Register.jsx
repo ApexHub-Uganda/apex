@@ -20,7 +20,7 @@ export function Register() {
       const result = await registrationService.register({
         name: data.school_name,
         email: data.email,
-        country: data.country || 'Kenya',
+        country: data.country || 'Uganda',
         admin_email: data.email,
         admin_password: data.password,
         admin_first_name: data.first_name,
@@ -72,7 +72,7 @@ export function Register() {
 
         <div className="mb-3">
           <label className="form-label small fw-medium">Country</label>
-          <input className="form-control" defaultValue="Kenya" {...register('country')} />
+          <input className="form-control" defaultValue="Uganda" {...register('country')} />
         </div>
 
         <div className="mb-3">

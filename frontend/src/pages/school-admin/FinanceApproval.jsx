@@ -13,6 +13,7 @@ import {
 } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
+import { ApexLoader } from '../../components/ApexLoader';
 
 export function FinanceApproval() {
   const queryClient = useQueryClient();
@@ -154,7 +155,7 @@ export function FinanceApproval() {
       {isError && <div className="alert alert-danger">Unable to load approval queue.</div>}
 
       {isLoading ? (
-        <div className="py-5 text-center"><div className="spinner-border text-primary" role="status" /></div>
+        <div className="py-5 text-center"><ApexLoader label="Loading…" /></div>
       ) : count === 0 ? (
         <div className="apex-card p-5">
           <ModuleEmptyState title="No pending transactions" message="Assistant bursar submissions will appear here for approval." />

@@ -61,6 +61,9 @@ import FinanceAnalytics from './pages/school-admin/FinanceAnalytics';
 import FinanceReports from './pages/school-admin/FinanceReports';
 import ParentFeeStatements from './pages/school-admin/ParentFeeStatements';
 import FinanceBilling from './pages/school-admin/FinanceBilling';
+import PromotionWizard from './pages/school-admin/PromotionWizard';
+import AcademicReportCards from './pages/school-admin/AcademicReportCards';
+import DoSOps from './pages/school-admin/DoSOps';
 import Library from './pages/school-admin/Library';
 import Hostel from './pages/school-admin/Hostel';
 import Transport from './pages/school-admin/Transport';
@@ -90,6 +93,7 @@ import FeatureGate from './components/FeatureGate';
 import AppToaster from './components/AppToaster';
 import { SCHOOL_ROUTE_FEATURES } from './config/featureRoutes';
 import { renderModuleHubRoutes, renderChildSubRoutes } from './config/schoolAdminRoutes';
+import { ApexLoader } from './components/ApexLoader';
 const HomeEntry = lazy(() => import('./pages/landing/HomeEntry'));
 const TermsPage = lazy(() => import('./pages/landing/TermsPage'));
 
@@ -223,19 +227,39 @@ function AppRoutes() {
         <Route path="reports" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.reports}><Reports /></Gated>} />
         <Route path="communication" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.communication}><Communication /></Gated>} />
         {/* Settings / permissions / plans are core school-admin surfaces — not plan SKUs */}
-        <Route path="settings" element={<SchoolAdminSettings />} />
+        <Route
+          path="settings"
+          element={(
+            <ProtectedRoute roles={['school_admin']}>
+              <SchoolAdminSettings />
+            </ProtectedRoute>
+          )}
+        />
         <Route
           path="settings/permissions"
           element={(
-            <ProtectedRoute roles={['school_admin']} portal={true}>
+            <ProtectedRoute roles={['school_admin']}>
               <PermissionSettings />
             </ProtectedRoute>
           )}
         />
-        <Route path="settings/plans" element={<SchoolPlansAndSubscriptions />} />
+        <Route
+          path="settings/plans"
+          element={(
+            <ProtectedRoute roles={['school_admin']}>
+              <SchoolPlansAndSubscriptions />
+            </ProtectedRoute>
+          )}
+        />
         <Route path="core/user-accounts" element={<Gated featureKey="user_accounts"><UserAccounts /></Gated>} />
         <Route path="core/campuses" element={<Gated featureKey="multi_campus_support"><Campuses /></Gated>} />
         <Route path="academics/timetable/wizard" element={<Gated featureKey="timetables"><TimetableWizard /></Gated>} />
+        <Route path="academics/promotion" element={<Gated featureKey="student_promotion"><PromotionWizard /></Gated>} />
+        <Route path="academics/report-cards" element={<Gated featureKeys={['report_cards', 'class_report_cards', 'result_processing']}><AcademicReportCards /></Gated>} />
+        <Route path="academics/dos-ops" element={<Gated featureKey="dos_workspace"><DoSOps /></Gated>} />
+        <Route path="examinations/report-cards" element={<Navigate to="/school-admin/academics/report-cards" replace />} />
+        <Route path="examinations/class-report-cards" element={<Navigate to="/school-admin/academics/report-cards" replace />} />
+        <Route path="examinations/results" element={<Navigate to="/school-admin/academics/report-cards" replace />} />
         {renderChildSubRoutes()}
         <Route path="profile" element={<Profile />} />
         <Route path="notifications" element={<Notifications />} />
@@ -246,7 +270,7 @@ function AppRoutes() {
       <Route path="/" element={(
         <Suspense fallback={(
           <div className="min-vh-100 d-flex align-items-center justify-content-center">
-            <div className="spinner-border text-primary" role="status" />
+            <ApexLoader label="Loading…" />
           </div>
         )}
         >
@@ -257,7 +281,7 @@ function AppRoutes() {
       <Route path="/terms" element={(
         <Suspense fallback={(
           <div className="min-vh-100 d-flex align-items-center justify-content-center">
-            <div className="spinner-border text-primary" role="status" />
+            <ApexLoader label="Loading…" />
           </div>
         )}
         >
@@ -288,3 +312,4 @@ export default function App() {
     </QueryClientProvider>
   );
 }
+

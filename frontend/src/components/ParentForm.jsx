@@ -44,7 +44,7 @@ export function ParentForm({ onSubmit, initialValues, submitLabel = 'Save parent
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
-      country: 'Kenya',
+      country: 'Uganda',
       relationship_to_student: 'guardian',
       preferred_contact_method: 'sms',
       consent_for_sms: true,
@@ -126,7 +126,7 @@ export function ParentForm({ onSubmit, initialValues, submitLabel = 'Save parent
       )}
 
       {activeSection === 'contact' && (
-        <WorkspaceSection title="Contact & payments" description="M-Pesa and SMS preferences for Kenyan schools">
+        <WorkspaceSection title="Contact & payments" description="Mobile money and SMS preferences for East African schools">
           <WorkspaceFieldGrid>
             <Field label="Primary Email" required error={errors.email?.message}>
               <input type="email" className="form-control" {...register('email', emailValidationRules({ label: 'Primary email' }))} />

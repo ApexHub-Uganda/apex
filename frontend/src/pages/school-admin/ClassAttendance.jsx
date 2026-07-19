@@ -7,6 +7,7 @@ import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { classAttendanceService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
+import { PageLoader } from '../../components/ApexLoader';
 
 function nowDefaults() {
   const current = new Date();
@@ -166,7 +167,7 @@ export function ClassAttendance({ initialClassId = '' }) {
         <div className="mb-4">
           <h5 className="fw-semibold mb-3">Choose a class</h5>
           {isLoading && !options ? (
-            <div className="py-4 text-center"><div className="spinner-border text-primary" role="status" /></div>
+            <PageLoader label="Loading classes…" compact />
           ) : classes.length === 0 ? (
             <div className="apex-card p-5">
               <ModuleEmptyState

@@ -15,22 +15,24 @@ export function Modal({ show, onHide, title, children, size = 'md', footer }) {
       {show && (
         <>
           <motion.div
-            className="modal-backdrop show"
+            className="apex-modal-backdrop"
             style={{ zIndex: 1050 }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
             onClick={canDismiss ? onHide : undefined}
+            aria-hidden
           />
-          <div className="modal show d-block" style={{ zIndex: 1055 }} tabIndex={-1}>
+          <div className="modal show d-block apex-modal" style={{ zIndex: 1055 }} tabIndex={-1}>
             <motion.div
               className={`modal-dialog modal-dialog-centered ${sizeClass}`}
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              initial={{ opacity: 0, scale: 0.96, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              exit={{ opacity: 0, scale: 0.97, y: 8 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 360, mass: 0.85 }}
             >
-              <div className="modal-content border-0 shadow-lg" style={{ borderRadius: 'var(--apex-radius-lg)' }}>
+              <div className="modal-content border-0 apex-modal-content">
                 <div className="modal-header border-0 pb-0">
                   <h5 className="modal-title fw-bold">{title}</h5>
                   {canDismiss && (

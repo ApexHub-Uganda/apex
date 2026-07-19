@@ -4,6 +4,7 @@ import { FiArrowLeft } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { financeAnalyticsService } from '../../services/moduleService';
+import { ApexLoader } from '../../components/ApexLoader';
 
 const formatUGX = (amount) => {
   const n = Number(amount);
@@ -35,7 +36,7 @@ export function FinanceAnalytics() {
       {isError && <div className="alert alert-danger">Unable to load finance analytics.</div>}
 
       {isLoading ? (
-        <div className="py-5 text-center"><div className="spinner-border text-primary" role="status" /></div>
+        <div className="py-5 text-center"><ApexLoader label="Loading…" /></div>
       ) : (
         <>
           <div className="row g-3 mb-4">

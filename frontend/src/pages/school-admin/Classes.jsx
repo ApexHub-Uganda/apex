@@ -12,6 +12,7 @@ import {
 } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { alert, extractApiError, notify } from '../../utils/notify';
+import { PageLoader } from '../../components/ApexLoader';
 
 const LEVEL_OPTIONS = [
   { value: '', label: 'Select level' },
@@ -23,14 +24,17 @@ const LEVEL_OPTIONS = [
 ];
 
 const CURRICULUM_OPTIONS = [
-  { value: 'cbc', label: 'CBC' },
-  { value: '844', label: '8-4-4' },
+  { value: 'uneb', label: 'UNEB (Uganda)' },
+  { value: 'uganda_cbe', label: 'Uganda Competence-Based' },
   { value: 'igcse', label: 'IGCSE' },
+  { value: 'ace', label: 'ACE' },
+  { value: 'cbc', label: 'CBC (Kenya)' },
+  { value: '844', label: '8-4-4' },
   { value: 'other', label: 'Other' },
 ];
 
 const EMPTY_FORM = {
-  name: '', code: '', academic_year: '', level_type: '', curriculum: 'cbc',
+  name: '', code: '', academic_year: '', level_type: '', curriculum: 'uneb',
   section: '', class_teacher: '', capacity: 40, room: '',
 };
 
@@ -208,9 +212,7 @@ export function Classes() {
           )}
 
           {isLoading ? (
-            <div className="py-5 text-center">
-              <div className="spinner-border text-primary" role="status" />
-            </div>
+            <PageLoader label="Loading classes…" />
           ) : classes.length === 0 ? (
             <ModuleEmptyState
               title="No classes yet"

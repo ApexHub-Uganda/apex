@@ -12,6 +12,7 @@ import ProgressBar from '../../components/ProgressBar';
 import { extractApiError, notify } from '../../utils/notify';
 import { getRoleLabel } from '../../config/schoolRoles';
 import { emailValidationRules } from '../../utils/emailValidation';
+import { ApexLoader } from '../../components/ApexLoader';
 
 const FIELD_LABELS = {
   first_name: 'First name',
@@ -148,7 +149,7 @@ export function ProfileWorkspace() {
   if (isLoading && !profile) {
     return (
       <div className="py-5 text-center">
-        <div className="spinner-border text-primary" role="status" />
+        <ApexLoader label="Loading…" />
       </div>
     );
   }

@@ -3,6 +3,7 @@ from __future__ import annotations
 from rest_framework import serializers
 
 from apps.examinations.models import (
+    ReportCardSubjectLine,
     Exam,
     ExaminationSession,
     Grade,
@@ -156,20 +157,37 @@ class GradeSerializer(serializers.ModelSerializer):
         read_only_fields = READ_ONLY + ["grade", "entry_status"]
 
 
+class ReportCardSubjectLineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReportCardSubjectLine
+        fields = (
+            "id", "subject", "subject_name", "subject_code", "paper_breakdown",
+            "ca_score", "exam_score", "total_score", "max_score", "grade",
+            "grade_point", "remarks", "sort_order",
+        )
+        read_only_fields = fields
+
+
 class ReportCardSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source="student.full_name", read_only=True)
+    admission_number = serializers.CharField(source="student.admission_number", read_only=True)
     term_name = serializers.CharField(source="term.name", read_only=True)
-    school_class_name = serializers.CharField(source="school_class.name", read_only=True)
+    class_name = serializers.CharField(source="school_class.name", read_only=True)
+    stream_name = serializers.CharField(source="stream.name", read_only=True, allow_null=True)
+    subject_lines = ReportCardSubjectLineSerializer(many=True, read_only=True)
 
     class Meta:
         model = ReportCard
-        fields = [
-            "id", "student", "student_name", "term", "term_name",
-            "school_class", "school_class_name", "total_score", "average_score",
-            "rank", "remarks", "teacher_remarks", "principal_remarks", "is_published",
-            "created_at", "updated_at",
-        ]
-        read_only_fields = READ_ONLY
+        fields = (
+            "id", "student", "student_name", "admission_number", "term", "term_name",
+            "school_class", "class_name", "stream", "stream_name", "academic_year",
+            "version", "is_latest", "total_score", "average_score", "rank", "stream_rank",
+            "class_size", "stream_size", "aggregate_points", "division",
+            "remarks", "teacher_remarks", "principal_remarks", "dos_remarks",
+            "is_published", "published_at", "days_present", "days_absent", "days_late",
+            "days_excused", "next_term_opens", "subject_lines", "created_at", "updated_at",
+        )
+        read_only_fields = [f for f in fields if f not in ("teacher_remarks", "principal_remarks", "dos_remarks", "remarks")]
 
 
 class MarksEntryBulkSerializer(serializers.Serializer):

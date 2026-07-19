@@ -7,6 +7,7 @@ import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { hrApprovalService, leavesService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
+import { ApexLoader } from '../../components/ApexLoader';
 
 export function HRApproval() {
   const queryClient = useQueryClient();
@@ -90,7 +91,7 @@ export function HRApproval() {
       {isError && <div className="alert alert-danger">Unable to load leave approval queue.</div>}
 
       {isLoading ? (
-        <div className="py-5 text-center"><div className="spinner-border text-primary" role="status" /></div>
+        <div className="py-5 text-center"><ApexLoader label="Loading…" /></div>
       ) : count === 0 ? (
         <div className="apex-card p-5">
           <ModuleEmptyState title="No pending leave requests" message="Staff leave submissions will appear here for approval." />
