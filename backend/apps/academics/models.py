@@ -167,21 +167,145 @@ class SubjectPaper(BaseModel):
         verbose_name = "subject paper"
 
 
+class TimetableSchedule(BaseModel):
+    """Published lesson or exam timetable for a term / examination session."""
+
+    SCHEDULE_LESSON = "lesson"
+    SCHEDULE_EXAM = "exam"
+    SCHEDULE_TYPE_CHOICES = [
+        (SCHEDULE_LESSON, "Lesson timetable"),
+        (SCHEDULE_EXAM, "Exam timetable"),
+    ]
+
+    STATUS_DRAFT = "draft"
+    STATUS_ACTIVE = "active"
+    STATUS_ARCHIVED = "archived"
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_ARCHIVED, "Archived"),
+    ]
+
+    name = models.CharField(max_length=255)
+    schedule_type = models.CharField(max_length=20, choices=SCHEDULE_TYPE_CHOICES, default=SCHEDULE_LESSON, db_index=True)
+    academic_year = models.ForeignKey(
+        AcademicYear, on_delete=models.CASCADE, related_name="timetable_schedules", null=True, blank=True,
+    )
+    term = models.ForeignKey(
+        Term, on_delete=models.CASCADE, related_name="timetable_schedules", null=True, blank=True,
+    )
+    examination_session = models.ForeignKey(
+        "examinations.ExaminationSession",
+        on_delete=models.CASCADE,
+        related_name="timetable_schedules",
+        null=True,
+        blank=True,
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT, db_index=True)
+    is_locked = models.BooleanField(
+        default=False,
+        help_text="When true, only school admins may edit or delete entries for this schedule.",
+    )
+    generation_seed = models.PositiveIntegerField(null=True, blank=True)
+    config = models.JSONField(default=dict, blank=True)
+    stats = models.JSONField(default=dict, blank=True)
+    applied_at = models.DateTimeField(null=True, blank=True)
+    applied_by = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="applied_timetable_schedules",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["tenant", "schedule_type", "status"]),
+            models.Index(fields=["tenant", "term", "status"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.schedule_type}/{self.status})"
+
+
+class TimetableGenerationDraft(BaseModel):
+    """Temporary generation output until the user chooses USE IT or discards."""
+
+    schedule_type = models.CharField(max_length=20, choices=TimetableSchedule.SCHEDULE_TYPE_CHOICES)
+    term = models.ForeignKey(Term, on_delete=models.CASCADE, null=True, blank=True, related_name="timetable_drafts")
+    examination_session = models.ForeignKey(
+        "examinations.ExaminationSession",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="timetable_drafts",
+    )
+    academic_year = models.ForeignKey(
+        AcademicYear, on_delete=models.CASCADE, null=True, blank=True, related_name="timetable_drafts",
+    )
+    name = models.CharField(max_length=255, blank=True)
+    seed = models.PositiveIntegerField(default=0)
+    config = models.JSONField(default=dict, blank=True)
+    slots = models.JSONField(default=list, blank=True)
+    stats = models.JSONField(default=dict, blank=True)
+    warnings = models.JSONField(default=list, blank=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["tenant", "created_by", "schedule_type"])]
+
+
 class Timetable(BaseModel):
+    schedule = models.ForeignKey(
+        TimetableSchedule,
+        on_delete=models.CASCADE,
+        related_name="entries",
+        null=True,
+        blank=True,
+    )
     school_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="timetables")
+    stream = models.ForeignKey(
+        Stream, on_delete=models.SET_NULL, null=True, blank=True, related_name="timetables",
+    )
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="timetable_entries")
     teacher = models.ForeignKey("staff.Teacher", on_delete=models.SET_NULL, null=True, related_name="timetable_entries")
+    period = models.ForeignKey(
+        "academics.Period", on_delete=models.SET_NULL, null=True, blank=True, related_name="timetable_entries",
+    )
+    term = models.ForeignKey(
+        Term, on_delete=models.SET_NULL, null=True, blank=True, related_name="timetable_entries",
+    )
+    examination_session = models.ForeignKey(
+        "examinations.ExaminationSession",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="timetable_entries",
+    )
+    schedule_type = models.CharField(
+        max_length=20,
+        choices=TimetableSchedule.SCHEDULE_TYPE_CHOICES,
+        default=TimetableSchedule.SCHEDULE_LESSON,
+        db_index=True,
+    )
     day_of_week = models.PositiveSmallIntegerField(choices=[
         (0, "Monday"), (1, "Tuesday"), (2, "Wednesday"),
         (3, "Thursday"), (4, "Friday"), (5, "Saturday"), (6, "Sunday"),
-    ])
+    ], null=True, blank=True)
+    exam_date = models.DateField(null=True, blank=True, help_text="Used for exam timetable slots")
     start_time = models.TimeField()
     end_time = models.TimeField()
     room = models.CharField(max_length=50, blank=True)
 
     class Meta:
-        ordering = ["day_of_week", "start_time"]
-        indexes = [models.Index(fields=["tenant", "school_class", "day_of_week"])]
+        ordering = ["day_of_week", "exam_date", "start_time"]
+        indexes = [
+            models.Index(fields=["tenant", "school_class", "day_of_week"]),
+            models.Index(fields=["tenant", "schedule", "schedule_type"]),
+            models.Index(fields=["tenant", "exam_date"]),
+        ]
 
 
 class TeachingAssignment(BaseModel):

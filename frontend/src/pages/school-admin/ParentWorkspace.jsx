@@ -204,8 +204,8 @@ export function ParentWorkspace() {
           recordName={parent?.full_name}
           description="Permanently remove this parent or guardian from the school directory. Learner links will be removed."
           onDelete={handleDeleteParent}
-          canRead={canReadDeleteUser()}
-          canWrite={canWriteDeleteUser()}
+          canRead={canReadDeleteUser('parent_management')}
+          canWrite={canWriteDeleteUser('parent_management')}
         />
       )}
     </WorkspaceShell>

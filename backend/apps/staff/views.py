@@ -58,8 +58,9 @@ class StaffViewSet(BulkImportMixin, BaseModelViewSet):
             perms.extend([CanAccessStaffBulkImport(), TenantActivePermission()])
             return perms
         if action == "destroy":
-            perms.extend([IsStaffMember(), TenantActivePermission()])
-            perms.append(RequiresFeature("delete_user")())
+            # Directory write covers delete — Delete User is not a sellable plan module.
+            perms.extend([CanManageStaffRecords(), TenantActivePermission()])
+            perms.append(RequiresFeature(self.required_feature_key)())
             return perms
         if action in ("create", "update", "partial_update"):
             perms.extend([CanManageStaffRecords(), TenantActivePermission()])

@@ -1,6 +1,6 @@
 import {
   FiHome, FiGrid, FiSettings, FiBell, FiLayers, FiCreditCard,
-  FiBarChart2, FiShield, FiRadio, FiInbox, FiTrendingUp,
+  FiBarChart2, FiShield, FiRadio, FiInbox, FiTrendingUp, FiBookOpen, FiAward, FiFileText,
 } from 'react-icons/fi';
 import { resolveFeatureIcon } from '../utils/featureIcons';
 import { SCHOOL_MODULES } from './schoolModules';
@@ -28,41 +28,94 @@ export const superAdminNav = [
   { path: '/super-admin/settings', label: 'Settings', icon: <FiSettings /> },
 ];
 
+// Synthetic always-on keys for school portal chrome (not sellable plan modules).
 export const CORE_FEATURE_KEYS = ['dashboard_analytics', 'school_settings', 'notifications'];
 
 export const FREE_TRIAL_FEATURE_KEYS = [
   'student_management', 'parent_management', 'staff_management', 'user_accounts',
-  'school_settings', 'academic_years', 'terms', 'classes', 'subjects', 'admissions',
+  'academic_years', 'terms', 'classes', 'subjects', 'admissions',
   'student_attendance', 'fee_structures', 'student_billing', 'payment_recording',
   'dashboard_analytics', 'announcements',
 ];
 
-export const buildSchoolAdminNav = (moduleMenu = [], { isSchoolAdmin = true } = {}) => {
+/**
+ * Parent family-portal sidebar entries (child-scoped routes).
+ * Top-level Academics / Results so parents do not dig through staff module hubs.
+ */
+export const buildParentPortalNavItems = () => ([
+  {
+    key: 'parent_academics',
+    path: '/school-admin/parent/academics',
+    label: 'Academics',
+    icon: <FiBookOpen />,
+    // Multi-key: visible if any academic read feature is granted (filter uses feature_keys).
+    featureKey: 'timetables',
+    feature_keys: ['timetables', 'homework', 'student_attendance', 'classes', 'terms'],
+  },
+  {
+    key: 'parent_results',
+    path: '/school-admin/parent/results',
+    label: 'Results & progress',
+    icon: <FiAward />,
+    featureKey: 'report_cards',
+    feature_keys: ['report_cards', 'examination_management'],
+  },
+  {
+    key: 'parent_fee_statements',
+    path: '/school-admin/finance/statements',
+    label: 'Fee statements',
+    icon: <FiFileText />,
+    featureKey: 'parent_fee_statements',
+    feature_keys: ['parent_fee_statements', 'student_billing'],
+  },
+]);
+
+export const buildSchoolAdminNav = (
+  moduleMenu = [],
+  { isSchoolAdmin = true, isParent = false } = {},
+) => {
   const items = [
     { path: '/school-admin', label: 'Dashboard', icon: <FiHome />, featureKey: 'dashboard_analytics' },
   ];
+
+  // Parents get a dedicated family section first (child-scoped Academics / Results / Fees).
+  if (isParent) {
+    items.push({ divider: true, label: 'Family portal' });
+    items.push(...buildParentPortalNavItems());
+  }
 
   const modules = [...(moduleMenu.length > 0 ? moduleMenu : [])].sort(
     (a, b) => (a.sort_order ?? 99) - (b.sort_order ?? 99),
   );
 
+  // For parents, skip generic finance/academics hub cards that dump staff tools —
+  // they already have the family portal entries above. Still show other modules
+  // (communication, events, etc.) if granted.
+  const parentHiddenModuleKeys = new Set(['finance', 'academics', 'examinations', 'attendance']);
+
   if (modules.length > 0) {
-    items.push({ divider: true, label: 'Modules' });
-    modules.forEach((module) => {
-      const Icon = resolveFeatureIcon(module.icon);
-      items.push({
-        key: module.key,
-        path: module.path,
-        label: module.label,
-        icon: <Icon />,
-        featureKey: module.children?.[0]?.feature_key || module.feature_key,
-        children: (module.children || []).map((child) => ({
-          ...child,
-          icon: resolveFeatureIcon(child.icon),
-        })),
-        badge: module.enabled_count ?? module.children?.length ?? 0,
+    const visibleModules = isParent
+      ? modules.filter((module) => !parentHiddenModuleKeys.has(module.key))
+      : modules;
+
+    if (visibleModules.length > 0) {
+      items.push({ divider: true, label: 'Modules' });
+      visibleModules.forEach((module) => {
+        const Icon = resolveFeatureIcon(module.icon);
+        items.push({
+          key: module.key,
+          path: module.path,
+          label: module.label,
+          icon: <Icon />,
+          featureKey: module.children?.[0]?.feature_key || module.feature_key,
+          children: (module.children || []).map((child) => ({
+            ...child,
+            icon: resolveFeatureIcon(child.icon),
+          })),
+          badge: module.enabled_count ?? module.children?.length ?? 0,
+        });
       });
-    });
+    }
   }
 
   if (isSchoolAdmin) {
@@ -70,15 +123,15 @@ export const buildSchoolAdminNav = (moduleMenu = [], { isSchoolAdmin = true } = 
       divider: true,
       label: 'System',
     });
+    // Core school-admin surfaces — not gated by plan feature checkboxes.
     items.push({
       path: '/school-admin/settings',
       label: 'Settings',
       icon: <FiSettings />,
-      featureKey: 'school_settings',
       children: [
-        { path: '/school-admin/settings', label: 'School Settings', icon: <FiSettings />, featureKey: 'school_settings' },
-        { path: '/school-admin/settings/permissions', label: 'Permission Settings', icon: <FiShield />, featureKey: 'roles_permissions' },
-        { path: '/school-admin/settings/plans', label: 'Plans & Subscriptions', icon: <FiLayers />, featureKey: 'school_settings' },
+        { path: '/school-admin/settings', label: 'School Settings', icon: <FiSettings /> },
+        { path: '/school-admin/settings/permissions', label: 'Permission Settings', icon: <FiShield /> },
+        { path: '/school-admin/settings/plans', label: 'Plans & Subscriptions', icon: <FiLayers /> },
       ],
     });
   }

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import secrets
+import string
 from typing import Any
 
 from django.contrib.auth import get_user_model
@@ -38,8 +39,15 @@ def _next_employee_id(tenant) -> str:
     return candidate
 
 
-def _generate_temp_password() -> str:
-    return secrets.token_urlsafe(12)
+def _generate_temp_password(length: int = 6) -> str:
+    """
+    One-time portal password for first sign-in only.
+
+    Kept short (6 alphanumeric chars) so users can type it easily.
+    Permanent passwords still go through Django validators (min 8, etc.).
+    """
+    alphabet = string.ascii_letters + string.digits  # A–Z, a–z, 0–9
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 @transaction.atomic

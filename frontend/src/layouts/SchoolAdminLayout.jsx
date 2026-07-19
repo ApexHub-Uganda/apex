@@ -16,10 +16,12 @@ export function SchoolAdminLayout() {
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, effectiveRole } = useAuth();
   const {
     tenant, loading: tenantLoading, moduleMenu, isSuspended, isSchoolAdmin, canAccessFeature,
   } = useTenant();
+
+  const isParent = (effectiveRole || user?.role) === 'parent';
 
   // Prefer live tenant context from DB over stale JWT user profile.
   const isPendingApproval = !isSuspended && (tenant
@@ -33,9 +35,9 @@ export function SchoolAdminLayout() {
     || user?.tenant_status === 'suspended';
 
   const navItems = useMemo(() => {
-    const items = buildSchoolAdminNav(moduleMenu, { isSchoolAdmin });
+    const items = buildSchoolAdminNav(moduleMenu, { isSchoolAdmin, isParent });
     return filterSchoolAdminNavItems(items, { canAccessFeature, isSchoolAdmin });
-  }, [moduleMenu, isSchoolAdmin, canAccessFeature]);
+  }, [moduleMenu, isSchoolAdmin, isParent, canAccessFeature]);
   const hasModules = (moduleMenu?.length ?? 0) > 0;
   const planSlug = tenant?.subscription?.plan_slug || user?.tenant_plan_slug;
   const planName = tenant?.subscription?.plan_name;

@@ -7,6 +7,7 @@ import DataTable from '../../components/DataTable';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { hostelReportsService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
+import { extractApiError, notify } from '../../utils/notify';
 
 const REPORT_TYPES = [
   { value: 'occupancy', label: 'Occupancy' },
@@ -67,12 +68,17 @@ export function HostelReports() {
   const totals = data?.totals || {};
   const summary = data?.summary || {};
 
-  const handleExport = () => {
-    hostelReportsService.downloadCsv({
-      type: reportType,
-      start_date: startDate || undefined,
-      end_date: endDate || undefined,
-    });
+  const handleExport = async () => {
+    try {
+      await hostelReportsService.downloadCsv({
+        type: reportType,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
+      });
+      notify.success('Report downloaded.');
+    } catch (err) {
+      notify.error(extractApiError(err, err?.message || 'Unable to download report.'));
+    }
   };
 
   return (

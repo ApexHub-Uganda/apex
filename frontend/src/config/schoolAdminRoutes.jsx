@@ -23,6 +23,10 @@ const DEDICATED_SEGMENTS = new Set([
   'attendance/lessons',
   'finance/bursar', 'finance/assistant', 'finance/approval',
   'finance/payments', 'finance/analytics', 'finance/reports', 'finance/statements',
+  'finance/results-access',
+  'parent/academics', 'parent/results',
+  'core/user-accounts', 'core/campuses',
+  'academics/timetable/wizard',
 ]);
 
 /** Modules that use ModuleHub as their landing page. */

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiArrowLeft, FiEdit2, FiPlus, FiSend, FiTrash2 } from 'react-icons/fi';
 import PageHeader from './PageHeader';
 import DataTable from './DataTable';
+import SearchableSelect from './SearchableSelect';
 import ModuleEmptyState from './ModuleEmptyState';
 import CurrentRecordPanel from './CurrentRecordPanel';
 import { Modal } from './Modal';
@@ -43,11 +44,17 @@ const OPTION_LOADERS = {
   subjects: () => subjectsService.list().then((rows) => rows.map((s) => ({
     value: s.id, label: `${s.name} (${s.code})`,
   }))),
-  students: () => studentsService.list().then((rows) => rows.map((s) => ({
-    value: s.id, label: s.full_name || s.admission_number,
+  students: () => studentsService.list({ page_size: 500 }).then((rows) => rows.map((s) => ({
+    value: s.id,
+    label: `${s.full_name || `${s.first_name || ''} ${s.last_name || ''}`.trim() || s.admission_number}${s.admission_number ? ` — ${s.admission_number}` : ''}`,
+    meta: [s.school_class_name || s.class_name, s.stream_name].filter(Boolean).join(' · ') || undefined,
+    keywords: [s.admission_number, s.first_name, s.last_name, s.email, s.phone, s.upi_number].filter(Boolean).join(' '),
   }))),
-  staff: () => staffService.list().then((rows) => rows.map((s) => ({
-    value: s.id, label: s.full_name || `${s.first_name} ${s.last_name}`.trim(),
+  staff: () => staffService.list({ page_size: 500 }).then((rows) => rows.map((s) => ({
+    value: s.id,
+    label: s.full_name || `${s.first_name || ''} ${s.last_name || ''}`.trim(),
+    meta: [s.staff_number, s.email, s.department_name].filter(Boolean).join(' · ') || undefined,
+    keywords: [s.staff_number, s.email, s.phone, s.first_name, s.last_name].filter(Boolean).join(' '),
   }))),
   routes: () => routesService.list().then((rows) => rows.map((r) => ({
     value: r.id, label: r.name,
@@ -75,12 +82,17 @@ const OPTION_LOADERS = {
   academic_years: () => academicYearsService.list().then((rows) => rows.map((y) => ({
     value: y.id, label: y.name,
   }))),
-  feePayments: () => feePaymentsService.list().then((rows) => rows.map((p) => ({
+  feePayments: () => feePaymentsService.list({ page_size: 500 }).then((rows) => rows.map((p) => ({
     value: p.id,
     label: `${p.student_name || 'Payment'} — ${p.amount_paid} (${p.payment_date || ''})`,
+    meta: [p.receipt_number, p.fee_name, p.student_admission].filter(Boolean).join(' · ') || undefined,
+    keywords: [p.receipt_number, p.reference, p.mpesa_transaction_id, p.student_admission, p.fee_name].filter(Boolean).join(' '),
   }))),
   financialAccounts: () => financialAccountsService.list().then((rows) => rows.map((a) => ({
-    value: a.id, label: a.name,
+    value: a.id,
+    label: a.code ? `${a.name} (${a.code})` : a.name,
+    meta: a.account_type || undefined,
+    keywords: [a.name, a.code, a.account_type].filter(Boolean).join(' '),
   }))),
   tickets: () => supportTicketsService.list().then((rows) => rows.map((t) => ({
     value: t.id, label: `${t.ticket_number} — ${t.subject}`,
@@ -141,14 +153,16 @@ export function EntityListPage({
   const records = listPayload?.records ?? [];
   const listMeta = listPayload?.meta ?? null;
   const creationLocked = Boolean(listMeta?.creation_locked);
+  // Create stays locked while a period is active (all roles). School admins keep full edit/delete.
   const canCreate = canManage && config.creatable !== false && !creationLocked;
-  const isReadOnlyViewer = !canManage && !isSchoolAdmin;
+  const canEditRecords = canManage || isSchoolAdmin;
+  const isReadOnlyViewer = !canEditRecords;
   const hideSingletonTable = Boolean(
     config.singleton
     && creationLocked
     && listMeta?.active_record
     && !isSchoolAdmin
-    && (featureKey === 'academic_years' || featureKey === 'terms'),
+    && (featureKey === 'academic_years' || featureKey === 'terms' || featureKey === 'examination_sessions'),
   );
   const scopedEmptyTitle = `No ${title.toLowerCase()} assigned to you`;
   const scopedEmptyMessage = 'You only see records linked to your teaching assignments. Contact the Director of Studies if something is missing.';
@@ -283,7 +297,7 @@ export function EntityListPage({
       ...col,
       render: col.render || ((row) => formatCell(col, row, dynamicOptions)),
     })),
-    ...(canManage ? [{
+    ...(canEditRecords ? [{
       key: 'actions',
       label: '',
       width: COL_WIDTH.actions,
@@ -394,6 +408,26 @@ export function EntityListPage({
     const options = resolveFieldOptions(field);
 
     if (field.type === 'select') {
+      // Use searchable combobox for large option sets (students, payments, etc.)
+      const useSearchable = Boolean(field.searchable)
+        || options.length > 8
+        || ['students', 'feePayments', 'staff', 'parents'].includes(field.optionsFrom);
+      if (useSearchable) {
+        return (
+          <SearchableSelect
+            options={options.map((o) => ({
+              value: o.value,
+              label: o.label,
+              meta: o.meta,
+              keywords: o.keywords || [o.label, o.value].filter(Boolean).join(' '),
+            }))}
+            value={value}
+            onChange={(val) => updateFormField(field, val)}
+            placeholder={field.placeholder || `Search ${field.label || 'options'}…`}
+            emptyLabel="No matches"
+          />
+        );
+      }
       return (
         <select
           className="form-select"
@@ -518,8 +552,10 @@ export function EntityListPage({
             data={records}
             loading={isLoading}
             compact
-            searchPlaceholder={`Search ${title.toLowerCase()}…`}
-            onRowClick={canManage ? openEdit : undefined}
+            searchable
+            searchPlaceholder={`Search ${title.toLowerCase()} by name, code, student, reference…`}
+            searchKeys={config.searchKeys || null}
+            onRowClick={canEditRecords ? openEdit : undefined}
             emptyState={(
               <ModuleEmptyState
                 title={

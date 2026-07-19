@@ -175,6 +175,63 @@ def build_finance_reports(*, tenant, report_type: str = "collections", start_dat
         ]
         payload["totals"] = {"amount": _decimal_str(total), "count": entries.count()}
 
+    elif report_type == "aging":
+        balances = StudentFeeBalance.objects.filter(
+            tenant=tenant, is_deleted=False, balance__gt=0,
+        ).select_related("student", "student__school_class", "term")
+        rows = []
+        buckets = {"current": 0, "30": 0, "60": 0, "90": 0}
+        from apps.finance.models import Invoice as Inv
+        for b in balances:
+            # age by oldest open invoice due_date
+            inv = Inv.objects.filter(
+                tenant=tenant, student=b.student_id, is_deleted=False,
+            ).exclude(status__in=["paid", "cancelled"]).order_by("due_date").first()
+            days = 0
+            if inv and inv.due_date:
+                days = (today - inv.due_date).days
+            bucket = "current"
+            if days > 90:
+                bucket = "90"
+            elif days > 60:
+                bucket = "60"
+            elif days > 30:
+                bucket = "30"
+            buckets[bucket] = buckets.get(bucket, 0) + 1
+            rows.append({
+                "student": b.student.full_name if b.student_id else "",
+                "admission_number": b.student.admission_number if b.student_id else "",
+                "class_name": b.student.school_class.name if b.student_id and b.student.school_class_id else "",
+                "term": b.term.name if b.term_id else "",
+                "balance": _decimal_str(b.balance),
+                "days_overdue": max(0, days),
+                "bucket": bucket,
+            })
+        payload["rows"] = rows
+        payload["totals"] = {**{f"bucket_{k}": v for k, v in buckets.items()}, "count": len(rows)}
+
+    elif report_type == "class_collections":
+        payments = FeePayment.objects.filter(
+            tenant=tenant,
+            is_deleted=False,
+            approval_status=APPROVAL_APPROVED,
+            status="completed",
+            payment_date__gte=start,
+            payment_date__lte=end,
+        ).select_related("student", "student__school_class")
+        from collections import defaultdict
+        grouped = defaultdict(lambda: {"total": Decimal("0"), "count": 0})
+        for p in payments:
+            key = p.student.school_class.name if p.student_id and p.student.school_class_id else "Unassigned"
+            grouped[key]["total"] += p.amount_paid or Decimal("0")
+            grouped[key]["count"] += 1
+        payload["rows"] = [
+            {"class_name": k, "total": _decimal_str(v["total"]), "count": v["count"]}
+            for k, v in sorted(grouped.items(), key=lambda x: -x[1]["total"])
+        ]
+        grand = sum((v["total"] for v in grouped.values()), Decimal("0"))
+        payload["totals"] = {"amount": _decimal_str(grand), "classes": len(grouped)}
+
     else:
         payload["rows"] = []
         payload["totals"] = {}

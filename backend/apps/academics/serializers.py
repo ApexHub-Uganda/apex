@@ -18,6 +18,7 @@ from apps.academics.models import (
     TeachingAssignment,
     Term,
     Timetable,
+    TimetableSchedule,
 )
 
 READ_ONLY = ["id", "tenant", "created_at", "updated_at", "created_by", "updated_by", "is_deleted"]
@@ -257,8 +258,47 @@ class SubjectSerializer(serializers.ModelSerializer):
 
 
 class TimetableSerializer(serializers.ModelSerializer):
+    school_class_name = serializers.CharField(source="school_class.name", read_only=True)
+    subject_name = serializers.CharField(source="subject.name", read_only=True)
+    subject_code = serializers.CharField(source="subject.code", read_only=True)
+    teacher_name = serializers.SerializerMethodField()
+    period_name = serializers.CharField(source="period.name", read_only=True)
+    stream_name = serializers.CharField(source="stream.name", read_only=True)
+    day_label = serializers.SerializerMethodField()
+    is_schedule_locked = serializers.SerializerMethodField()
+
     class Meta:
         model = Timetable
+        fields = "__all__"
+        read_only_fields = READ_ONLY
+
+    def get_teacher_name(self, obj) -> str:
+        if not obj.teacher_id:
+            return ""
+        staff = getattr(obj.teacher, "staff", None)
+        return staff.full_name if staff else ""
+
+    def get_day_label(self, obj) -> str:
+        labels = {
+            0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday",
+            4: "Friday", 5: "Saturday", 6: "Sunday",
+        }
+        return labels.get(obj.day_of_week, "") if obj.day_of_week is not None else ""
+
+    def get_is_schedule_locked(self, obj) -> bool:
+        if not obj.schedule_id:
+            return False
+        return bool(obj.schedule.is_locked or obj.schedule.status == "active")
+
+
+class TimetableScheduleSerializer(serializers.ModelSerializer):
+    term_name = serializers.CharField(source="term.name", read_only=True)
+    examination_session_name = serializers.CharField(
+        source="examination_session.name", read_only=True,
+    )
+
+    class Meta:
+        model = TimetableSchedule
         fields = "__all__"
         read_only_fields = READ_ONLY
 

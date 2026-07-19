@@ -58,45 +58,6 @@
           "sort_order": 3
         },
         {
-          "feature_key": "delete_user",
-          "feature_name": "Delete User",
-          "description": "Permanently remove student, staff, and parent records from the school directory.",
-          "nav_key": "",
-          "route_path": "/school-admin/core",
-          "icon": "FiTrash2",
-          "show_in_nav": false,
-          "show_on_dashboard": false,
-          "widget_key": "",
-          "dashboard_label": "",
-          "sort_order": 4
-        },
-        {
-          "feature_key": "roles_permissions",
-          "feature_name": "Roles & Permissions",
-          "description": "Define roles and granular access permissions for users.",
-          "nav_key": "",
-          "route_path": "/school-admin/settings",
-          "icon": "FiShield",
-          "show_in_nav": false,
-          "show_on_dashboard": false,
-          "widget_key": "",
-          "dashboard_label": "",
-          "sort_order": 5
-        },
-        {
-          "feature_key": "school_settings",
-          "feature_name": "School Settings",
-          "description": "Configure school profile, branding, and system preferences.",
-          "nav_key": "",
-          "route_path": "/school-admin/settings",
-          "icon": "FiSettings",
-          "show_in_nav": false,
-          "show_on_dashboard": false,
-          "widget_key": "",
-          "dashboard_label": "",
-          "sort_order": 6
-        },
-        {
           "feature_key": "multi_campus_support",
           "feature_name": "Multi-campus Support",
           "description": "Manage multiple campuses or branches under one school account.",
@@ -107,7 +68,7 @@
           "show_on_dashboard": false,
           "widget_key": "",
           "dashboard_label": "",
-          "sort_order": 7
+          "sort_order": 4
         }
       ]
     },
@@ -1550,8 +1511,6 @@
       "parent_management",
       "staff_management",
       "user_accounts",
-      "delete_user",
-      "school_settings",
       "academic_years",
       "terms",
       "classes",
@@ -1571,9 +1530,6 @@
       "parent_management",
       "staff_management",
       "user_accounts",
-      "delete_user",
-      "roles_permissions",
-      "school_settings",
       "academic_years",
       "terms",
       "classes",
@@ -1610,9 +1566,6 @@
       "parent_management",
       "staff_management",
       "user_accounts",
-      "delete_user",
-      "roles_permissions",
-      "school_settings",
       "multi_campus_support",
       "academic_years",
       "terms",

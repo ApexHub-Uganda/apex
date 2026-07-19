@@ -43,6 +43,22 @@ def singleton_tenant(db, singleton_plan):
 
 
 @pytest.fixture
+def school_admin_user(db, singleton_tenant):
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    return User.objects.create_user(
+        email="admin.singleton@test.edu",
+        password="TestPass@2026",
+        first_name="School",
+        last_name="Admin",
+        role=UserRole.SCHOOL_ADMIN,
+        tenant=singleton_tenant,
+        is_email_verified=True,
+    )
+
+
+@pytest.fixture
 def dos_user(db, singleton_tenant):
     staff = onboard_staff(
         singleton_tenant,
@@ -233,3 +249,78 @@ class TestAcademicSingleton:
             format="json",
         )
         assert response.status_code in (200, 201)
+
+    def test_school_admin_can_update_active_term(
+        self, api_client, singleton_tenant, active_year_and_term, school_admin_user,
+    ):
+        term = active_year_and_term["term"]
+        api_client.force_authenticate(user=school_admin_user)
+        response = api_client.patch(
+            f"/api/v1/academics/terms/{term.id}/",
+            {
+                "name": "Term 1 Updated",
+                "end_date": "2026-04-15",
+                "is_current": True,
+            },
+            format="json",
+        )
+        assert response.status_code == 200
+        term.refresh_from_db()
+        assert term.name == "Term 1 Updated"
+
+    def test_school_admin_still_cannot_create_second_term_while_active(
+        self, api_client, school_admin_user, active_year_and_term,
+    ):
+        year = active_year_and_term["year"]
+        api_client.force_authenticate(user=school_admin_user)
+        response = api_client.post(
+            "/api/v1/academics/terms/",
+            {
+                "name": "Term 2",
+                "academic_year": str(year.id),
+                "term_number": 2,
+                "start_date": "2026-05-01",
+                "end_date": "2026-08-01",
+                "is_current": False,
+            },
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "still active" in str(response.data).lower()
+
+    def test_exam_session_singleton_blocks_second_create(
+        self, api_client, school_admin_user, active_year_and_term, singleton_plan,
+    ):
+        from apps.examinations.models import ExaminationSession
+        from apps.subscriptions.services import assign_plan_features
+
+        assign_plan_features(singleton_plan, [
+            "academic_years", "terms", "timetables", "classes", "subjects",
+            "examination_sessions",
+        ])
+        year = active_year_and_term["year"]
+        term = active_year_and_term["term"]
+        ExaminationSession.objects.create(
+            tenant=school_admin_user.tenant,
+            name="Mid-term Exams",
+            academic_year=year,
+            term=term,
+            start_date=date(2026, 3, 1),
+            end_date=date(2026, 3, 20),
+            status="active",
+        )
+        api_client.force_authenticate(user=school_admin_user)
+        response = api_client.post(
+            "/api/v1/examinations/sessions/",
+            {
+                "name": "End of Term",
+                "academic_year": str(year.id),
+                "term": str(term.id),
+                "start_date": "2026-04-01",
+                "end_date": "2026-04-10",
+                "status": "planned",
+            },
+            format="json",
+        )
+        assert response.status_code == 400
+        assert "still active" in str(response.data).lower()

@@ -7,11 +7,14 @@ import DataTable from '../../components/DataTable';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { financeReportsService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
+import { extractApiError, notify } from '../../utils/notify';
 
 const REPORT_TYPES = [
   { value: 'collections', label: 'Fee Collections' },
   { value: 'debtors', label: 'Outstanding Debtors' },
   { value: 'expenses', label: 'Expenses' },
+  { value: 'aging', label: 'Debt aging' },
+  { value: 'class_collections', label: 'Class collections' },
 ];
 
 const formatUGX = (amount) => {
@@ -36,6 +39,19 @@ const COLUMNS_BY_TYPE = {
     { key: 'class_name', label: 'Class', accessor: 'class_name' },
     { key: 'term', label: 'Term', accessor: 'term' },
     { key: 'balance', label: 'Balance', render: (row) => formatUGX(row.balance) },
+  ],
+  aging: [
+    { key: 'student', label: 'Student', accessor: 'student' },
+    { key: 'admission_number', label: 'Admission', accessor: 'admission_number' },
+    { key: 'class_name', label: 'Class', accessor: 'class_name' },
+    { key: 'balance', label: 'Balance', render: (row) => formatUGX(row.balance) },
+    { key: 'days_overdue', label: 'Days overdue', accessor: 'days_overdue' },
+    { key: 'bucket', label: 'Bucket', accessor: 'bucket' },
+  ],
+  class_collections: [
+    { key: 'class_name', label: 'Class', accessor: 'class_name' },
+    { key: 'total', label: 'Collected', render: (row) => formatUGX(row.total) },
+    { key: 'count', label: 'Payments', accessor: 'count' },
   ],
   expenses: [
     { key: 'entry_date', label: 'Date', accessor: 'entry_date' },
@@ -66,12 +82,17 @@ export function FinanceReports() {
   const rows = data?.rows || [];
   const totals = data?.totals || {};
 
-  const handleExport = () => {
-    financeReportsService.downloadCsv({
-      type: reportType,
-      start_date: startDate || undefined,
-      end_date: endDate || undefined,
-    });
+  const handleExport = async () => {
+    try {
+      await financeReportsService.downloadCsv({
+        type: reportType,
+        start_date: startDate || undefined,
+        end_date: endDate || undefined,
+      });
+      notify.success('Report downloaded.');
+    } catch (err) {
+      notify.error(extractApiError(err, err?.message || 'Unable to download report.'));
+    }
   };
 
   return (
@@ -113,6 +134,13 @@ export function FinanceReports() {
           columns={COLUMNS_BY_TYPE[reportType] || []}
           data={rows}
           loading={isLoading}
+          searchable
+          searchPlaceholder="Search report rows (student, class, receipt, amount…)"
+          searchKeys={[
+            'student', 'admission_number', 'class_name', 'fee_item', 'receipt_number',
+            'payment_method', 'term', 'description', 'debit_account', 'credit_account',
+            'bucket', 'amount', 'balance', 'total',
+          ]}
           emptyState={(
             <ModuleEmptyState
               title="No report data"

@@ -104,13 +104,37 @@ def build_finance_workspace(*, tenant, user) -> dict[str, Any]:
             {"label": "Approval Queue", "path": "/school-admin/finance/approval", "feature_key": "transaction_approval"},
             {"label": "Fee Structures", "path": "/school-admin/finance/structures", "feature_key": "fee_structures"},
             {"label": "Financial Reports", "path": "/school-admin/finance/reports", "feature_key": "financial_reports"},
+            {"label": "Results fee gate", "path": "/school-admin/finance/results-access", "feature_key": "bursar_workspace"},
             {"label": "Accounting Periods", "path": "/school-admin/finance/periods", "feature_key": "accounting_periods"},
         ]
+
+    if role == UserRole.ASSISTANT_BURSAR and _enabled(perms, "assistant_bursar_workspace"):
+        payload["quick_links"].append(
+            {"label": "Results fee gate", "path": "/school-admin/finance/results-access", "feature_key": "assistant_bursar_workspace"},
+        )
 
     if _enabled(perms, "finance_analytics"):
         collected = FeePayment.objects.filter(
             tenant=tenant, is_deleted=False, status="completed",
         ).aggregate(total=Sum("amount_paid"))["total"]
         payload["counts"]["total_collected"] = str(collected or 0)
+
+    # Actionable debtor preview for bursary workspaces
+    if is_school_wide and (
+        _enabled(perms, "debtor_management") or _enabled(perms, "bursar_workspace")
+    ):
+        top_debtors = StudentFeeBalance.objects.filter(
+            tenant=tenant, is_deleted=False, status=BALANCE_DEBTOR, balance__gt=0,
+        ).select_related("student", "term").order_by("-balance")[:8]
+        payload["queues"]["top_debtors"] = [
+            {
+                "id": str(b.id),
+                "student": b.student.full_name if b.student_id else "",
+                "admission_number": b.student.admission_number if b.student_id else "",
+                "term": b.term.name if b.term_id else "",
+                "balance": str(b.balance),
+            }
+            for b in top_debtors
+        ]
 
     return payload

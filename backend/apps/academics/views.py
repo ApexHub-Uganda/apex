@@ -422,10 +422,47 @@ class SubjectPaperViewSet(AcademicScopeMixin, BaseModelViewSet):
 
 class TimetableViewSet(TimetableActiveTermMixin, AcademicScopeMixin, BaseModelViewSet):
     required_feature_key = "timetables"
-    queryset = Timetable.objects.select_related("school_class", "subject", "teacher")
+    queryset = Timetable.objects.select_related(
+        "school_class", "subject", "teacher__staff", "period", "stream", "schedule",
+    )
     serializer_class = TimetableSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
-    filterset_fields = ["school_class", "day_of_week", "subject"]
+    filterset_fields = [
+        "school_class", "day_of_week", "subject", "schedule", "schedule_type",
+        "term", "examination_session", "stream",
+    ]
+
+    def get_permissions(self):
+        perms = [permission() for permission in self.permission_classes]
+        perms.append(RequiresFeature("timetables")())
+        return perms
+
+    def perform_create(self, serializer):
+        from apps.academics.timetable_generator import assert_timetable_write
+
+        assert_timetable_write(self.request.user)
+        super().perform_create(serializer)
+
+    def perform_update(self, serializer):
+        from apps.academics.timetable_generator import (
+            assert_timetable_admin_lock,
+            schedule_is_locked_for_user,
+        )
+
+        instance = self.get_object()
+        if schedule_is_locked_for_user(instance.schedule, self.request.user):
+            assert_timetable_admin_lock(self.request.user)
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        from apps.academics.timetable_generator import (
+            assert_timetable_admin_lock,
+            schedule_is_locked_for_user,
+        )
+
+        if schedule_is_locked_for_user(instance.schedule, self.request.user):
+            assert_timetable_admin_lock(self.request.user)
+        super().perform_destroy(instance)
 
 
 class TeachingAssignmentViewSet(AcademicScopeMixin, BaseModelViewSet):

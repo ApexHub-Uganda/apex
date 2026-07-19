@@ -7,9 +7,17 @@ export function canAccessNavFeature(featureKey, canAccessFeature, isSchoolAdmin)
   return canAccessFeature(featureKey, false);
 }
 
+/** True if any of the listed feature keys is readable (for multi-key parent nav items). */
+export function canAccessAnyNavFeature(featureKeys, canAccessFeature, isSchoolAdmin) {
+  const keys = (featureKeys || []).filter(Boolean);
+  if (!keys.length) return true;
+  return keys.some((key) => canAccessNavFeature(key, canAccessFeature, isSchoolAdmin));
+}
+
 /**
  * Filter sub-module links using API-provided can_read when available.
  * Parent modules stay visible as long as at least one child remains.
+ * Supports child.feature_keys[] (any-of) used by the parent family portal.
  */
 export function filterNavChildren(children = [], canAccessFeature, isSchoolAdmin) {
   if (isSchoolAdmin) return children;
@@ -17,6 +25,9 @@ export function filterNavChildren(children = [], canAccessFeature, isSchoolAdmin
   return children.filter((child) => {
     if (child.can_read === false) return false;
     if (child.can_read === true) return true;
+    if (Array.isArray(child.feature_keys) && child.feature_keys.length) {
+      return canAccessAnyNavFeature(child.feature_keys, canAccessFeature, isSchoolAdmin);
+    }
     return canAccessNavFeature(child.feature_key, canAccessFeature, isSchoolAdmin);
   });
 }
@@ -49,6 +60,15 @@ export function filterSchoolAdminNavItems(items = [], { canAccessFeature, isScho
       const children = buildAccessibleSubLinks(item, { canAccessFeature, isSchoolAdmin });
       if (!children.length) return;
       filtered.push({ ...item, children });
+      return;
+    }
+
+    // Parent portal leaves may list feature_keys[] (any-of) instead of a single key.
+    if (Array.isArray(item.feature_keys) && item.feature_keys.length) {
+      if (!canAccessAnyNavFeature(item.feature_keys, canAccessFeature, isSchoolAdmin)) {
+        return;
+      }
+      filtered.push(item);
       return;
     }
 

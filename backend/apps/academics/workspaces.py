@@ -154,13 +154,33 @@ def build_academic_workspace(*, tenant, user) -> dict[str, Any]:
             {"label": "Marks Approval", "path": "/school-admin/examinations/approval", "feature_key": "marks_approval"},
             {"label": "Subjects", "path": "/school-admin/academics/subjects", "feature_key": "subjects"},
             {"label": "Assessments", "path": "/school-admin/examinations/assessments", "feature_key": "assessment_management"},
+            {"label": "Marks Entry", "path": "/school-admin/examinations/marks", "feature_key": "marks_entry"},
+            {"label": "Report Cards", "path": "/school-admin/examinations/report-cards", "feature_key": "report_cards"},
         ]
+        if ctx and ctx.department_subject_ids:
+            payload["counts"]["department_subjects"] = len(ctx.department_subject_ids)
+            payload["counts"]["department_classes"] = len(ctx.assigned_class_ids or set())
     elif role == UserRole.DIRECTOR_OF_STUDIES and _feature_enabled(perms, "dos_workspace"):
         payload["quick_links"] = [
             {"label": "Teacher Assignments", "path": "/school-admin/academics/subject-assignments", "feature_key": "teacher_assignments"},
             {"label": "Exam Sessions", "path": "/school-admin/examinations/sessions", "feature_key": "examination_sessions"},
             {"label": "Marks Approval", "path": "/school-admin/examinations/approval", "feature_key": "marks_approval"},
+            {"label": "Timetable Wizard", "path": "/school-admin/academics/timetable/wizard", "feature_key": "timetables"},
+            {"label": "Terms", "path": "/school-admin/academics/terms", "feature_key": "terms"},
+            {"label": "Assessments", "path": "/school-admin/examinations/assessments", "feature_key": "assessment_management"},
         ]
+        from apps.academics.models import TeachingAssignment, Term
+        from apps.examinations.models import ExaminationSession
+
+        payload["counts"]["active_terms"] = Term.objects.filter(
+            tenant=tenant, is_deleted=False, is_current=True,
+        ).count()
+        payload["counts"]["open_exam_sessions"] = ExaminationSession.objects.filter(
+            tenant=tenant, is_deleted=False,
+        ).exclude(status="closed").count()
+        payload["counts"]["teaching_assignments"] = TeachingAssignment.objects.filter(
+            tenant=tenant, is_deleted=False, is_active=True,
+        ).count()
 
     if (
         role == UserRole.TEACHER

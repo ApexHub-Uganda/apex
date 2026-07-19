@@ -2610,9 +2610,10 @@ h6 .verified-name-inline {
 }
 
 .apex-table-search {
-  flex: 1 1 180px;
+  flex: 1 1 220px;
   min-width: 0;
-  max-width: 320px;
+  max-width: 420px;
+  position: relative;
 }
 
 .apex-table-category-filter {
@@ -2632,11 +2633,102 @@ h6 .verified-name-inline {
   transform: translateY(-50%);
   width: 14px;
   height: 14px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .apex-table-search-input {
   font-size: 0.8125rem;
   min-height: 2rem;
+  padding-right: 1.75rem;
+}
+
+.apex-table-search-clear {
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  line-height: 1;
+  font-size: 1.1rem;
+  color: var(--apex-text-muted);
+  text-decoration: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apex-table-search-clear:hover {
+  color: var(--apex-text);
+}
+
+/* Searchable combobox (finance pickers) */
+.apex-searchable-select {
+  position: relative;
+  width: 100%;
+}
+
+.apex-searchable-select-trigger {
+  cursor: pointer;
+  background-color: var(--apex-surface, #fff);
+}
+
+.apex-searchable-select.is-disabled .apex-searchable-select-trigger {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.apex-searchable-select-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--apex-text-muted);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.apex-searchable-select-clear:hover {
+  color: var(--apex-text);
+  background: color-mix(in srgb, var(--apex-border) 50%, transparent);
+}
+
+.apex-searchable-select-menu {
+  position: absolute;
+  z-index: 1080;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  overflow: hidden;
+  background: var(--apex-surface, #fff);
+}
+
+.apex-searchable-select-search-icon {
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.apex-searchable-select-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.apex-searchable-select-option {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  color: var(--apex-text, #0f172a);
+}
+
+.apex-searchable-select-option:hover,
+.apex-searchable-select-option.is-active {
+  background: color-mix(in srgb, var(--apex-primary) 10%, transparent);
+}
+
+.apex-searchable-select-option.is-selected {
+  background: color-mix(in srgb, var(--apex-primary) 14%, transparent);
 }
 
 .apex-table-footer-meta {

@@ -60,6 +60,7 @@ import FinanceApproval from './pages/school-admin/FinanceApproval';
 import FinanceAnalytics from './pages/school-admin/FinanceAnalytics';
 import FinanceReports from './pages/school-admin/FinanceReports';
 import ParentFeeStatements from './pages/school-admin/ParentFeeStatements';
+import FinanceBilling from './pages/school-admin/FinanceBilling';
 import Library from './pages/school-admin/Library';
 import Hostel from './pages/school-admin/Hostel';
 import Transport from './pages/school-admin/Transport';
@@ -73,6 +74,11 @@ import Communication from './pages/school-admin/Communication';
 import SchoolAdminSettings from './pages/school-admin/Settings';
 import PermissionSettings from './pages/school-admin/PermissionSettings';
 import SchoolPlansAndSubscriptions from './pages/school-admin/PlansAndSubscriptions';
+import UserAccounts from './pages/school-admin/UserAccounts';
+import Campuses from './pages/school-admin/Campuses';
+import TimetableWizard from './pages/school-admin/TimetableWizard';
+import ResultsAccessPolicyPage from './pages/school-admin/ResultsAccessPolicy';
+import ParentAcademics from './pages/school-admin/ParentAcademics';
 import { SCHOOL_PORTAL_ROLES } from './config/schoolRoles';
 
 import Profile from './pages/shared/Profile';
@@ -194,7 +200,7 @@ function AppRoutes() {
         <Route path="examinations/approval" element={<Gated featureKey="marks_approval"><MarksApproval /></Gated>} />
         <Route path="examinations/assessments" element={<Gated featureKey="assessment_management"><Assessments /></Gated>} />
         <Route path="attendance/lessons" element={<Gated featureKey="lesson_attendance"><LessonAttendance /></Gated>} />
-        <Route path="finance" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.finance}><Finance /></Gated>} />
+        <Route path="finance" element={<Gated featureKey="student_billing"><FinanceBilling /></Gated>} />
         <Route path="finance/bursar" element={<Gated featureKey="bursar_workspace"><BursarWorkspace /></Gated>} />
         <Route path="finance/assistant" element={<Gated featureKey="assistant_bursar_workspace"><AssistantBursarWorkspace /></Gated>} />
         <Route path="finance/approval" element={<Gated featureKey="transaction_approval"><FinanceApproval /></Gated>} />
@@ -202,6 +208,9 @@ function AppRoutes() {
         <Route path="finance/analytics" element={<Gated featureKey="finance_analytics"><FinanceAnalytics /></Gated>} />
         <Route path="finance/reports" element={<Gated featureKey="financial_reports"><FinanceReports /></Gated>} />
         <Route path="finance/statements" element={<Gated featureKey="parent_fee_statements"><ParentFeeStatements /></Gated>} />
+        <Route path="finance/results-access" element={<Gated featureKeys={['bursar_workspace', 'assistant_bursar_workspace']}><ResultsAccessPolicyPage /></Gated>} />
+        <Route path="parent/academics" element={<ParentAcademics />} />
+        <Route path="parent/results" element={<ParentAcademics />} />
         <Route path="library" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.library}><Library /></Gated>} />
         <Route path="hostel" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.hostel}><Hostel /></Gated>} />
         <Route path="transport" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.transport}><Transport /></Gated>} />
@@ -213,9 +222,20 @@ function AppRoutes() {
         <Route path="payroll" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.payroll}><Payroll /></Gated>} />
         <Route path="reports" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.reports}><Reports /></Gated>} />
         <Route path="communication" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.communication}><Communication /></Gated>} />
-        <Route path="settings" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES.settings}><SchoolAdminSettings /></Gated>} />
-        <Route path="settings/permissions" element={<Gated featureKey="roles_permissions"><PermissionSettings /></Gated>} />
-        <Route path="settings/plans" element={<Gated featureKey={SCHOOL_ROUTE_FEATURES['settings/plans']}><SchoolPlansAndSubscriptions /></Gated>} />
+        {/* Settings / permissions / plans are core school-admin surfaces — not plan SKUs */}
+        <Route path="settings" element={<SchoolAdminSettings />} />
+        <Route
+          path="settings/permissions"
+          element={(
+            <ProtectedRoute roles={['school_admin']} portal={true}>
+              <PermissionSettings />
+            </ProtectedRoute>
+          )}
+        />
+        <Route path="settings/plans" element={<SchoolPlansAndSubscriptions />} />
+        <Route path="core/user-accounts" element={<Gated featureKey="user_accounts"><UserAccounts /></Gated>} />
+        <Route path="core/campuses" element={<Gated featureKey="multi_campus_support"><Campuses /></Gated>} />
+        <Route path="academics/timetable/wizard" element={<Gated featureKey="timetables"><TimetableWizard /></Gated>} />
         {renderChildSubRoutes()}
         <Route path="profile" element={<Profile />} />
         <Route path="notifications" element={<Notifications />} />

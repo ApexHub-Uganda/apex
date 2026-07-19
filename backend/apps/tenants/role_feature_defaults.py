@@ -267,14 +267,39 @@ DEFAULT_ROLE_FEATURE_PERMISSIONS: dict[str, dict[str, _PERM]] = {
         "dashboard_analytics": _rw(),
     },
     UserRole.PARENT: {
+        # Finance — statements only (child-scoped on the API)
         "parent_fee_statements": _r(),
-        "student_billing": _deny(),
+        "student_billing": _r(),
+        "fee_structures": _r(),
         "payment_recording": _deny(),
         "finance_analytics": _deny(),
         "financial_reports": _deny(),
         "bursar_workspace": _deny(),
         "assistant_bursar_workspace": _deny(),
         "transaction_approval": _deny(),
+        "invoice_generation": _deny(),
+        "discounts": _deny(),
+        "refunds": _deny(),
+        # Academics — read-only child-scoped views
+        "terms": _r(),
+        "classes": _r(),
+        "timetables": _r(),
+        "homework": _r(),
+        "teacher_workspace": _deny(),
+        "hod_workspace": _deny(),
+        "dos_workspace": _deny(),
+        "subject_assignment": _deny(),
+        # Examinations / progress — fee-gated at API layer
+        "report_cards": _r(),
+        "examination_management": _r(),
+        "marks_entry": _deny(),
+        "marks_approval": _deny(),
+        "grade_calculation": _deny(),
+        "assessment_management": _deny(),
+        # Attendance
+        "student_attendance": _r(),
+        "lesson_attendance": _deny(),
+        "staff_attendance": _deny(),
     },
 }
 
@@ -282,10 +307,11 @@ DEFAULT_ROLE_FEATURE_PERMISSIONS: dict[str, dict[str, _PERM]] = {
 def get_default_feature_permission(role: str, feature_key: str) -> dict[str, bool] | None:
     """Return default read/write for a role/feature, or None to inherit module level."""
     canonical = normalize_role(role)
+    # Retired plan SKUs — never surface in role matrices as assignable modules.
+    if feature_key in {"delete_user", "roles_permissions", "school_settings"}:
+        return None
     perms = DEFAULT_ROLE_FEATURE_PERMISSIONS.get(canonical, {}).get(feature_key)
     if perms is None:
-        if feature_key == "delete_user":
-            return _deny()
         return None
     return perms.copy()
 

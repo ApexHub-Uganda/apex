@@ -1,0 +1,195 @@
+from decimal import Decimal
+
+import uuid
+
+import django.db.models.deletion
+from django.db import migrations, models
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ("academics", "0010_timetable_generation"),
+        ("finance", "0005_results_access_policy"),
+        ("students", "0003_ea_context_fields"), ("accounts", "0003_user_must_change_password"),
+    ]
+
+    operations = [
+        migrations.AddField(
+            model_name="invoice",
+            name="term",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="invoices",
+                to="academics.term",
+            ),
+        ),
+        migrations.AddField(
+            model_name="feepayment",
+            name="term",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="fee_payments",
+                to="academics.term",
+            ),
+        ),
+        migrations.AddField(
+            model_name="feepayment",
+            name="invoice",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="payments",
+                to="finance.invoice",
+            ),
+        ),
+        migrations.AddField(
+            model_name="feepayment",
+            name="payment_reference",
+            field=models.CharField(blank=True, db_index=True, max_length=64),
+        ),
+        migrations.AddField(
+            model_name="feediscount",
+            name="term",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="fee_discounts",
+                to="academics.term",
+            ),
+        ),
+        migrations.CreateModel(
+            name="PaymentIntent",
+            fields=[
+                ("id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(db_index=True, default=False)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("currency", models.CharField(default="UGX", max_length=3)),
+                ("gateway", models.CharField(default="not_configured", max_length=40)),
+                ("reference", models.CharField(db_index=True, max_length=64)),
+                ("status", models.CharField(default="pending", max_length=20)),
+                ("failure_message", models.TextField(blank=True)),
+                ("metadata", models.JSONField(blank=True, default=dict)),
+                ("external_reference", models.CharField(blank=True, max_length=120)),
+                ("created_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_created", to="accounts.user")),
+                ("updated_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_updated", to="accounts.user")),
+                ("tenant", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name="%(app_label)s_%(class)s_set", to="tenants.tenant")),
+                ("student", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="payment_intents", to="students.student")),
+            ],
+            options={"ordering": ["-created_at"]},
+        ),
+        migrations.CreateModel(
+            name="PaymentWebhookEvent",
+            fields=[
+                ("id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(db_index=True, default=False)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                ("gateway", models.CharField(max_length=40)),
+                ("payload_headers", models.JSONField(blank=True, default=dict)),
+                ("payload_body", models.TextField(blank=True)),
+                ("processing_status", models.CharField(default="received", max_length=30)),
+                ("result_code", models.CharField(blank=True, max_length=60)),
+                ("result_message", models.CharField(blank=True, max_length=500)),
+                ("created_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_created", to="accounts.user")),
+                ("updated_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_updated", to="accounts.user")),
+                ("tenant", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name="%(app_label)s_%(class)s_set", to="tenants.tenant")),
+            ],
+            options={"ordering": ["-created_at"]},
+        ),
+        migrations.CreateModel(
+            name="CreditNote",
+            fields=[
+                ("id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(db_index=True, default=False)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("reason", models.TextField()),
+                ("reference", models.CharField(blank=True, db_index=True, max_length=64)),
+                ("status", models.CharField(default="posted", max_length=20)),
+                ("created_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_created", to="accounts.user")),
+                ("updated_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_updated", to="accounts.user")),
+                ("tenant", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name="%(app_label)s_%(class)s_set", to="tenants.tenant")),
+                ("student", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="credit_notes", to="students.student")),
+                ("term", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="credit_notes", to="academics.term")),
+                ("invoice", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="credit_notes", to="finance.invoice")),
+            ],
+            options={"ordering": ["-created_at"]},
+        ),
+        migrations.CreateModel(
+            name="DebitNote",
+            fields=[
+                ("id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(db_index=True, default=False)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                ("amount", models.DecimalField(decimal_places=2, max_digits=12)),
+                ("reason", models.TextField()),
+                ("reference", models.CharField(blank=True, db_index=True, max_length=64)),
+                ("status", models.CharField(default="posted", max_length=20)),
+                ("created_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_created", to="accounts.user")),
+                ("updated_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_updated", to="accounts.user")),
+                ("tenant", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name="%(app_label)s_%(class)s_set", to="tenants.tenant")),
+                ("student", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="debit_notes", to="students.student")),
+                ("term", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="debit_notes", to="academics.term")),
+            ],
+            options={"ordering": ["-created_at"]},
+        ),
+        migrations.CreateModel(
+            name="JournalEntry",
+            fields=[
+                ("id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(db_index=True, default=False)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                ("entry_date", models.DateField()),
+                ("reference", models.CharField(blank=True, db_index=True, max_length=64)),
+                ("narration", models.CharField(max_length=255)),
+                ("source", models.CharField(blank=True, max_length=40)),
+                ("source_id", models.CharField(blank=True, max_length=64)),
+                ("is_posted", models.BooleanField(default=True)),
+                ("created_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_created", to="accounts.user")),
+                ("updated_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_updated", to="accounts.user")),
+                ("tenant", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name="%(app_label)s_%(class)s_set", to="tenants.tenant")),
+                ("period", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="journal_entries", to="finance.accountingperiod")),
+            ],
+            options={"ordering": ["-entry_date", "-created_at"], "verbose_name_plural": "Journal entries"},
+        ),
+        migrations.CreateModel(
+            name="JournalLine",
+            fields=[
+                ("id", models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+                ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("is_deleted", models.BooleanField(db_index=True, default=False)),
+                ("deleted_at", models.DateTimeField(blank=True, null=True)),
+                ("account_code", models.CharField(blank=True, max_length=30)),
+                ("account_name", models.CharField(blank=True, max_length=120)),
+                ("debit", models.DecimalField(decimal_places=2, default=Decimal("0"), max_digits=14)),
+                ("credit", models.DecimalField(decimal_places=2, default=Decimal("0"), max_digits=14)),
+                ("memo", models.CharField(blank=True, max_length=255)),
+                ("created_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_created", to="accounts.user")),
+                ("updated_by", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name="%(app_label)s_%(class)s_updated", to="accounts.user")),
+                ("tenant", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name="%(app_label)s_%(class)s_set", to="tenants.tenant")),
+                ("journal", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="lines", to="finance.journalentry")),
+                ("account", models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name="journal_lines", to="finance.financialaccount")),
+            ],
+            options={"ordering": ["created_at"]},
+        ),
+    ]
+
+

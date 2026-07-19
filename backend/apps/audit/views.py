@@ -1,6 +1,5 @@
 from django.db.models import Count
 from django.http import HttpResponse
-from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -11,6 +10,7 @@ from apps.audit.models import AuditLog
 from apps.audit.serializers import AuditLogDetailSerializer, AuditLogListSerializer
 from apps.audit.services import build_audit_log_pdf, build_audit_logs_list_pdf
 from apps.core.constants import UserRole
+from apps.core.exports import export_filename, pdf_attachment_response
 from apps.core.permissions import IsSchoolAdmin, IsSuperAdmin
 from apps.tenants.models import Tenant
 
@@ -79,10 +79,10 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
         log = self.get_object()
         data = AuditLogDetailSerializer(log).data
         pdf_bytes = build_audit_log_pdf(data)
-        filename = f"audit-log-{log.id}.pdf"
-        response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = f'attachment; filename="{filename}"'
-        return response
+        return pdf_attachment_response(
+            pdf_bytes=pdf_bytes,
+            filename=f"audit-log-{log.id}.pdf",
+        )
 
     @action(detail=False, methods=["get"], url_path="export-pdf")
     def export_list_pdf(self, request: Request) -> HttpResponse:
@@ -94,7 +94,7 @@ class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):
             and v
         }
         pdf_bytes = build_audit_logs_list_pdf(logs, active_filters)
-        stamp = timezone.now().strftime("%Y%m%d-%H%M%S")
-        response = HttpResponse(pdf_bytes, content_type="application/pdf")
-        response["Content-Disposition"] = f'attachment; filename="audit-logs-{stamp}.pdf"'
-        return response
+        return pdf_attachment_response(
+            pdf_bytes=pdf_bytes,
+            filename=export_filename("audit-logs", ext="pdf"),
+        )

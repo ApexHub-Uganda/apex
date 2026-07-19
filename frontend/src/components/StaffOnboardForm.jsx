@@ -259,10 +259,10 @@ export function StaffOnboardForm({
           <>
             <Field
               label="Initial Password"
-              hint="Leave blank to auto-generate a secure temporary password"
+              hint="Leave blank to auto-generate a 6-character one-time password (letters and numbers). The user must set a full password after first sign-in."
               error={errors.password?.message}
             >
-              <input type="password" className="form-control" autoComplete="new-password" {...register('password', { minLength: { value: 8, message: 'Minimum 8 characters' } })} />
+              <input type="password" className="form-control" autoComplete="new-password" {...register('password', { minLength: { value: 8, message: 'If set manually, minimum 8 characters' } })} />
             </Field>
             <div className="col-md-6 d-flex align-items-end">
               <div className="form-check">

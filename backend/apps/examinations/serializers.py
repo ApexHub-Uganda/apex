@@ -94,6 +94,16 @@ class ExaminationSessionSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = READ_ONLY
 
+    def validate(self, attrs: dict) -> dict:
+        if self.instance is None:
+            from apps.academics.singleton import assert_can_create_examination_session
+
+            request = self.context.get("request")
+            tenant = getattr(request.user, "tenant", None) if request else None
+            if tenant is not None:
+                assert_can_create_examination_session(tenant)
+        return attrs
+
 
 class ExamSerializer(serializers.ModelSerializer):
     subject_name = serializers.CharField(source="subject.name", read_only=True)

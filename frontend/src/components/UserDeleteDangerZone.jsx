@@ -5,7 +5,7 @@ import { alert, extractApiError, notify } from '../utils/notify';
 
 /**
  * Danger zone for removing a student, staff, or parent record.
- * Visible when the user has read access to delete_user; write is required to execute.
+ * Gated by directory module write (student/parent/staff management) — not a plan SKU.
  */
 export function UserDeleteDangerZone({
   entityLabel = 'record',
@@ -23,7 +23,7 @@ export function UserDeleteDangerZone({
   const handleDeleteClick = async () => {
     if (!canWrite) {
       notify.error(
-        'Access denied. You need write permission for "Delete User" under Core Management to remove records.',
+        'Access denied. You need write permission on this directory module to remove records.',
       );
       return;
     }
@@ -67,7 +67,7 @@ export function UserDeleteDangerZone({
             {description || `Permanently delete this ${entityLabel} from the school directory.`}
             {!canWrite && (
               <span className="d-block mt-1 text-warning-emphasis">
-                You can view this section but need Delete User write permission to proceed.
+                You can view this section but need write permission on this directory to proceed.
               </span>
             )}
           </p>

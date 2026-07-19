@@ -7,20 +7,47 @@ import { getModuleKeyForFeature } from '../config/schoolModules';
 
 const TenantContext = createContext(null);
 
+/** Darken/lighten a #RRGGBB colour for derived theme tokens. */
+const shiftHex = (hex, amount) => {
+  if (!hex || typeof hex !== 'string' || !/^#([0-9A-Fa-f]{6})$/.test(hex.trim())) {
+    return null;
+  }
+  const raw = hex.trim().slice(1);
+  const nums = [0, 2, 4].map((i) => parseInt(raw.slice(i, i + 2), 16));
+  const next = nums.map((n) => Math.max(0, Math.min(255, Math.round(n + amount))));
+  return `#${next.map((n) => n.toString(16).padStart(2, '0')).join('')}`.toUpperCase();
+};
+
 const applyTenantTheme = (theme) => {
   if (!theme) return;
   const root = document.documentElement;
-  if (theme.primary) root.style.setProperty('--apex-primary', theme.primary);
-  if (theme.secondary) root.style.setProperty('--apex-secondary', theme.secondary);
-  if (theme.accent) root.style.setProperty('--apex-accent', theme.accent);
+  if (theme.primary) {
+    root.style.setProperty('--apex-primary', theme.primary);
+    const dark = shiftHex(theme.primary, -24);
+    const light = shiftHex(theme.primary, 36);
+    if (dark) root.style.setProperty('--apex-primary-dark', dark);
+    if (light) root.style.setProperty('--apex-primary-light', light);
+  }
+  if (theme.secondary) {
+    root.style.setProperty('--apex-secondary', theme.secondary);
+    const dark = shiftHex(theme.secondary, -22);
+    if (dark) root.style.setProperty('--apex-secondary-dark', dark);
+  }
+  if (theme.accent) {
+    root.style.setProperty('--apex-accent', theme.accent);
+    const dark = shiftHex(theme.accent, -18);
+    if (dark) root.style.setProperty('--apex-accent-dark', dark);
+  }
   root.setAttribute('data-tenant-theme', 'custom');
 };
 
 const resetTenantTheme = () => {
   const root = document.documentElement;
-  root.style.removeProperty('--apex-primary');
-  root.style.removeProperty('--apex-secondary');
-  root.style.removeProperty('--apex-accent');
+  [
+    '--apex-primary', '--apex-primary-dark', '--apex-primary-light',
+    '--apex-secondary', '--apex-secondary-dark',
+    '--apex-accent', '--apex-accent-dark',
+  ].forEach((prop) => root.style.removeProperty(prop));
   root.removeAttribute('data-tenant-theme');
 };
 

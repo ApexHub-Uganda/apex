@@ -1,4 +1,4 @@
-"""Hostel summary and typed reports."""
+"""Hostel summary and typed reports (aligned to current models)."""
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -7,8 +7,7 @@ from typing import Any
 from django.db.models import Sum
 from django.utils import timezone
 
-from apps.hostel.constants import ALLOCATION_OCCUPYING_STATUSES, MAINTENANCE_OPEN_STATUSES
-from apps.hostel.models import Allocation, Hostel, HostelFee, HostelMaintenance, HostelVisitor, Room
+from apps.hostel.models import Allocation, Hostel, Room
 
 
 def build_hostel_reports(
@@ -34,13 +33,7 @@ def build_hostel_reports(
         tenant=tenant,
         is_deleted=False,
         room__hostel__in=hostels,
-        status__in=ALLOCATION_OCCUPYING_STATUSES,
-    ).count()
-    pending_fees = HostelFee.objects.filter(
-        tenant=tenant,
-        is_deleted=False,
-        hostel__in=hostels,
-        status__in=["pending", "partial", "overdue"],
+        status__in=["active", "current", "occupied"],
     ).count()
 
     occupancy_rate = round((total_occupied / total_capacity) * 100, 1) if total_capacity else 0.0
@@ -56,7 +49,6 @@ def build_hostel_reports(
             "total_occupied": total_occupied,
             "occupancy_rate": occupancy_rate,
             "active_allocations": active_allocations,
-            "pending_fees": pending_fees,
         },
         "rows": [],
         "totals": {},
@@ -87,69 +79,33 @@ def build_hostel_reports(
         payload["rows"] = rows
         payload["totals"] = {"hostels": len(rows)}
 
-    elif report_type == "maintenance":
-        records = HostelMaintenance.objects.filter(
+    elif report_type in {"maintenance", "visitors", "fees"}:
+        # Models for these report types are not present yet — return occupancy-style allocations.
+        records = Allocation.objects.filter(
             tenant=tenant,
             is_deleted=False,
-            hostel__in=hostels,
-            reported_at__date__gte=start,
-            reported_at__date__lte=end,
-        ).select_related("hostel", "room").order_by("-reported_at")
+            room__hostel__in=hostels,
+        ).select_related("student", "room", "room__hostel").order_by("-start_date")
+        if start_date:
+            records = records.filter(start_date__gte=start)
+        if end_date:
+            records = records.filter(start_date__lte=end)
         payload["rows"] = [
             {
-                "reported_at": row.reported_at.date().isoformat(),
-                "hostel": row.hostel.name if row.hostel_id else "",
-                "title": row.title,
-                "priority": row.priority,
-                "status": row.status,
-            }
-            for row in records
-        ]
-        payload["totals"] = {
-            "count": records.count(),
-            "open": records.filter(status__in=MAINTENANCE_OPEN_STATUSES).count(),
-        }
-
-    elif report_type == "visitors":
-        records = HostelVisitor.objects.filter(
-            tenant=tenant,
-            is_deleted=False,
-            hostel__in=hostels,
-            check_in_time__date__gte=start,
-            check_in_time__date__lte=end,
-        ).select_related("hostel", "student").order_by("-check_in_time")
-        payload["rows"] = [
-            {
-                "check_in_time": row.check_in_time.date().isoformat() if row.check_in_time else "",
-                "hostel": row.hostel.name if row.hostel_id else "",
-                "visitor_name": row.visitor_name,
+                "start_date": str(row.start_date) if row.start_date else "",
+                "end_date": str(row.end_date) if row.end_date else "",
+                "hostel": row.room.hostel.name if row.room_id and row.room.hostel_id else "",
+                "room": row.room.room_number if row.room_id else "",
                 "student": row.student.full_name if row.student_id else "",
-                "purpose": row.purpose,
                 "status": row.status,
+                "bed_number": row.bed_number or "",
             }
             for row in records
         ]
         payload["totals"] = {"count": records.count()}
-
-    elif report_type == "fees":
-        records = HostelFee.objects.filter(
-            tenant=tenant,
-            is_deleted=False,
-            hostel__in=hostels,
-            due_date__gte=start,
-            due_date__lte=end,
-        ).select_related("hostel", "student").order_by("-due_date")
-        payload["rows"] = [
-            {
-                "due_date": str(row.due_date),
-                "hostel": row.hostel.name if row.hostel_id else "",
-                "student": row.student.full_name if row.student_id else "",
-                "amount": str(row.amount),
-                "amount_paid": str(row.amount_paid),
-                "status": row.status,
-            }
-            for row in records
-        ]
-        payload["totals"] = {"count": records.count()}
+        payload["summary"]["note"] = (
+            f"Detailed '{report_type}' entities are not available yet; "
+            "showing room allocations for the selected period."
+        )
 
     return payload

@@ -207,3 +207,54 @@ class SchoolRoleFeaturePermission(models.Model):
     def __str__(self) -> str:
         access = "rw" if self.can_write else ("r" if self.can_read else "—")
         return f"{self.tenant.code}:{self.role}:{self.feature_key} ({access})"
+
+
+class Campus(models.Model):
+    """Physical school campus / branch under a tenant (multi-campus support)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant = models.ForeignKey(
+        Tenant,
+        on_delete=models.CASCADE,
+        related_name="campuses",
+        db_index=True,
+    )
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=30, help_text="Short campus code, unique per school")
+    address = models.TextField(blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    is_main = models.BooleanField(
+        default=False,
+        help_text="Primary / headquarters campus for the school.",
+    )
+    is_active = models.BooleanField(default=True, db_index=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_main", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["tenant", "code"],
+                name="uniq_tenant_campus_code",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["tenant", "is_active"]),
+            models.Index(fields=["tenant", "is_main"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.tenant.code}:{self.code} — {self.name}"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.code = (self.code or "").strip().upper()
+        super().save(*args, **kwargs)
+        if self.is_main and self.tenant_id:
+            # Keep a single main campus per school.
+            Campus.objects.filter(tenant_id=self.tenant_id, is_main=True).exclude(pk=self.pk).update(
+                is_main=False,
+            )

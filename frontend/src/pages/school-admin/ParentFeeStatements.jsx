@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import PageHeader from '../../components/PageHeader';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
-import { parentFeeStatementsService } from '../../services/moduleService';
+import DataTable from '../../components/DataTable';
+import SearchableSelect from '../../components/SearchableSelect';
+import { parentFeeStatementsService, financeDocumentsService } from '../../services/moduleService';
+import { notify } from '../../utils/notify';
 
 const formatUGX = (amount) => {
   const n = Number(amount);
@@ -20,6 +23,39 @@ export function ParentFeeStatements() {
 
   const children = data?.children || [];
   const active = children.find((c) => c.student?.id === selectedChild) || children[0];
+
+  const childOptions = useMemo(() => (
+    children.map((stmt) => ({
+      value: stmt.student.id,
+      label: `${stmt.student.full_name} (${stmt.student.admission_number})`,
+      meta: stmt.student.class_name || undefined,
+      keywords: [stmt.student.full_name, stmt.student.admission_number, stmt.student.class_name].filter(Boolean).join(' '),
+    }))
+  ), [children]);
+
+  const invoiceColumns = useMemo(() => [
+    { key: 'invoice_number', label: '#', accessor: 'invoice_number', sortable: true },
+    { key: 'issue_date', label: 'Issued', accessor: 'issue_date' },
+    {
+      key: 'total_amount',
+      label: 'Amount',
+      render: (row) => formatUGX(row.total_amount),
+      searchValue: (row) => row.total_amount,
+    },
+    { key: 'status', label: 'Status', accessor: 'status' },
+  ], []);
+
+  const paymentColumns = useMemo(() => [
+    { key: 'payment_date', label: 'Date', accessor: 'payment_date', sortable: true },
+    { key: 'fee_item', label: 'Item', accessor: 'fee_item' },
+    {
+      key: 'amount_paid',
+      label: 'Amount',
+      render: (row) => formatUGX(row.amount_paid),
+      searchValue: (row) => row.amount_paid,
+    },
+    { key: 'receipt_number', label: 'Receipt', accessor: 'receipt_number' },
+  ], []);
 
   return (
     <div>
@@ -42,19 +78,13 @@ export function ParentFeeStatements() {
       ) : (
         <>
           {children.length > 1 && (
-            <div className="mb-3">
-              <select
-                className="form-select form-select-sm"
-                style={{ maxWidth: 320 }}
+            <div className="mb-3" style={{ maxWidth: 420 }}>
+              <SearchableSelect
+                options={childOptions}
                 value={selectedChild || active?.student?.id || ''}
-                onChange={(e) => setSelectedChild(e.target.value)}
-              >
-                {children.map((stmt) => (
-                  <option key={stmt.student.id} value={stmt.student.id}>
-                    {stmt.student.full_name} ({stmt.student.admission_number})
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedChild}
+                placeholder="Search child by name or admission no…"
+              />
             </div>
           )}
 
@@ -62,10 +92,28 @@ export function ParentFeeStatements() {
             <div className="row g-3">
               <div className="col-12">
                 <div className="apex-card p-3 p-md-4">
-                  <h5 className="fw-semibold mb-1">{active.student.full_name}</h5>
-                  <div className="small text-muted mb-3">
-                    {active.student.admission_number}
-                    {active.student.class_name ? ` · ${active.student.class_name}` : ''}
+                  <div className="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <div>
+                      <h5 className="fw-semibold mb-1">{active.student.full_name}</h5>
+                      <div className="small text-muted mb-3">
+                        {active.student.admission_number}
+                        {active.student.class_name ? ` · ${active.student.class_name}` : ''}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary btn-sm"
+                      onClick={async () => {
+                        try {
+                          await financeDocumentsService.statementPdf(active.student.id);
+                          notify.success('Statement PDF downloaded.');
+                        } catch {
+                          notify.error('Unable to download statement PDF.');
+                        }
+                      }}
+                    >
+                      Download PDF
+                    </button>
                   </div>
                   <div className="row g-3">
                     <div className="col-md-4"><div className="small text-muted">Total Billed</div><div className="fw-semibold">{formatUGX(active.summary.total_billed)}</div></div>
@@ -78,50 +126,30 @@ export function ParentFeeStatements() {
               <div className="col-lg-6">
                 <div className="apex-card p-3">
                   <h6 className="fw-semibold mb-3">Invoices</h6>
-                  {(active.invoices || []).length === 0 ? (
-                    <p className="small text-muted mb-0">No invoices on record.</p>
-                  ) : (
-                    <div className="table-responsive">
-                      <table className="table table-sm mb-0">
-                        <thead><tr><th>#</th><th>Issued</th><th>Amount</th><th>Status</th></tr></thead>
-                        <tbody>
-                          {active.invoices.map((inv) => (
-                            <tr key={inv.invoice_number}>
-                              <td>{inv.invoice_number}</td>
-                              <td>{inv.issue_date}</td>
-                              <td>{formatUGX(inv.total_amount)}</td>
-                              <td>{inv.status}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                  <DataTable
+                    columns={invoiceColumns}
+                    data={active.invoices || []}
+                    pageSize={8}
+                    searchable
+                    searchPlaceholder="Search invoices…"
+                    searchKeys={['invoice_number', 'issue_date', 'total_amount', 'status']}
+                    emptyState={<p className="small text-muted mb-0">No invoices on record.</p>}
+                  />
                 </div>
               </div>
 
               <div className="col-lg-6">
                 <div className="apex-card p-3">
                   <h6 className="fw-semibold mb-3">Payments</h6>
-                  {(active.payments || []).length === 0 ? (
-                    <p className="small text-muted mb-0">No payments on record.</p>
-                  ) : (
-                    <div className="table-responsive">
-                      <table className="table table-sm mb-0">
-                        <thead><tr><th>Date</th><th>Item</th><th>Amount</th><th>Receipt</th></tr></thead>
-                        <tbody>
-                          {active.payments.map((p, idx) => (
-                            <tr key={`${p.receipt_number}-${idx}`}>
-                              <td>{p.payment_date}</td>
-                              <td>{p.fee_item}</td>
-                              <td>{formatUGX(p.amount_paid)}</td>
-                              <td>{p.receipt_number || '—'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                  <DataTable
+                    columns={paymentColumns}
+                    data={active.payments || []}
+                    pageSize={8}
+                    searchable
+                    searchPlaceholder="Search payments by receipt, item…"
+                    searchKeys={['payment_date', 'fee_item', 'amount_paid', 'receipt_number']}
+                    emptyState={<p className="small text-muted mb-0">No payments on record.</p>}
+                  />
                 </div>
               </div>
             </div>

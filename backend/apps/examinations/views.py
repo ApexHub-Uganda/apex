@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.academics.mixins import AcademicScopeMixin
+from apps.academics.mixins import AcademicScopeMixin, ExaminationSessionSingletonMixin
 from apps.academics.scoping import filter_queryset_for_user, user_can_access_exam, user_can_write_exam_marks, user_has_unrestricted_marks_access
 from apps.core.permissions import IsStaffMember, RequiresAnyFeature, RequiresFeature, TenantActivePermission
 from apps.core.views import BaseModelViewSet
@@ -145,7 +145,7 @@ class GradingSchemeViewSet(BaseModelViewSet):
         }, status=status.HTTP_200_OK)
 
 
-class ExaminationSessionViewSet(AcademicScopeMixin, BaseModelViewSet):
+class ExaminationSessionViewSet(ExaminationSessionSingletonMixin, AcademicScopeMixin, BaseModelViewSet):
     required_feature_key = "examination_sessions"
     queryset = ExaminationSession.objects.select_related("academic_year", "term")
     serializer_class = ExaminationSessionSerializer

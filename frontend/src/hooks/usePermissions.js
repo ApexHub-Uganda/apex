@@ -75,8 +75,21 @@ export function usePermissions() {
     canDelete: (moduleOrFeatureKey) => (
       canAccessFeature(moduleOrFeatureKey, true) || canWriteModule(moduleOrFeatureKey)
     ),
-    canReadDeleteUser: () => isSchoolAdmin || canAccessFeature('delete_user', false),
-    canWriteDeleteUser: () => isSchoolAdmin || canAccessFeature('delete_user', true),
+    // Delete is a directory write capability (not a sellable plan feature).
+    canReadDeleteUser: (directoryFeatureKey) => (
+      isSchoolAdmin
+      || (directoryFeatureKey
+        ? canAccessFeature(directoryFeatureKey, false)
+        : canAccessFeature('student_management', false)
+          || canAccessFeature('parent_management', false)
+          || canAccessFeature('staff_management', false))
+    ),
+    canWriteDeleteUser: (directoryFeatureKey) => (
+      isSchoolAdmin
+      || (directoryFeatureKey
+        ? canAccessFeature(directoryFeatureKey, true)
+        : false)
+    ),
   };
 }
 

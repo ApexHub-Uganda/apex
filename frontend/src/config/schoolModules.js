@@ -6,20 +6,19 @@ export const SCHOOL_MODULES = [
     icon: 'FiGrid',
     path: '/school-admin/core',
     sort_order: 0,
+    // School Settings, Roles & Permissions, Delete User are core platform capabilities
+    // (not plan-sellable modules) — see CORE_FEATURE_KEYS / school-admin settings nav.
     feature_keys: [
       'student_management', 'parent_management', 'staff_management', 'departments',
-      'user_accounts', 'delete_user', 'roles_permissions', 'school_settings', 'multi_campus_support',
+      'user_accounts', 'multi_campus_support',
     ],
     children: [
       { feature_key: 'student_management', label: 'Students', path: '/school-admin/students', icon: 'FiUsers' },
       { feature_key: 'parent_management', label: 'Parents & Guardians', path: '/school-admin/parents', icon: 'FiUsers' },
       { feature_key: 'staff_management', label: 'Staff', path: '/school-admin/staff', icon: 'FiBriefcase' },
       { feature_key: 'departments', label: 'Departments', path: '/school-admin/core/departments', icon: 'FiLayers' },
-      { feature_key: 'user_accounts', label: 'User Accounts', path: '/school-admin/settings', icon: 'FiUser' },
-      { feature_key: 'delete_user', label: 'Delete User', path: '/school-admin/core', icon: 'FiTrash2' },
-      { feature_key: 'roles_permissions', label: 'Roles & Permissions', path: '/school-admin/settings', icon: 'FiShield' },
-      { feature_key: 'school_settings', label: 'School Settings', path: '/school-admin/settings', icon: 'FiSettings' },
-      { feature_key: 'multi_campus_support', label: 'Multi-campus', path: '/school-admin/settings', icon: 'FiMapPin' },
+      { feature_key: 'user_accounts', label: 'User Accounts', path: '/school-admin/core/user-accounts', icon: 'FiUser' },
+      { feature_key: 'multi_campus_support', label: 'Multi-campus', path: '/school-admin/core/campuses', icon: 'FiMapPin' },
     ],
   },
   {
@@ -46,7 +45,7 @@ export const SCHOOL_MODULES = [
       { feature_key: 'grading', label: 'Grading', path: '/school-admin/academics/grading', icon: 'FiAward' },
       { feature_key: 'homework', label: 'Homework', path: '/school-admin/academics/homework', icon: 'FiEdit' },
       { feature_key: 'assignments', label: 'Assignments', path: '/school-admin/academics/assignments', icon: 'FiFileText' },
-      { feature_key: 'timetables', label: 'Timetables', path: '/school-admin/academics/timetable', icon: 'FiClock' },
+      { feature_key: 'timetables', label: 'Timetables', path: '/school-admin/academics/timetable/wizard', icon: 'FiClock' },
       { feature_key: 'periods', label: 'Periods', path: '/school-admin/academics/periods', icon: 'FiClock' },
       { feature_key: 'classrooms', label: 'Classrooms', path: '/school-admin/academics/classrooms', icon: 'FiHome' },
       { feature_key: 'class_teacher_tools', label: 'Class Teacher', path: '/school-admin/academics/class-teacher', icon: 'FiUsers' },
@@ -314,8 +313,7 @@ export const buildRouteFeatureMap = () => {
     payroll: 'payroll_runs',
     reports: 'reports',
     communication: 'announcements',
-    settings: 'school_settings',
-    'settings/plans': 'school_settings',
+    // settings / permissions / plans are core school-admin surfaces (not plan SKUs)
     notifications: 'notifications',
     core: 'student_management',
     academics: 'academic_years',

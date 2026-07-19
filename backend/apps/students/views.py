@@ -54,9 +54,7 @@ class ParentViewSet(BulkImportMixin, BaseModelViewSet):
 
     def get_permissions(self):
         perms = [permission() for permission in self.permission_classes]
-        if getattr(self, "action", None) == "destroy":
-            perms.append(RequiresFeature("delete_user")())
-            return perms
+        # Directory write covers delete — Delete User is not a sellable plan module.
         if self.required_feature_key:
             perms.append(RequiresFeature(self.required_feature_key)())
         return perms
@@ -187,9 +185,7 @@ class StudentViewSet(AcademicScopeMixin, BulkImportMixin, BaseModelViewSet):
     def get_permissions(self):
         perms = [permission() for permission in self.permission_classes]
         action = getattr(self, "action", None)
-        if action == "destroy":
-            perms.append(RequiresFeature("delete_user")())
-            return perms
+        # Directory write covers delete — Delete User is not a sellable plan module.
         if action in self._ENROLLMENT_FEATURE_ACTIONS:
             perms.append(RequiresAnyFeature("student_management", "class_teacher_tools")())
         else:

@@ -6,7 +6,7 @@ from rest_framework import serializers
 from apps.core.serializer_fields import DeliverableEmailField
 from apps.staff.models import Staff
 from apps.students.models import Student
-from apps.tenants.models import Tenant
+from apps.tenants.models import Campus, Tenant
 from apps.tenants.school_validation import (
     validate_school_code,
     validate_school_contact_email,
@@ -14,13 +14,152 @@ from apps.tenants.school_validation import (
 )
 
 
+class CampusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Campus
+        fields = [
+            "id", "name", "code", "address", "city", "phone", "email",
+            "is_main", "is_active", "notes", "created_at", "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def validate_code(self, value: str) -> str:
+        code = (value or "").strip().upper()
+        if not code:
+            raise serializers.ValidationError("Campus code is required.")
+        if len(code) > 30:
+            raise serializers.ValidationError("Campus code must be 30 characters or fewer.")
+        return code
+
+    def validate(self, attrs: dict) -> dict:
+        request = self.context.get("request")
+        tenant = getattr(getattr(request, "user", None), "tenant", None)
+        if self.instance is not None:
+            tenant = self.instance.tenant
+        code = attrs.get("code")
+        if code and tenant is not None:
+            qs = Campus.objects.filter(tenant=tenant, code=code)
+            if self.instance is not None:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError({"code": "A campus with this code already exists."})
+        return attrs
+
+
 class TenantBrandingSerializer(serializers.ModelSerializer):
+    """Legacy branding patch (logo + colours). Prefer SchoolSettingsSerializer."""
+
     class Meta:
         model = Tenant
         fields = [
             "logo", "favicon", "banner", "login_bg",
             "primary_color", "secondary_color", "accent_color", "tagline",
         ]
+
+
+class SchoolSettingsSerializer(serializers.ModelSerializer):
+    """
+    School-admin editable profile + branding used on the portal and PDF chrome.
+
+    Does not expose status, plan, or other super-admin-only fields.
+    """
+
+    logo_url = serializers.SerializerMethodField(read_only=True)
+    # Multipart forms send "true"/"false" strings — BooleanField handles that.
+    clear_logo = serializers.BooleanField(required=False, write_only=True, default=False)
+
+    class Meta:
+        model = Tenant
+        fields = [
+            "id",
+            "name",
+            "code",
+            "email",
+            "phone",
+            "address",
+            "city",
+            "country",
+            "timezone",
+            "website",
+            "tagline",
+            "primary_color",
+            "secondary_color",
+            "accent_color",
+            "logo",
+            "logo_url",
+            "clear_logo",
+        ]
+        read_only_fields = ["id", "code", "logo_url"]
+        extra_kwargs = {
+            "logo": {"required": False, "allow_null": True},
+            "name": {"required": False},
+            "email": {"required": False},
+            "phone": {"required": False, "allow_blank": True},
+            "address": {"required": False, "allow_blank": True},
+            "city": {"required": False, "allow_blank": True},
+            "country": {"required": False, "allow_blank": True},
+            "timezone": {"required": False},
+            "website": {"required": False, "allow_blank": True},
+            "tagline": {"required": False, "allow_blank": True},
+            "primary_color": {"required": False},
+            "secondary_color": {"required": False},
+            "accent_color": {"required": False},
+        }
+
+    def get_logo_url(self, obj: Tenant) -> str | None:
+        from apps.core.media_utils import resolve_media_url
+
+        request = self.context.get("request")
+        return resolve_media_url(request, obj.logo) if obj.logo else None
+
+    def validate_primary_color(self, value: str) -> str:
+        return self._validate_hex(value, "primary_color")
+
+    def validate_secondary_color(self, value: str) -> str:
+        return self._validate_hex(value, "secondary_color")
+
+    def validate_accent_color(self, value: str) -> str:
+        return self._validate_hex(value, "accent_color")
+
+    def _validate_hex(self, value: str, field: str) -> str:
+        from apps.core.pdf_branding import normalize_hex_color
+        from apps.core.constants import COLOR_ACCENT, COLOR_PRIMARY, COLOR_SECONDARY
+
+        defaults = {
+            "primary_color": COLOR_PRIMARY,
+            "secondary_color": COLOR_SECONDARY,
+            "accent_color": COLOR_ACCENT,
+        }
+        normalized = normalize_hex_color(value, defaults[field])
+        if value and normalized == defaults[field] and str(value).strip().upper() != defaults[field].upper():
+            # Only reject if user sent something non-empty that failed to parse
+            # and did not already equal the default.
+            import re
+            if not re.match(r"^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$", str(value).strip()):
+                raise serializers.ValidationError("Use a hex colour like #0F766E.")
+        return normalized
+
+    def validate_name(self, value: str) -> str:
+        name = (value or "").strip()
+        if not name:
+            raise serializers.ValidationError("School name is required.")
+        if len(name) < 2:
+            raise serializers.ValidationError("School name is too short.")
+        return name
+
+    def validate_email(self, value: str) -> str:
+        email = (value or "").strip()
+        if not email:
+            raise serializers.ValidationError("School contact email is required.")
+        return email
+
+    def update(self, instance: Tenant, validated_data: dict) -> Tenant:
+        clear_logo = validated_data.pop("clear_logo", False)
+        if clear_logo and not validated_data.get("logo"):
+            if instance.logo:
+                instance.logo.delete(save=False)
+            instance.logo = None
+        return super().update(instance, validated_data)
 
 
 class TenantSerializer(serializers.ModelSerializer):

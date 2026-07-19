@@ -1,4 +1,4 @@
-"""Delete User permission gates directory record removal."""
+"""Directory delete is gated by module write — not a sellable Delete User plan SKU."""
 from __future__ import annotations
 
 from datetime import date
@@ -15,50 +15,44 @@ from apps.tenants.role_permissions import save_role_permissions
 
 
 @pytest.fixture
-def delete_user_plan(db, plan):
+def directory_plan(db, plan):
     assign_plan_features(plan, [
-        "student_management", "parent_management", "staff_management", "delete_user",
+        "student_management", "parent_management", "staff_management",
     ])
     return plan
 
 
-def _grant_delete_user(tenant, *, can_read: bool, can_write: bool) -> None:
+def _grant_directory_write(tenant, *, can_write: bool) -> None:
+    """Teacher can read directories; write controls whether delete is allowed."""
     save_role_permissions(tenant, [
         {
             "role": UserRole.TEACHER,
             "module_key": "core_management",
-            "can_read": can_read,
-            "can_write": can_write,
-        },
-        {
-            "role": UserRole.TEACHER,
-            "feature_key": "delete_user",
-            "can_read": can_read,
+            "can_read": True,
             "can_write": can_write,
         },
         {
             "role": UserRole.TEACHER,
             "feature_key": "student_management",
             "can_read": True,
-            "can_write": True,
+            "can_write": can_write,
         },
         {
             "role": UserRole.TEACHER,
             "feature_key": "parent_management",
             "can_read": True,
-            "can_write": True,
+            "can_write": can_write,
         },
         {
             "role": UserRole.TEACHER,
             "feature_key": "staff_management",
             "can_read": True,
-            "can_write": True,
+            "can_write": can_write,
         },
     ])
 
 
 def _setup_teacher_student_scope(tenant, teacher_user):
-    """Give the teacher academic visibility to the student under test."""
     staff = Staff.objects.create(
         tenant=tenant,
         user=teacher_user,
@@ -100,9 +94,9 @@ def _setup_teacher_student_scope(tenant, teacher_user):
 
 
 @pytest.mark.django_db
-class TestDeleteUserPermission:
-    def test_student_delete_requires_delete_user_write(
-        self, api_client, tenant, delete_user_plan, teacher_user,
+class TestDirectoryDeletePermission:
+    def test_student_delete_requires_directory_write(
+        self, api_client, tenant, directory_plan, teacher_user,
     ):
         school_class = _setup_teacher_student_scope(tenant, teacher_user)
         student = Student.objects.create(
@@ -116,20 +110,20 @@ class TestDeleteUserPermission:
             school_class=school_class,
         )
 
-        _grant_delete_user(tenant, can_read=True, can_write=False)
+        _grant_directory_write(tenant, can_write=False)
         api_client.force_authenticate(user=teacher_user)
         response = api_client.delete(f"/api/v1/students/{student.id}/")
         assert response.status_code == status.HTTP_403_FORBIDDEN
         assert Student.objects.filter(pk=student.id, is_deleted=False).exists()
 
-        _grant_delete_user(tenant, can_read=True, can_write=True)
+        _grant_directory_write(tenant, can_write=True)
         response = api_client.delete(f"/api/v1/students/{student.id}/")
         assert response.status_code == status.HTTP_204_NO_CONTENT
         student.refresh_from_db()
         assert student.is_deleted is True
 
-    def test_parent_delete_requires_delete_user_write(
-        self, api_client, tenant, delete_user_plan, teacher_user,
+    def test_parent_delete_requires_directory_write(
+        self, api_client, tenant, directory_plan, teacher_user,
     ):
         parent = Parent.objects.create(
             tenant=tenant,
@@ -139,19 +133,19 @@ class TestDeleteUserPermission:
             phone="+254700000001",
         )
 
-        _grant_delete_user(tenant, can_read=True, can_write=False)
+        _grant_directory_write(tenant, can_write=False)
         api_client.force_authenticate(user=teacher_user)
         response = api_client.delete(f"/api/v1/students/parents/{parent.id}/")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-        _grant_delete_user(tenant, can_read=True, can_write=True)
+        _grant_directory_write(tenant, can_write=True)
         response = api_client.delete(f"/api/v1/students/parents/{parent.id}/")
         assert response.status_code == status.HTTP_204_NO_CONTENT
         parent.refresh_from_db()
         assert parent.is_deleted is True
 
-    def test_staff_delete_requires_delete_user_write(
-        self, api_client, tenant, delete_user_plan, teacher_user,
+    def test_staff_delete_requires_school_admin_or_staff_manager(
+        self, api_client, tenant, directory_plan, teacher_user, school_admin,
     ):
         staff = Staff.objects.create(
             tenant=tenant,
@@ -167,19 +161,20 @@ class TestDeleteUserPermission:
             status="active",
         )
 
-        _grant_delete_user(tenant, can_read=True, can_write=False)
+        # Ordinary teachers cannot manage staff records.
+        _grant_directory_write(tenant, can_write=True)
         api_client.force_authenticate(user=teacher_user)
         response = api_client.delete(f"/api/v1/staff/{staff.id}/")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-        _grant_delete_user(tenant, can_read=True, can_write=True)
+        api_client.force_authenticate(user=school_admin)
         response = api_client.delete(f"/api/v1/staff/{staff.id}/")
         assert response.status_code == status.HTTP_204_NO_CONTENT
         staff.refresh_from_db()
         assert staff.is_deleted is True
 
-    def test_school_admin_can_delete_without_explicit_grant(
-        self, api_client, tenant, delete_user_plan, school_admin,
+    def test_school_admin_can_delete_without_extra_grant(
+        self, api_client, tenant, directory_plan, school_admin,
     ):
         student = Student.objects.create(
             tenant=tenant,
@@ -193,3 +188,16 @@ class TestDeleteUserPermission:
         api_client.force_authenticate(user=school_admin)
         response = api_client.delete(f"/api/v1/students/{student.id}/")
         assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    def test_retired_features_excluded_from_plan_catalog(self, db):
+        from apps.subscriptions.seed_features import RETIRED_PLAN_FEATURE_KEYS, seed_feature_catalog
+        from apps.subscriptions.services import get_feature_catalog
+
+        seed_feature_catalog()
+        catalog = get_feature_catalog()
+        keys = {
+            feat["feature_key"]
+            for category in catalog
+            for feat in category.get("features", [])
+        }
+        assert keys.isdisjoint(RETIRED_PLAN_FEATURE_KEYS)

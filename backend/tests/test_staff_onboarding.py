@@ -37,6 +37,13 @@ class TestStaffOnboarding:
         assert hasattr(staff, "teacher_profile")
         assert staff.employee_id.startswith(tenant.code)
         mock_send.assert_called_once()
+        # One-time password emailed for first login is 6 alphanumeric characters.
+        send_kwargs = mock_send.call_args.kwargs if mock_send.call_args.kwargs else {}
+        # EmailService.send may receive body text containing the OTP; assert generator contract directly.
+        from apps.staff.services import _generate_temp_password
+        otp = _generate_temp_password()
+        assert len(otp) == 6
+        assert otp.isalnum()
 
     def test_onboard_bursar_no_teacher_profile(self, tenant, school_admin):
         staff = onboard_staff(

@@ -142,26 +142,10 @@ export const ENTITY_REGISTRY_EXTRAS = {
     'Point-in-time data snapshots for auditing',
     { to: '/school-admin/analytics', label: 'Analytics' },
   ),
-  user_accounts: redirectEntry(
-    '/school-admin/settings',
-    'User accounts and login credentials',
-    { to: '/school-admin/settings', label: 'Settings' },
-  ),
-  roles_permissions: redirectEntry(
-    '/school-admin/settings',
-    'Role-based access and feature permissions',
-    { to: '/school-admin/settings', label: 'Settings' },
-  ),
-  school_settings: redirectEntry(
-    '/school-admin/settings',
-    'School profile, branding, and preferences',
-    { to: '/school-admin/settings', label: 'Settings' },
-  ),
-  multi_campus_support: redirectEntry(
-    '/school-admin/settings',
-    'Multi-campus configuration and branch settings',
-    { to: '/school-admin/settings', label: 'Settings' },
-  ),
+  // user_accounts + multi_campus_support have dedicated pages.
+  // school_settings / roles_permissions / delete_user are retired plan SKUs —
+  // keep redirects only if a stale deep-link remains in an old session menu.
+
   hostel_management: redirectEntry(
     '/school-admin/hostel',
     'Hostel blocks, wardens, and capacity',
@@ -361,8 +345,9 @@ export const ENTITY_REGISTRY_EXTRAS = {
   examination_sessions: {
     service: examinationSessionsService,
     queryKey: ['examination-sessions'],
+    singleton: { type: 'examination_session', title: 'Current exam period' },
     createLabel: 'Add Exam Session',
-    subtitle: 'School-wide examination windows and calendars',
+    subtitle: 'School-wide examination windows and calendars — only one open period at a time',
     backLink: { to: '/school-admin/examinations', label: 'Examinations' },
     columns: [
       { key: 'name', label: 'Session', accessor: 'name', sortable: true },
@@ -563,6 +548,7 @@ export const ENTITY_REGISTRY_EXTRAS = {
     queryKey: ['student-fee-balances'],
     subtitle: 'Outstanding student fee balances by term',
     backLink: { to: '/school-admin/finance', label: 'Finance' },
+    searchKeys: ['student_name', 'admission_number', 'class_name', 'term_name', 'balance', 'status'],
     columns: [
       { key: 'student_name', label: 'Student', accessor: 'student_name', sortable: true },
       { key: 'admission_number', label: 'Admission', accessor: 'admission_number' },
@@ -582,6 +568,7 @@ export const ENTITY_REGISTRY_EXTRAS = {
     createLabel: 'Add Discount',
     subtitle: 'Fee discounts, waivers, and scholarships',
     backLink: { to: '/school-admin/finance', label: 'Finance' },
+    searchKeys: ['student_name', 'discount_type', 'amount', 'status', 'reason'],
     columns: [
       { key: 'student_name', label: 'Student', accessor: 'student_name' },
       { key: 'discount_type', label: 'Type', accessor: 'discount_type' },
@@ -609,6 +596,7 @@ export const ENTITY_REGISTRY_EXTRAS = {
     createLabel: 'Request Refund',
     subtitle: 'Process and track fee refunds',
     backLink: { to: '/school-admin/finance', label: 'Finance' },
+    searchKeys: ['student_name', 'amount', 'status', 'reason'],
     columns: [
       { key: 'student_name', label: 'Student', accessor: 'student_name' },
       { key: 'amount', label: 'Amount (UGX)', accessor: 'amount' },
@@ -744,6 +732,7 @@ export const ENTITY_REGISTRY_EXTRAS = {
     createLabel: 'Create Invoice',
     subtitle: 'Generate student fee invoices',
     backLink: { to: '/school-admin/finance', label: 'Finance' },
+    searchKeys: ['invoice_number', 'student_name', 'student', 'status', 'total_amount'],
     columns: [
       { key: 'invoice_number', label: 'Invoice #', accessor: 'invoice_number', sortable: true },
       { key: 'student', label: 'Student', accessor: 'student' },

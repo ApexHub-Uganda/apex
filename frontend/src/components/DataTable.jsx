@@ -7,12 +7,42 @@ import { isNameColumn, isShortColumn, ROW_NUMBER_COLUMN } from '../utils/tableDi
 /** Horizontal scroll only when the table has many columns. */
 const WIDE_TABLE_COLUMN_THRESHOLD = 8;
 
+/** Flatten row values used for multi-token client search. */
+function rowSearchBlob(row, columns, searchKeys) {
+  const parts = [];
+  if (Array.isArray(searchKeys) && searchKeys.length) {
+    searchKeys.forEach((key) => {
+      const val = row?.[key];
+      if (val != null && val !== '') parts.push(String(val));
+    });
+  }
+  columns.forEach((col) => {
+    if (col.key === 'actions' || col.key === '_open' || col.key === '_rowNum') return;
+    if (col.searchValue) {
+      parts.push(String(col.searchValue(row) ?? ''));
+      return;
+    }
+    if (col.accessor) {
+      const val = typeof col.accessor === 'function' ? col.accessor(row) : row[col.accessor];
+      if (val != null && typeof val !== 'object') parts.push(String(val));
+    }
+  });
+  // Always index common id/code fields even if not in columns
+  ['id', 'code', 'reference', 'receipt_number', 'invoice_number', 'admission_number',
+    'student_name', 'student_admission', 'email', 'phone', 'full_name'].forEach((k) => {
+    if (row?.[k] != null && row[k] !== '') parts.push(String(row[k]));
+  });
+  return parts.join(' ').toLowerCase();
+}
+
 export function DataTable({
   columns,
   data = [],
   loading = false,
   searchable = true,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder = 'Search records…',
+  /** Extra object keys always included in client search (beyond columns). */
+  searchKeys = null,
   pageSize = 10,
   onRowClick,
   emptyMessage = 'No records found',
@@ -32,13 +62,14 @@ export function DataTable({
   const filtered = useMemo(() => {
     let result = [...data];
     if (search) {
-      const q = search.toLowerCase();
-      result = result.filter((row) =>
-        columns.some((col) => {
-          const val = col.accessor ? (typeof col.accessor === 'function' ? col.accessor(row) : row[col.accessor]) : '';
-          return String(val ?? '').toLowerCase().includes(q);
-        })
-      );
+      // Multi-token AND search: "ada g5" matches name Ada in class G5
+      const tokens = search.trim().toLowerCase().split(/\s+/).filter(Boolean);
+      if (tokens.length) {
+        result = result.filter((row) => {
+          const hay = rowSearchBlob(row, columns, searchKeys);
+          return tokens.every((t) => hay.includes(t));
+        });
+      }
     }
     if (sortKey) {
       const sortCol = columns.find((col) => col.key === sortKey);
@@ -61,7 +92,7 @@ export function DataTable({
       });
     }
     return result;
-  }, [data, search, sortKey, sortDir, columns]);
+  }, [data, search, sortKey, sortDir, columns, searchKeys]);
 
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paginated = filtered.slice(page * pageSize, (page + 1) * pageSize);
@@ -202,12 +233,24 @@ export function DataTable({
               <div className="position-relative apex-table-search">
                 <FiSearch className="position-absolute text-muted apex-table-search-icon" />
                 <input
-                  type="text"
+                  type="search"
                   className="form-control form-control-sm ps-5 apex-table-search-input"
                   placeholder={searchPlaceholder}
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+                  aria-label={searchPlaceholder}
+                  autoComplete="off"
                 />
+                {search ? (
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm position-absolute apex-table-search-clear p-0"
+                    title="Clear search"
+                    onClick={() => { setSearch(''); setPage(0); }}
+                  >
+                    ×
+                  </button>
+                ) : null}
               </div>
             )}
             {filters}

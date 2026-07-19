@@ -84,6 +84,9 @@ DEFAULT_ROLE_MODULE_PERMISSIONS: dict[str, dict[str, dict[str, bool]]] = {
     UserRole.PARENT: {
         "communication": {"can_read": True, "can_write": False},
         "finance": {"can_read": True, "can_write": False},
+        "academics": {"can_read": True, "can_write": False},
+        "examinations": {"can_read": True, "can_write": False},
+        "attendance": {"can_read": True, "can_write": False},
         "analytics": {"can_read": True, "can_write": False},
         "events": {"can_read": True, "can_write": False},
     },

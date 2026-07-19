@@ -216,8 +216,11 @@ def _nav_label(nav_key: str) -> str:
 def assign_plan_features(plan: Plan, feature_keys: list[str]) -> Plan:
     """Replace plan feature assignments atomically."""
     from apps.subscriptions.plan_tiers import merge_plan_feature_keys
+    from apps.subscriptions.seed_features import RETIRED_PLAN_FEATURE_KEYS
 
     feature_keys = merge_plan_feature_keys(plan.slug, feature_keys)
+    # Never attach retired core capabilities as plan SKUs.
+    feature_keys = [k for k in feature_keys if k not in RETIRED_PLAN_FEATURE_KEYS]
     features = list(FeatureFlag.objects.filter(feature_key__in=feature_keys, is_active=True))
     unknown = set(feature_keys) - {f.feature_key for f in features}
     if unknown:
@@ -242,6 +245,7 @@ def assign_plan_features(plan: Plan, feature_keys: list[str]) -> Plan:
 def get_feature_catalog() -> list[dict[str, Any]]:
     """Super-admin plan editor catalog — grouped into 15 school modules."""
     from apps.subscriptions.module_registry import SCHOOL_MODULES
+    from apps.subscriptions.seed_features import RETIRED_PLAN_FEATURE_KEYS
 
     cached = cache.get(CATALOG_CACHE)
     if cached is not None:
@@ -249,13 +253,17 @@ def get_feature_catalog() -> list[dict[str, Any]]:
 
     feature_map = {
         f.feature_key: f
-        for f in FeatureFlag.objects.filter(is_active=True).select_related("category")
+        for f in FeatureFlag.objects.filter(is_active=True)
+        .exclude(feature_key__in=RETIRED_PLAN_FEATURE_KEYS)
+        .select_related("category")
     }
 
     categories = []
     for module in SCHOOL_MODULES:
         features = []
         for idx, feature_key in enumerate(module["feature_keys"]):
+            if feature_key in RETIRED_PLAN_FEATURE_KEYS:
+                continue
             feat = feature_map.get(feature_key)
             if not feat:
                 continue

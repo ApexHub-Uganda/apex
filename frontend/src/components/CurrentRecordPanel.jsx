@@ -22,10 +22,12 @@ export function CurrentRecordPanel({
 }) {
   if (!record) return null;
 
-  const Icon = type === 'term' ? FiClock : FiCalendar;
+  const Icon = type === 'term' || type === 'examination_session' ? FiClock : FiCalendar;
   const subtitle = type === 'term' && record.academic_year_name
     ? `${record.academic_year_name}${record.term_number ? ` · Term ${record.term_number}` : ''}`
-    : null;
+    : (type === 'examination_session'
+      ? [record.academic_year_name, record.term_name, record.status].filter(Boolean).join(' · ')
+      : null);
 
   return (
     <div className="apex-glass border-0 p-4 p-md-5 mb-4">

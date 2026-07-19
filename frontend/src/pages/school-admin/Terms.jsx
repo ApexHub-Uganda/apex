@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { FiArrowLeft, FiPlus } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit2, FiPlus, FiTrash2 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
@@ -9,7 +9,7 @@ import CurrentRecordPanel from '../../components/CurrentRecordPanel';
 import { Modal } from '../../components/Modal';
 import { academicYearsService, termsService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
-import { extractApiError, notify } from '../../utils/notify';
+import { alert, extractApiError, notify } from '../../utils/notify';
 
 const EMPTY_FORM = {
   name: '', academic_year: '', term_number: '', start_date: '', end_date: '',
@@ -19,11 +19,12 @@ const EMPTY_FORM = {
 export function Terms() {
   const queryClient = useQueryClient();
   const { canWriteModule, isSchoolAdmin } = usePermissions();
-  const canManage = canWriteModule('terms') || canWriteModule('academics');
+  const canManage = isSchoolAdmin || canWriteModule('terms') || canWriteModule('academics');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const { data: listPayload, isLoading, isError } = useQuery({
     queryKey: ['terms', 'meta'],
@@ -86,6 +87,21 @@ export function Terms() {
     }
   };
 
+  const handleDelete = async (row) => {
+    const result = await alert.delete(`"${row.name || 'this term'}"`);
+    if (!result.isConfirmed) return;
+    setDeletingId(row.id);
+    try {
+      await termsService.delete(row.id);
+      notify.success('Term deleted.');
+      await queryClient.invalidateQueries({ queryKey: ['terms'] });
+    } catch (err) {
+      notify.error(extractApiError(err, 'Unable to delete term.'));
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const columns = [
     { key: 'name', label: 'Term', accessor: 'name', sortable: true },
     { key: 'term_number', label: 'No.', accessor: 'term_number' },
@@ -101,6 +117,31 @@ export function Terms() {
         ? <span className="badge text-bg-primary-subtle border text-primary">Current</span>
         : '—'),
     },
+    ...(canManage ? [{
+      key: 'actions',
+      label: '',
+      render: (row) => (
+        <div className="apex-table-row-actions">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-primary"
+            onClick={(e) => { e.stopPropagation(); openEdit(row); }}
+            title="Edit"
+          >
+            <FiEdit2 size={14} />
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-danger"
+            disabled={deletingId === row.id}
+            onClick={(e) => { e.stopPropagation(); handleDelete(row); }}
+            title="Delete"
+          >
+            {deletingId === row.id ? '…' : <FiTrash2 size={14} />}
+          </button>
+        </div>
+      ),
+    }] : []),
   ];
 
   return (

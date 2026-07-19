@@ -166,8 +166,8 @@ export function StudentWorkspace() {
           recordName={student?.full_name}
           description="Permanently remove this learner from the school directory. Attendance, marks, and billing links may be affected."
           onDelete={handleDeleteStudent}
-          canRead={canReadDeleteUser()}
-          canWrite={canWriteDeleteUser()}
+          canRead={canReadDeleteUser('student_management')}
+          canWrite={canWriteDeleteUser('student_management')}
         />
       )}
     </WorkspaceShell>

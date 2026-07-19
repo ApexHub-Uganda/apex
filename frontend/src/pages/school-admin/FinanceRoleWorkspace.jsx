@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FiArrowRight, FiDollarSign } from 'react-icons/fi';
 import WorkspaceShell, { WorkspaceSection } from '../../components/WorkspaceShell';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
+import DataTable from '../../components/DataTable';
 import { financeWorkspaceService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 
@@ -97,14 +98,59 @@ export function FinanceRoleWorkspace({
       )}
 
       {queues.pending_payments?.length > 0 && canReadFeature('transaction_approval') && (
-        <WorkspaceSection title="Payments awaiting approval" icon={FiDollarSign}>
-          <Link to="/school-admin/finance/approval" className="btn btn-link btn-sm px-0">
+        <WorkspaceSection title="Payments awaiting approval" icon={FiDollarSign} className="mb-4">
+          <DataTable
+            columns={[
+              { key: 'student', label: 'Student', accessor: 'student', sortable: true },
+              { key: 'amount', label: 'Amount', accessor: 'amount' },
+              { key: 'date', label: 'Date', accessor: 'date' },
+            ]}
+            data={queues.pending_payments}
+            pageSize={8}
+            searchable
+            searchPlaceholder="Search pending payments…"
+            searchKeys={['student', 'amount', 'date']}
+          />
+          <Link to="/school-admin/finance/approval" className="btn btn-primary btn-sm mt-2">
             Open approval queue <FiArrowRight size={14} />
           </Link>
         </WorkspaceSection>
       )}
 
-      {!quickLinks.length && (
+      {queues.top_debtors?.length > 0 && (
+        <WorkspaceSection title="Highest outstanding balances" icon={FiDollarSign} className="mb-4">
+          <DataTable
+            columns={[
+              { key: 'student', label: 'Student', accessor: 'student', sortable: true },
+              { key: 'admission_number', label: 'Adm #', accessor: 'admission_number' },
+              { key: 'term', label: 'Term', accessor: 'term' },
+              { key: 'balance', label: 'Balance', accessor: 'balance' },
+            ]}
+            data={queues.top_debtors}
+            pageSize={8}
+            searchable
+            searchPlaceholder="Search debtors by name, admission, term…"
+            searchKeys={['student', 'admission_number', 'term', 'balance']}
+          />
+          <Link to="/school-admin/finance/debtors" className="btn btn-outline-primary btn-sm mt-2">
+            Manage debtors <FiArrowRight size={14} />
+          </Link>
+        </WorkspaceSection>
+      )}
+
+      {(canReadFeature('bursar_workspace') || canReadFeature('assistant_bursar_workspace')) && (
+        <WorkspaceSection title="Results fee gate" className="mb-4">
+          <p className="small text-muted">
+            Control the minimum fee clearance percentage before parents can view marks and report cards.
+            Set a school-wide default and optional per-class overrides.
+          </p>
+          <Link to="/school-admin/finance/results-access" className="btn btn-outline-primary btn-sm">
+            Configure results access <FiArrowRight size={14} />
+          </Link>
+        </WorkspaceSection>
+      )}
+
+      {!quickLinks.length && !queues.pending_payments?.length && !queues.top_debtors?.length && (
         <div className="apex-card p-4">
           <ModuleEmptyState
             title="Finance workspace ready"

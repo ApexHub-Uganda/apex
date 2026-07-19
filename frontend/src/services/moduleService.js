@@ -127,12 +127,71 @@ export const billingService = {
     api.get('/subscriptions/payments/providers/', { page_size: 20 }).then((r) => unwrapList(r)),
 };
 
-const downloadBlob = (response, fallbackName) => {
-  const blob = new Blob([response.data], { type: response.headers['content-type'] || 'application/pdf' });
-  const disposition = response.headers['content-disposition'] || '';
-  const match = disposition.match(/filename="?([^"]+)"?/);
-  const filename = match?.[1] || fallbackName;
-  const url = window.URL.createObjectURL(blob);
+const readBlobText = async (blob) => {
+  if (!blob) return '';
+  if (typeof blob.text === 'function') return blob.text();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('Unable to read download payload.'));
+    reader.readAsText(blob);
+  });
+};
+
+const assertDownloadableBlob = async (response, expectedKinds = []) => {
+  const raw = response?.data;
+  const headerType = String(response?.headers?.['content-type'] || '').toLowerCase();
+  const blob = raw instanceof Blob
+    ? raw
+    : new Blob([raw], { type: headerType || 'application/octet-stream' });
+
+  // API errors still arrive as blobs when responseType is "blob".
+  const looksLikeJson = headerType.includes('application/json')
+    || headerType.includes('text/html')
+    || headerType.includes('text/plain');
+  if (looksLikeJson || blob.size < 8) {
+    const text = (await readBlobText(blob)).trim();
+    if (text.startsWith('{') || text.startsWith('<') || text.toLowerCase().includes('not authenticated')) {
+      let message = 'Download failed.';
+      try {
+        const parsed = JSON.parse(text);
+        message = parsed?.error?.message || parsed?.message || parsed?.detail || message;
+      } catch {
+        if (text) message = text.slice(0, 200);
+      }
+      throw new Error(message);
+    }
+  }
+
+  if (expectedKinds.includes('pdf')) {
+    const head = new Uint8Array(await blob.slice(0, 5).arrayBuffer());
+    const magic = String.fromCharCode(...head);
+    if (magic !== '%PDF-') {
+      const text = (await readBlobText(blob.slice(0, 400))).trim();
+      let message = 'Downloaded file is not a valid PDF.';
+      try {
+        const parsed = JSON.parse(text);
+        message = parsed?.error?.message || parsed?.message || parsed?.detail || message;
+      } catch {
+        /* keep default */
+      }
+      throw new Error(message);
+    }
+  }
+
+  return blob;
+};
+
+const downloadBlob = async (response, fallbackName, expectedKinds = []) => {
+  const blob = await assertDownloadableBlob(response, expectedKinds);
+  const contentType = response.headers?.['content-type']
+    || (expectedKinds.includes('pdf') ? 'application/pdf' : blob.type)
+    || 'application/octet-stream';
+  const typedBlob = blob.type ? blob : new Blob([blob], { type: contentType });
+  const disposition = response.headers?.['content-disposition'] || '';
+  const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^\";]+)"?/i);
+  const filename = decodeURIComponent((match?.[1] || fallbackName).replace(/["']/g, ''));
+  const url = window.URL.createObjectURL(typedBlob);
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
@@ -142,18 +201,35 @@ const downloadBlob = (response, fallbackName) => {
   window.URL.revokeObjectURL(url);
 };
 
+/** Authenticated file download — never use window.open (no JWT). */
+const downloadAuthenticatedFile = async (path, params = {}, fallbackName = 'download.bin', expectedKinds = []) => {
+  const response = await api.get(path, { params, responseType: 'blob' });
+  await downloadBlob(response, fallbackName, expectedKinds);
+  return true;
+};
+
+const createReportsService = (basePath, prefix) => ({
+  get: (params = {}) => api.get(basePath, { params }).then((r) => unwrapData(r)),
+  downloadCsv: (params = {}) => downloadAuthenticatedFile(
+    basePath,
+    { ...params, format: 'csv' },
+    `${prefix}-${params.type || 'report'}.csv`,
+    ['csv'],
+  ),
+});
+
 export const auditLogsService = {
   list: (params) => api.get('/audit/logs/', { params }).then((r) => unwrapList(r)),
   get: (id) => api.get(`/audit/logs/${id}/`).then((r) => unwrapData(r)),
   filterOptions: () => api.get('/audit/logs/filter-options/').then((r) => unwrapData(r)),
   exportPdf: (id) =>
-    api.get(`/audit/logs/${id}/export-pdf/`, { responseType: 'blob' }).then((r) => {
-      downloadBlob(r, `audit-log-${id}.pdf`);
-    }),
+    api.get(`/audit/logs/${id}/export-pdf/`, { responseType: 'blob' }).then((r) => (
+      downloadBlob(r, `audit-log-${id}.pdf`, ['pdf'])
+    )),
   exportListPdf: (params) =>
-    api.get('/audit/logs/export-pdf/', { params, responseType: 'blob' }).then((r) => {
-      downloadBlob(r, 'audit-logs-export.pdf');
-    }),
+    api.get('/audit/logs/export-pdf/', { params, responseType: 'blob' }).then((r) => (
+      downloadBlob(r, 'audit-logs-export.pdf', ['pdf'])
+    )),
 };
 
 export const broadcastService = {
@@ -211,6 +287,8 @@ export const parentsService = {
   getMatchingSummary: () =>
     api.get('/students/parents/matching-summary/').then((r) => unwrapData(r)),
 };
+export const usersService = createCrudService('/auth/users/');
+export const campusesService = createCrudService('/tenants/campuses/');
 export const academicYearsService = createCrudService('/academics/years/');
 export const termsService = createCrudService('/academics/terms/');
 export const streamsService = {
@@ -243,6 +321,19 @@ export const teachingAssignmentsService = {
     }),
 };
 export const timetablesService = createCrudService('/academics/timetables/');
+export const timetableWizardService = {
+  getContext: () => api.get('/academics/timetables/generate/context/').then((r) => unwrapData(r)),
+  generate: (payload) => api.post('/academics/timetables/generate/', payload).then((r) => unwrapData(r)),
+  getDraft: (id) => api.get(`/academics/timetables/generate/${id}/`).then((r) => unwrapData(r)),
+  regenerate: (id) => api.post(`/academics/timetables/generate/${id}/`, { action: 'regenerate' }).then((r) => unwrapData(r)),
+  apply: (id) => api.post(`/academics/timetables/generate/${id}/`, { action: 'apply' }).then((r) => unwrapData(r)),
+  listSchedules: (params = {}) => api.get('/academics/timetable-schedules/', { params }).then((r) => {
+    const data = unwrapData(r);
+    return Array.isArray(data) ? data : (data?.results || data || []);
+  }),
+  getSchedule: (id) => api.get(`/academics/timetable-schedules/${id}/`).then((r) => unwrapData(r)),
+  deleteSchedule: (id) => api.delete(`/academics/timetable-schedules/${id}/`).then((r) => unwrapData(r)),
+};
 export const feeCategoriesService = createCrudService('/finance/fee-categories/');
 export const feeStructuresService = createCrudService('/finance/fee-structures/');
 export const studentFeeBalancesService = createCrudService('/finance/balances/');
@@ -286,15 +377,22 @@ export const financeApprovalService = {
 export const financeAnalyticsService = {
   get: () => api.get('/finance/analytics/').then((r) => unwrapData(r)),
 };
-export const financeReportsService = {
-  get: (params = {}) => api.get('/finance/reports/', { params }).then((r) => unwrapData(r)),
-  downloadCsv: (params = {}) => {
-    const query = new URLSearchParams({ ...params, format: 'csv' }).toString();
-    window.open(`${api.defaults.baseURL}/finance/reports/?${query}`, '_blank');
-  },
-};
+export const financeReportsService = createReportsService('/finance/reports/', 'finance');
+export const hostelReportsService = createReportsService('/hostel/reports/', 'hostel');
+export const libraryReportsService = createReportsService('/library/reports/', 'library');
+export const hrReportsService = createReportsService('/hr/reports/', 'hr');
 export const parentFeeStatementsService = {
   get: (params = {}) => api.get('/finance/parent-statements/', { params }).then((r) => unwrapData(r)),
+};
+export const resultsAccessService = {
+  get: () => api.get('/finance/results-access-policy/').then((r) => unwrapData(r)),
+  updateSchool: (payload) => api.put('/finance/results-access-policy/', payload).then((r) => unwrapData(r)),
+  updateClass: (classId, payload) => api.put(`/finance/results-access-policy/classes/${classId}/`, payload).then((r) => unwrapData(r)),
+};
+export const parentPortalService = {
+  overview: () => api.get('/students/portal/overview/').then((r) => unwrapData(r)),
+  finance: (params = {}) => api.get('/students/portal/finance/', { params }).then((r) => unwrapData(r)),
+  academics: (params = {}) => api.get('/students/portal/academics/', { params }).then((r) => unwrapData(r)),
 };
 const admissionApplicationsBase = '/admissions/applications/';
 export const admissionApplicationsService = {
@@ -542,6 +640,53 @@ export const classesService = {
     listStreams: (classId) => streamsService.list({ school_class: classId }),
 };
 export const attendanceService = createCrudService('/attendance/');
+
+export const financeBillingService = {
+  billClass: (payload) => api.post('/finance/billing/bill-class/', payload).then((r) => unwrapData(r)),
+  billStudent: (payload) => api.post('/finance/billing/bill-student/', payload).then((r) => unwrapData(r)),
+};
+export const financeDocumentsService = {
+  paymentReceiptPdf: (id) =>
+    api.get(`/finance/payments/${id}/receipt.pdf`, { responseType: 'blob' }).then(async (r) => {
+      const blob = r.data;
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `receipt-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    }),
+  invoicePdf: (id) =>
+    api.get(`/finance/invoices/${id}/pdf/`, { responseType: 'blob' }).then(async (r) => {
+      const blob = r.data;
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    }),
+  statementPdf: (studentId) =>
+    api.get(`/finance/statements/${studentId}/pdf/`, { responseType: 'blob' }).then(async (r) => {
+      const blob = r.data;
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `statement-${studentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    }),
+};
+export const onlinePaymentsService = {
+  listGateways: () => api.get('/finance/online-payments/').then((r) => unwrapData(r)),
+  initiate: (payload) => api.post('/finance/online-payments/', payload).then((r) => r.data),
+};
 export const financeService = feePaymentsService;
 export const libraryService = booksService;
 export const hostelService = createCrudService('/hostel/');
@@ -597,3 +742,4 @@ export default {
   notificationsService,
   notificationFeedService,
 };
+

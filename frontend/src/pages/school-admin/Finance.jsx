@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiPlus } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import DataTable from '../../components/DataTable';
+import SearchableSelect from '../../components/SearchableSelect';
 import StatusBadge from '../../components/StatusBadge';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { Modal } from '../../components/Modal';
 import {
-  feePaymentsService, feeStructuresService, studentsService,
+  feePaymentsService, feeStructuresService, studentsService, financeDocumentsService,
 } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
@@ -54,8 +55,26 @@ export function Finance() {
 
   const { data: students = [] } = useQuery({
     queryKey: ['students', 'finance-select'],
-    queryFn: () => studentsService.list({ status: 'active' }),
+    queryFn: () => studentsService.list({ status: 'active', page_size: 500 }),
   });
+
+  const studentOptions = useMemo(() => (
+    (students || []).map((s) => ({
+      value: s.id,
+      label: `${s.full_name || `${s.first_name || ''} ${s.last_name || ''}`.trim() || s.admission_number} — ${s.admission_number || ''}`.trim(),
+      meta: [s.school_class_name || s.class_name, s.stream_name].filter(Boolean).join(' · ') || undefined,
+      keywords: [s.admission_number, s.first_name, s.last_name, s.email, s.phone, s.upi_number].filter(Boolean).join(' '),
+    }))
+  ), [students]);
+
+  const structureOptions = useMemo(() => (
+    (structures || []).map((f) => ({
+      value: f.id,
+      label: `${f.name} — ${formatUGX(f.amount)}`,
+      meta: [f.class_name, f.term_name, f.fee_category].filter(Boolean).join(' · ') || undefined,
+      keywords: [f.name, f.fee_category, f.class_name, f.term_name, f.vote_head_code].filter(Boolean).join(' '),
+    }))
+  ), [structures]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -95,6 +114,26 @@ export function Finance() {
     { key: 'mpesa_transaction_id', label: 'M-Pesa ID', accessor: 'mpesa_transaction_id' },
     { key: 'approval_status', label: 'Approval', render: (row) => <StatusBadge status={row.approval_status || row.status} /> },
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
+    {
+      key: 'actions',
+      label: '',
+      render: (row) => row.receipt_number ? (
+        <button
+          type="button"
+          className="btn btn-link btn-sm p-0"
+          onClick={async () => {
+            try {
+              await financeDocumentsService.paymentReceiptPdf(row.id);
+              notify.success('Receipt downloaded.');
+            } catch (err) {
+              notify.error(extractApiError(err, 'Could not download receipt.'));
+            }
+          }}
+        >
+          PDF
+        </button>
+      ) : '—',
+    },
   ];
 
   if (!canView) {
@@ -125,6 +164,13 @@ export function Finance() {
             columns={columns}
             data={payments}
             loading={isLoading}
+            searchable
+            searchPlaceholder="Search student, admission, receipt, M-Pesa ID, fee…"
+            searchKeys={[
+              'student_name', 'student_admission', 'class_name', 'fee_name',
+              'receipt_number', 'mpesa_transaction_id', 'mpesa_phone', 'reference',
+              'payment_method', 'status', 'approval_status', 'amount_paid',
+            ]}
             emptyState={(
               <ModuleEmptyState
                 title="No payments recorded"
@@ -151,21 +197,25 @@ export function Finance() {
         <div className="row g-3">
           <div className="col-md-6">
             <label className="form-label small fw-medium">Student *</label>
-            <select className="form-select" value={form.student} onChange={(e) => setForm({ ...form, student: e.target.value })}>
-              <option value="">Select student</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>{s.full_name || s.admission_number} — {s.admission_number}</option>
-              ))}
-            </select>
+            <SearchableSelect
+              options={studentOptions}
+              value={form.student}
+              onChange={(val) => setForm({ ...form, student: val })}
+              placeholder="Search student by name or admission no…"
+              emptyLabel="No students match your search"
+              required
+            />
           </div>
           <div className="col-md-6">
             <label className="form-label small fw-medium">Fee Structure *</label>
-            <select className="form-select" value={form.fee_structure} onChange={(e) => setForm({ ...form, fee_structure: e.target.value })}>
-              <option value="">Select fee item</option>
-              {structures.map((f) => (
-                <option key={f.id} value={f.id}>{f.name} — {formatUGX(f.amount)}</option>
-              ))}
-            </select>
+            <SearchableSelect
+              options={structureOptions}
+              value={form.fee_structure}
+              onChange={(val) => setForm({ ...form, fee_structure: val })}
+              placeholder="Search fee item, class, or term…"
+              emptyLabel="No fee structures match"
+              required
+            />
           </div>
           <div className="col-md-4">
             <label className="form-label small fw-medium">Amount (UGX) *</label>

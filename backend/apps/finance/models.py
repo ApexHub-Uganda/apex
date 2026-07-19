@@ -100,6 +100,13 @@ class StudentFeeBalance(BaseModel):
 class FeePayment(BaseModel):
     student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="fee_payments")
     fee_structure = models.ForeignKey(FeeStructure, on_delete=models.PROTECT, related_name="payments")
+    term = models.ForeignKey(
+        "academics.Term", on_delete=models.SET_NULL, null=True, blank=True, related_name="fee_payments",
+    )
+    invoice = models.ForeignKey(
+        "finance.Invoice", on_delete=models.SET_NULL, null=True, blank=True, related_name="payments",
+    )
+    payment_reference = models.CharField(max_length=64, blank=True, db_index=True)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2)
     payment_date = models.DateField()
     payment_method = models.CharField(
@@ -147,6 +154,9 @@ class FeePayment(BaseModel):
 
 class Invoice(BaseModel):
     student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="invoices")
+    term = models.ForeignKey(
+        "academics.Term", on_delete=models.SET_NULL, null=True, blank=True, related_name="invoices",
+    )
     invoice_number = models.CharField(max_length=50, db_index=True)
     issue_date = models.DateField()
     due_date = models.DateField()
@@ -174,6 +184,9 @@ class FeeDiscount(BaseModel):
         FeeStructure, on_delete=models.SET_NULL, null=True, blank=True, related_name="discounts",
     )
     invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name="discounts")
+    term = models.ForeignKey(
+        "academics.Term", on_delete=models.SET_NULL, null=True, blank=True, related_name="fee_discounts",
+    )
     discount_type = models.CharField(
         max_length=20,
         choices=[("waiver", "Waiver"), ("scholarship", "Scholarship"), ("sibling", "Sibling"), ("other", "Other")],
@@ -339,3 +352,169 @@ class AccountingEntry(BaseModel):
     class Meta:
         ordering = ["-entry_date"]
         verbose_name_plural = "Accounting entries"
+class ResultsAccessPolicy(BaseModel):
+    """Tenant-wide fee clearance threshold for parent/sponsor academic results access."""
+
+    default_cleared_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("100.00"),
+        help_text="Minimum paid percentage of billed fees required before parents can view results.",
+    )
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "results access policy"
+        verbose_name_plural = "results access policies"
+        ordering = ["-updated_at"]
+
+    def __str__(self) -> str:
+        return f"Results access {self.default_cleared_percent}%"
+
+
+class ClassResultsAccessPolicy(BaseModel):
+    """Optional per-class override of the results fee clearance threshold."""
+
+    school_class = models.OneToOneField(
+        "academics.Class",
+        on_delete=models.CASCADE,
+        related_name="results_access_policy",
+    )
+    cleared_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("100.00"),
+        help_text="Class-specific minimum paid percentage for results visibility.",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="When inactive, the school-wide default applies for this class.",
+    )
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "class results access policy"
+        ordering = ["school_class__name"]
+
+    def __str__(self) -> str:
+        return f"{self.school_class_id}: {self.cleared_percent}%"
+
+
+
+class PaymentIntent(BaseModel):
+    """Online payment attempt (gateway architecture; live providers postponed)."""
+
+    student = models.ForeignKey(
+        "students.Student", on_delete=models.SET_NULL, null=True, blank=True, related_name="payment_intents",
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="UGX")
+    gateway = models.CharField(max_length=40, default="not_configured")
+    reference = models.CharField(max_length=64, db_index=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "Pending"),
+            ("processing", "Processing"),
+            ("succeeded", "Succeeded"),
+            ("failed", "Failed"),
+            ("cancelled", "Cancelled"),
+        ],
+        default="pending",
+    )
+    failure_message = models.TextField(blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    external_reference = models.CharField(max_length=120, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["tenant", "reference"])]
+
+
+class PaymentWebhookEvent(BaseModel):
+    """Inbound gateway webhooks stored for reconciliation (no live processing yet)."""
+
+    gateway = models.CharField(max_length=40)
+    payload_headers = models.JSONField(default=dict, blank=True)
+    payload_body = models.TextField(blank=True)
+    processing_status = models.CharField(max_length=30, default="received")
+    result_code = models.CharField(max_length=60, blank=True)
+    result_message = models.CharField(max_length=500, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class CreditNote(BaseModel):
+    """Credit note reducing student billable amount."""
+
+    student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="credit_notes")
+    term = models.ForeignKey(
+        "academics.Term", on_delete=models.SET_NULL, null=True, blank=True, related_name="credit_notes",
+    )
+    invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name="credit_notes")
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    reason = models.TextField()
+    reference = models.CharField(max_length=64, blank=True, db_index=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[("draft", "Draft"), ("posted", "Posted"), ("void", "Void")],
+        default="posted",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class DebitNote(BaseModel):
+    """Debit note increasing student billable amount (penalties / adjustments)."""
+
+    student = models.ForeignKey("students.Student", on_delete=models.CASCADE, related_name="debit_notes")
+    term = models.ForeignKey(
+        "academics.Term", on_delete=models.SET_NULL, null=True, blank=True, related_name="debit_notes",
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    reason = models.TextField()
+    reference = models.CharField(max_length=64, blank=True, db_index=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[("draft", "Draft"), ("posted", "Posted"), ("void", "Void")],
+        default="posted",
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class JournalEntry(BaseModel):
+    """Double-entry journal header."""
+
+    entry_date = models.DateField()
+    reference = models.CharField(max_length=64, blank=True, db_index=True)
+    narration = models.CharField(max_length=255)
+    source = models.CharField(max_length=40, blank=True, help_text="fee_payment, expense, payroll, manual, ...")
+    source_id = models.CharField(max_length=64, blank=True)
+    is_posted = models.BooleanField(default=True)
+    period = models.ForeignKey(
+        AccountingPeriod, on_delete=models.SET_NULL, null=True, blank=True, related_name="journal_entries",
+    )
+
+    class Meta:
+        ordering = ["-entry_date", "-created_at"]
+        verbose_name_plural = "Journal entries"
+
+
+class JournalLine(BaseModel):
+    journal = models.ForeignKey(JournalEntry, on_delete=models.CASCADE, related_name="lines")
+    account = models.ForeignKey(
+        FinancialAccount, on_delete=models.PROTECT, null=True, blank=True, related_name="journal_lines",
+    )
+    account_code = models.CharField(max_length=30, blank=True)
+    account_name = models.CharField(max_length=120, blank=True)
+    debit = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+    credit = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0"))
+    memo = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ["created_at"]

@@ -338,8 +338,6 @@ export function Sidebar({
     [getSubLinksProp],
   );
 
-  const lastActiveParentRef = useRef(findActiveParentPath(location.pathname, items, resolveSubLinks));
-
   const showCollapsed = isMobile ? false : collapsed;
   const sidebarWidth = isMobile
     ? (mobileOpen ? SIDEBAR_WIDTH_EXPANDED : 0)
@@ -352,32 +350,27 @@ export function Sidebar({
     );
   }, [collapsed, isMobile]);
 
+  // Keep the module that owns the current route expanded. Never collapse other
+  // modules on sub-option navigation — only the parent row toggles open/close.
   useEffect(() => {
     const activeParent = findActiveParentPath(location.pathname, items, resolveSubLinks);
     const pathChanged = lastPathnameRef.current !== location.pathname;
-    const prevActiveParent = lastActiveParentRef.current;
 
-    if (!pathChanged) {
-      if (activeParent) {
-        setExpandedKeys((prev) => (prev.size === 0 ? new Set([activeParent]) : prev));
-      }
-      lastActiveParentRef.current = activeParent;
-      return;
-    }
-
-    if (isMobile) {
+    if (pathChanged && isMobile) {
       setCollapsed(true);
       setFlyoutPath(null);
     }
 
-    if (!activeParent) {
-      setExpandedKeys(new Set());
-    } else if (prevActiveParent !== activeParent) {
-      setExpandedKeys((prev) => (prev.size === 0 ? new Set([activeParent]) : prev));
+    if (activeParent) {
+      setExpandedKeys((prev) => {
+        if (prev.has(activeParent)) return prev;
+        const next = new Set(prev);
+        next.add(activeParent);
+        return next;
+      });
     }
 
     lastPathnameRef.current = location.pathname;
-    lastActiveParentRef.current = activeParent;
   }, [location.pathname, items, resolveSubLinks, isMobile, setCollapsed]);
 
   useEffect(() => {
@@ -385,9 +378,12 @@ export function Sidebar({
   }, [collapsed, location.pathname]);
 
   const onParentToggle = useCallback((path) => {
+    // Toggle only this module — do not accordion-close siblings.
     setExpandedKeys((prev) => {
-      if (prev.has(path)) return new Set();
-      return new Set([path]);
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
     });
   }, []);
 
@@ -422,8 +418,9 @@ export function Sidebar({
     setCollapsed(true);
   }, [setCollapsed]);
 
+  // Sub-options / leaf links must NOT collapse expanded modules.
+  // Only the parent module button toggles expand/collapse.
   const onLeafNavigate = useCallback(() => {
-    setExpandedKeys(new Set());
     onFlyoutClose();
     if (isMobile) closeSidebar();
   }, [isMobile, closeSidebar, onFlyoutClose]);

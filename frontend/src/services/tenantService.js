@@ -122,14 +122,62 @@ export const tenantService = {
   },
 
   async getSettings() {
-    const { data } = await api.get('/tenants/context/');
-    return unwrap(data);
+    const { data } = await api.get('/tenants/settings/');
+    return unwrap(data) || data?.data || data;
   },
 
+  /**
+   * Persist school profile + branding.
+   * Accepts plain object (JSON) or FormData (logo upload).
+   */
   async updateSettings(settings) {
-    const tenantId = localStorage.getItem('apex_tenant_id');
-    const { data } = await api.patch(`/tenants/${tenantId}/`, settings);
-    return data;
+    const isFormData = typeof FormData !== 'undefined' && settings instanceof FormData;
+    const { data } = await api.patch('/tenants/settings/', settings, {
+      // Let the browser set multipart boundary; force JSON only for plain objects.
+      headers: isFormData ? { 'Content-Type': undefined } : undefined,
+      transformRequest: isFormData
+        ? [(body, headers) => {
+          if (headers && typeof headers === 'object') {
+            delete headers['Content-Type'];
+          }
+          return body;
+        }]
+        : undefined,
+    });
+    return unwrap(data) || data?.data || data;
+  },
+
+  /** Download A4 branded PDF template preview. */
+  async downloadPdfPreview() {
+    const response = await api.get('/tenants/pdf-preview/', { responseType: 'blob' });
+    const blob = response.data instanceof Blob
+      ? response.data
+      : new Blob([response.data], { type: 'application/pdf' });
+    const head = new Uint8Array(await blob.slice(0, 5).arrayBuffer());
+    const magic = String.fromCharCode(...head);
+    if (magic !== '%PDF-') {
+      const text = await blob.slice(0, 400).text();
+      let message = 'PDF preview failed.';
+      try {
+        const parsed = JSON.parse(text);
+        message = parsed?.error?.message || parsed?.message || message;
+      } catch {
+        /* keep default */
+      }
+      throw new Error(message);
+    }
+    const disposition = response.headers?.['content-disposition'] || '';
+    const match = disposition.match(/filename\*?=(?:UTF-8''|")?([^\";]+)"?/i);
+    const filename = decodeURIComponent((match?.[1] || 'pdf-template-preview.pdf').replace(/["']/g, ''));
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    return true;
   },
 
   async getCurrentSubscription() {

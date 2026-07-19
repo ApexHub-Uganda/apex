@@ -5,9 +5,17 @@ import json
 from pathlib import Path
 
 from apps.subscriptions.models import FeatureCategory, FeatureFlag, Plan, PlanFeature
-from apps.subscriptions.services import assign_plan_features, invalidate_catalog_cache
+from apps.subscriptions.services import assign_plan_features, invalidate_catalog_cache, invalidate_plan_cache
 
 DATA_FILE = Path(__file__).resolve().parent / "data" / "feature_catalog.json"
+
+# Not sellable plan modules — platform core capabilities only.
+# Must never reappear in the super-admin plan editor catalog.
+RETIRED_PLAN_FEATURE_KEYS: frozenset[str] = frozenset({
+    "delete_user",
+    "roles_permissions",
+    "school_settings",
+})
 
 
 def _load_catalog_data() -> dict:
@@ -15,10 +23,48 @@ def _load_catalog_data() -> dict:
         return json.load(fh)
 
 
+def retire_non_plan_features() -> dict[str, int]:
+    """
+    Deactivate retired features and detach them from every plan.
+
+    School Settings, Roles & Permissions, and Delete User are core product
+    surfaces (settings nav / directory danger zone), not subscription SKUs.
+    """
+    flags = FeatureFlag.objects.filter(feature_key__in=RETIRED_PLAN_FEATURE_KEYS)
+    deactivated = flags.update(is_active=False)
+    removed_links = PlanFeature.objects.filter(
+        feature__feature_key__in=RETIRED_PLAN_FEATURE_KEYS,
+    ).delete()[0]
+
+    # Keep denormalized plan.feature_flags JSON free of retired keys.
+    touched = 0
+    for plan in Plan.objects.all().only("id", "feature_flags"):
+        flags_map = dict(plan.feature_flags or {})
+        changed = False
+        for key in RETIRED_PLAN_FEATURE_KEYS:
+            if key in flags_map:
+                flags_map.pop(key, None)
+                changed = True
+        if changed:
+            plan.feature_flags = flags_map
+            plan.save(update_fields=["feature_flags", "updated_at"])
+            invalidate_plan_cache(str(plan.id))
+            touched += 1
+
+    invalidate_catalog_cache()
+    return {
+        "deactivated_flags": deactivated,
+        "removed_plan_links": removed_links,
+        "plans_cleaned": touched,
+    }
+
+
 def seed_feature_catalog() -> int:
     """Upsert categories and features from JSON. Returns feature count."""
     data = _load_catalog_data()
     count = 0
+    active_keys: set[str] = set()
+
     for cat_data in data.get("categories", []):
         category, _ = FeatureCategory.objects.update_or_create(
             slug=cat_data["slug"],
@@ -30,8 +76,12 @@ def seed_feature_catalog() -> int:
             },
         )
         for feat in cat_data.get("features", []):
+            key = feat["feature_key"]
+            if key in RETIRED_PLAN_FEATURE_KEYS:
+                continue
+            active_keys.add(key)
             FeatureFlag.objects.update_or_create(
-                feature_key=feat["feature_key"],
+                feature_key=key,
                 defaults={
                     "category": category,
                     "feature_name": feat["feature_name"],
@@ -48,6 +98,13 @@ def seed_feature_catalog() -> int:
                 },
             )
             count += 1
+
+    # Any catalog feature no longer in JSON (or retired) stays inactive.
+    FeatureFlag.objects.exclude(feature_key__in=active_keys).filter(
+        feature_key__in=RETIRED_PLAN_FEATURE_KEYS,
+    ).update(is_active=False)
+
+    retire_non_plan_features()
     invalidate_catalog_cache()
     return count
 
@@ -77,6 +134,11 @@ def seed_plan_defaults_for_slug(plan_slug: str) -> None:
         return
     keys = defaults.get(plan_slug)
     if keys == "all":
-        keys = list(FeatureFlag.objects.filter(is_active=True).values_list("feature_key", flat=True))
+        keys = list(
+            FeatureFlag.objects.filter(is_active=True)
+            .exclude(feature_key__in=RETIRED_PLAN_FEATURE_KEYS)
+            .values_list("feature_key", flat=True),
+        )
     if keys:
+        keys = [k for k in keys if k not in RETIRED_PLAN_FEATURE_KEYS]
         assign_plan_features(plan, list(keys))

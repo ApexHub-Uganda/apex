@@ -125,21 +125,38 @@ export function AcademicRoleWorkspace({
         </WorkspaceSection>
       )}
 
+      {(counts.teaching_assignments != null || counts.open_exam_sessions != null || counts.department_subjects != null) && (
+        <div className="row g-3 mb-4">
+          {counts.teaching_assignments != null && (
+            <div className="col-6 col-md-3"><StatTile label="Teaching assignments" value={counts.teaching_assignments} /></div>
+          )}
+          {counts.open_exam_sessions != null && (
+            <div className="col-6 col-md-3"><StatTile label="Open exam sessions" value={counts.open_exam_sessions} accent="info" /></div>
+          )}
+          {counts.department_subjects != null && (
+            <div className="col-6 col-md-3"><StatTile label="Dept subjects" value={counts.department_subjects} /></div>
+          )}
+          {counts.department_classes != null && (
+            <div className="col-6 col-md-3"><StatTile label="Dept classes" value={counts.department_classes} accent="success" /></div>
+          )}
+        </div>
+      )}
+
       {queues.marks_approval?.length > 0 && canReadFeature('marks_approval') && (
         <WorkspaceSection
           title="Marks awaiting approval"
-          description="Review and approve submitted mark sheets."
+          description="Review and approve submitted mark sheets for your scope."
           icon={FiCheckCircle}
           className="mb-4"
         >
           <QueueList
             items={queues.marks_approval}
             emptyMessage="No marks pending approval."
-            actionLabel="Review"
-            onAction={() => {}}
+            actionLabel="Open"
+            onAction={() => { window.location.href = '/school-admin/examinations/approval'; }}
           />
-          <Link to="/school-admin/examinations/approval" className="btn btn-link btn-sm px-0 mt-2">
-            Open approval queue <FiArrowRight size={14} />
+          <Link to="/school-admin/examinations/approval" className="btn btn-primary btn-sm mt-3">
+            Open full approval queue <FiArrowRight size={14} />
           </Link>
         </WorkspaceSection>
       )}
@@ -155,16 +172,16 @@ export function AcademicRoleWorkspace({
             items={queues.draft_assessments}
             emptyMessage="No draft assessments."
             actionLabel="Manage"
-            onAction={() => {}}
+            onAction={() => { window.location.href = '/school-admin/examinations/assessments'; }}
           />
-          <Link to="/school-admin/examinations/assessments" className="btn btn-link btn-sm px-0 mt-2">
+          <Link to="/school-admin/examinations/assessments" className="btn btn-outline-primary btn-sm mt-3">
             Manage assessments <FiArrowRight size={14} />
           </Link>
         </WorkspaceSection>
       )}
 
       {data?.is_class_teacher && canReadFeature('class_teacher_tools') && (
-        <WorkspaceSection title="Class teacher tools" icon={FiUsers}>
+        <WorkspaceSection title="Class teacher tools" icon={FiUsers} className="mb-4">
           <div className="d-flex flex-wrap gap-2">
             <Link to="/school-admin/academics/class-notices" className="btn btn-outline-secondary btn-sm">
               Class notices
@@ -175,19 +192,31 @@ export function AcademicRoleWorkspace({
             <Link to="/school-admin/examinations/class-report-cards" className="btn btn-outline-secondary btn-sm">
               Class report cards
             </Link>
+            <Link to="/school-admin/attendance" className="btn btn-outline-secondary btn-sm">
+              Class attendance
+            </Link>
           </div>
         </WorkspaceSection>
       )}
 
-      {!quickLinks.length && !queues.marks_approval?.length && !queues.draft_assessments?.length && (
-        <div className="apex-card p-4">
-          <ModuleEmptyState
-            title="Workspace ready"
-            message="Use the sidebar to access your permitted academic tools. Counts will appear as you receive assignments."
-            icon={FiBookOpen}
-          />
+      <WorkspaceSection title="Operations map" icon={FiBookOpen}>
+        <div className="row g-2">
+          {[
+            canReadFeature('marks_entry') && { label: 'Enter marks', path: '/school-admin/examinations/marks' },
+            canReadFeature('marks_approval') && { label: 'Approve marks', path: '/school-admin/examinations/approval' },
+            canReadFeature('teacher_assignments') && { label: 'Teaching assignments', path: '/school-admin/academics/subject-assignments' },
+            canReadFeature('timetables') && { label: 'Timetable wizard', path: '/school-admin/academics/timetable/wizard' },
+            canReadFeature('examination_sessions') && { label: 'Exam sessions', path: '/school-admin/examinations/sessions' },
+            canReadFeature('report_cards') && { label: 'Report cards', path: '/school-admin/examinations/report-cards' },
+          ].filter(Boolean).map((item) => (
+            <div key={item.path} className="col-md-4">
+              <Link to={item.path} className="btn btn-light border w-100 text-start btn-sm">
+                {item.label} <FiArrowRight className="float-end mt-1" size={14} />
+              </Link>
+            </div>
+          ))}
         </div>
-      )}
+      </WorkspaceSection>
     </WorkspaceShell>
   );
 }

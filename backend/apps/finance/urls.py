@@ -1,6 +1,16 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from apps.finance.billing_views import (
+    BillClassView,
+    BillStudentView,
+    GatewayWebhookView,
+    InvoicePdfView,
+    OnlinePaymentInitiateView,
+    PaymentReceiptPdfView,
+    StudentStatementPdfView,
+)
+from apps.finance.results_access_views import ClassResultsAccessPolicyView, ResultsAccessPolicyView
 from apps.finance.views import (
     AccountingEntryViewSet,
     AccountingPeriodViewSet,
@@ -43,5 +53,29 @@ urlpatterns = [
     path("analytics/", FinanceAnalyticsView.as_view(), name="finance-analytics"),
     path("reports/", FinanceReportsView.as_view(), name="finance-reports"),
     path("parent-statements/", ParentFeeStatementsView.as_view(), name="finance-parent-statements"),
+    path("results-access-policy/", ResultsAccessPolicyView.as_view(), name="finance-results-access-policy"),
+    path(
+        "results-access-policy/classes/<uuid:class_id>/",
+        ClassResultsAccessPolicyView.as_view(),
+        name="finance-class-results-access-policy",
+    ),
+    # Billing engine
+    path("billing/bill-class/", BillClassView.as_view(), name="finance-bill-class"),
+    path("billing/bill-student/", BillStudentView.as_view(), name="finance-bill-student"),
+    # Documents
+    path("payments/<uuid:pk>/receipt.pdf", PaymentReceiptPdfView.as_view(), name="finance-payment-receipt-pdf"),
+    path("invoices/<uuid:pk>/pdf/", InvoicePdfView.as_view(), name="finance-invoice-pdf"),
+    path(
+        "statements/<uuid:student_id>/pdf/",
+        StudentStatementPdfView.as_view(),
+        name="finance-student-statement-pdf",
+    ),
+    # Gateway architecture (no live providers)
+    path("online-payments/", OnlinePaymentInitiateView.as_view(), name="finance-online-payments"),
+    path(
+        "gateways/<str:gateway_slug>/webhook/",
+        GatewayWebhookView.as_view(),
+        name="finance-gateway-webhook",
+    ),
     path("", include(router.urls)),
 ]

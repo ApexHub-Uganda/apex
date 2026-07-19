@@ -234,8 +234,19 @@ class UserViewSet(viewsets.ModelViewSet):
             qs = User.objects.all()
             if tenant_id:
                 qs = qs.filter(tenant_id=tenant_id)
-            return qs
-        return User.objects.filter(tenant=user.tenant)
+        else:
+            qs = User.objects.filter(tenant=user.tenant)
+
+        # Directory tabs: parents | staff | learners
+        category = (self.request.query_params.get("category") or "").strip().lower()
+        if category in ("parents", "parent"):
+            qs = qs.filter(role=UserRole.PARENT)
+        elif category in ("learners", "students", "student"):
+            qs = qs.filter(role=UserRole.STUDENT)
+        elif category in ("staff", "staffs"):
+            qs = qs.filter(role__in=UserRole.STAFF_ROLES)
+
+        return qs.select_related("tenant")
 
     @action(detail=True, methods=["post"])
     def verify_email(self, request: Request, pk: str = None) -> Response:

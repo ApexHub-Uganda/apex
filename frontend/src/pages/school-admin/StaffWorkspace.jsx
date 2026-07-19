@@ -173,8 +173,8 @@ export function StaffWorkspace() {
           recordName={staff?.full_name}
           description="Permanently remove this staff member from the school directory. Portal access and teaching assignments will be revoked."
           onDelete={handleDeleteStaff}
-          canRead={canReadDeleteUser()}
-          canWrite={canWriteDeleteUser()}
+          canRead={canReadDeleteUser('staff_management')}
+          canWrite={canWriteDeleteUser('staff_management')}
         />
       )}
     </WorkspaceShell>

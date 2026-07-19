@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import csv
-import io
 from datetime import datetime
 
-from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -12,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.constants import UserRole
+from apps.core.exports import csv_attachment_response
 from apps.core.permissions import IsSchoolPortalUser, IsStaffMember, RequiresAnyFeature, RequiresFeature, TenantActivePermission
 from apps.core.views import BaseModelViewSet
 from apps.finance.constants import APPROVAL_APPROVED, APPROVAL_PENDING
@@ -52,12 +50,16 @@ from apps.finance.workflow import (
     approve_discount,
     approve_payment,
     approve_refund,
-    assistant_bursar_requires_approval,
     close_accounting_period,
-    generate_receipt_number,
     reopen_accounting_period,
+    reject_discount,
+    reject_payment,
+    reject_refund,
     reverse_payment,
 )
+from apps.finance.services.numbering import generate_invoice_number
+from apps.finance.services.payments_core import record_fee_payment, PaymentServiceError
+from apps.core.exports import pdf_attachment_response
 from apps.finance.workspaces import build_finance_workspace
 from apps.students.models import Parent, Student
 
@@ -76,6 +78,10 @@ class FeeStructureViewSet(FinanceScopeMixin, BaseModelViewSet):
     serializer_class = FeeStructureSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["school_class", "term", "fee_category", "category"]
+    search_fields = [
+        "name", "fee_category", "vote_head_code", "description",
+        "school_class__name", "school_class__code", "term__name", "category__name",
+    ]
 
 
 class StudentFeeBalanceViewSet(FinanceScopeMixin, BaseModelViewSet):
@@ -84,6 +90,10 @@ class StudentFeeBalanceViewSet(FinanceScopeMixin, BaseModelViewSet):
     serializer_class = StudentFeeBalanceSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["student", "term", "status"]
+    search_fields = [
+        "student__first_name", "student__last_name", "student__admission_number",
+        "student__school_class__name", "student__school_class__code", "term__name", "status",
+    ]
     http_method_names = ["get", "head", "options"]
 
 
@@ -93,10 +103,16 @@ class FeePaymentViewSet(FinanceScopeMixin, BaseModelViewSet):
     serializer_class = FeePaymentSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["student", "status", "payment_method", "approval_status"]
+    search_fields = [
+        "receipt_number", "reference", "payment_reference", "mpesa_transaction_id", "mpesa_phone",
+        "student__first_name", "student__last_name", "student__admission_number",
+        "fee_structure__name", "notes", "status", "approval_status", "payment_method",
+    ]
 
     _WORKFLOW_FEATURES = {
         "approve": "transaction_approval",
         "reverse": "transaction_approval",
+        "reject": "transaction_approval",
         "receipt": "payment_recording",
     }
 
@@ -110,22 +126,21 @@ class FeePaymentViewSet(FinanceScopeMixin, BaseModelViewSet):
             perms.append(RequiresFeature(feature_key)())
         return perms
 
-    def perform_create(self, serializer):
-        user = self.request.user
-        approval_status = APPROVAL_PENDING if assistant_bursar_requires_approval(user) else APPROVAL_APPROVED
-        status_val = "pending" if approval_status == APPROVAL_PENDING else "completed"
-        receipt_number = ""
-        if approval_status == APPROVAL_APPROVED:
-            receipt_number = generate_receipt_number(tenant=user.tenant)
-        serializer.save(
-            tenant=user.tenant,
-            received_by=user,
-            approval_status=approval_status,
-            status=status_val,
-            receipt_number=receipt_number,
-            created_by=user,
-            updated_by=user,
-        )
+    def create(self, request, *args, **kwargs):
+        try:
+            payment = record_fee_payment(
+                tenant=request.user.tenant,
+                user=request.user,
+                data=request.data,
+                request=request,
+            )
+        except PaymentServiceError as exc:
+            return Response(
+                {"success": False, "message": exc.message, "code": exc.code},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = FeePaymentSerializer(payment).data
+        return Response(data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
     def approve(self, request, pk=None):
@@ -165,6 +180,23 @@ class FeePaymentViewSet(FinanceScopeMixin, BaseModelViewSet):
             "data": FeePaymentSerializer(payment).data,
         })
 
+    @action(detail=True, methods=["post"])
+    def reject(self, request, pk=None):
+        payment = self.get_object()
+        try:
+            reject_payment(payment=payment, user=request.user, reason=request.data.get("reason", ""), request=request)
+        except FinanceWorkflowError as exc:
+            return Response(
+                {"success": False, "message": exc.message, "code": exc.code},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        payment.refresh_from_db()
+        return Response({
+            "success": True,
+            "message": "Payment rejected.",
+            "data": FeePaymentSerializer(payment).data,
+        })
+
     @action(detail=True, methods=["get"])
     def receipt(self, request, pk=None):
         payment = self.get_object()
@@ -194,11 +226,29 @@ class FeePaymentViewSet(FinanceScopeMixin, BaseModelViewSet):
 
 class InvoiceViewSet(FinanceScopeMixin, BaseModelViewSet):
     required_feature_key = "invoice_generation"
-    queryset = Invoice.objects.select_related("student")
+    queryset = Invoice.objects.select_related("student", "term")
     serializer_class = InvoiceSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
-    filterset_fields = ["student", "status"]
-    search_fields = ["invoice_number"]
+    filterset_fields = ["student", "status", "term"]
+    search_fields = [
+        "invoice_number", "notes", "status",
+        "student__first_name", "student__last_name", "student__admission_number",
+        "term__name",
+    ]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        inv_number = serializer.validated_data.get("invoice_number") or generate_invoice_number(tenant=user.tenant)
+        serializer.save(
+            tenant=user.tenant,
+            invoice_number=inv_number,
+            created_by=user,
+            updated_by=user,
+        )
+        inv = serializer.instance
+        if inv.term_id and inv.student_id:
+            from apps.finance.services.balances import sync_student_fee_balance
+            sync_student_fee_balance(tenant=user.tenant, student=inv.student, term=inv.term)
 
 
 class FeeDiscountViewSet(FinanceScopeMixin, BaseModelViewSet):
@@ -207,6 +257,10 @@ class FeeDiscountViewSet(FinanceScopeMixin, BaseModelViewSet):
     serializer_class = FeeDiscountSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["student", "status", "discount_type"]
+    search_fields = [
+        "student__first_name", "student__last_name", "student__admission_number",
+        "discount_type", "reason", "status", "fee_structure__name",
+    ]
 
     def get_permissions(self):
         perms = super().get_permissions()
@@ -218,7 +272,7 @@ class FeeDiscountViewSet(FinanceScopeMixin, BaseModelViewSet):
     def approve(self, request, pk=None):
         discount = self.get_object()
         try:
-            approve_discount(discount=discount, user=request.user)
+            approve_discount(discount=discount, user=request.user, request=request)
         except FinanceWorkflowError as exc:
             return Response(
                 {"success": False, "message": exc.message, "code": exc.code},
@@ -231,6 +285,23 @@ class FeeDiscountViewSet(FinanceScopeMixin, BaseModelViewSet):
             "data": FeeDiscountSerializer(discount).data,
         })
 
+    @action(detail=True, methods=["post"])
+    def reject(self, request, pk=None):
+        discount = self.get_object()
+        try:
+            reject_discount(discount=discount, user=request.user, reason=request.data.get("reason", ""), request=request)
+        except FinanceWorkflowError as exc:
+            return Response(
+                {"success": False, "message": exc.message, "code": exc.code},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        discount.refresh_from_db()
+        return Response({
+            "success": True,
+            "message": "Discount rejected.",
+            "data": FeeDiscountSerializer(discount).data,
+        })
+
 
 class RefundViewSet(FinanceScopeMixin, BaseModelViewSet):
     required_feature_key = "refunds"
@@ -238,6 +309,11 @@ class RefundViewSet(FinanceScopeMixin, BaseModelViewSet):
     serializer_class = RefundSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["status", "fee_payment"]
+    search_fields = [
+        "reason", "status",
+        "fee_payment__receipt_number", "fee_payment__student__first_name",
+        "fee_payment__student__last_name", "fee_payment__student__admission_number",
+    ]
 
     def get_permissions(self):
         perms = super().get_permissions()
@@ -269,6 +345,7 @@ class MiscIncomeViewSet(FinanceScopeMixin, BaseModelViewSet):
     serializer_class = MiscIncomeSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["income_date", "account"]
+    search_fields = ["description", "reference", "notes", "account__name", "account__code"]
 
     def perform_create(self, serializer):
         serializer.save(
@@ -285,6 +362,10 @@ class FinanceNoteViewSet(FinanceScopeMixin, BaseModelViewSet):
     serializer_class = FinanceNoteSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["student", "invoice", "fee_payment"]
+    search_fields = [
+        "content", "student__first_name", "student__last_name", "student__admission_number",
+        "invoice__invoice_number", "fee_payment__receipt_number",
+    ]
 
     def perform_create(self, serializer):
         serializer.save(
@@ -301,6 +382,7 @@ class FinancialAccountViewSet(FinanceScopeMixin, BaseModelViewSet):
     serializer_class = FinancialAccountSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["account_type", "is_active"]
+    search_fields = ["name", "code", "account_type"]
 
 
 class BudgetViewSet(FinanceScopeMixin, BaseModelViewSet):
@@ -309,6 +391,7 @@ class BudgetViewSet(FinanceScopeMixin, BaseModelViewSet):
     serializer_class = BudgetSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["academic_year", "term"]
+    search_fields = ["name", "notes", "academic_year__name", "term__name", "account__name"]
 
 
 class AccountingPeriodViewSet(FinanceScopeMixin, BaseModelViewSet):
@@ -317,6 +400,7 @@ class AccountingPeriodViewSet(FinanceScopeMixin, BaseModelViewSet):
     serializer_class = AccountingPeriodSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["status"]
+    search_fields = ["name", "status"]
 
     def get_permissions(self):
         perms = super().get_permissions()
@@ -365,6 +449,10 @@ class AccountingEntryViewSet(FinanceScopeMixin, BaseModelViewSet):
     serializer_class = AccountingEntrySerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["entry_date", "entry_type", "approval_status"]
+    search_fields = [
+        "description", "reference", "debit_account", "credit_account",
+        "entry_type", "approval_status", "account__name", "account__code",
+    ]
 
 
 class TransactionApprovalQueueView(APIView):
@@ -467,16 +555,10 @@ class FinanceReportsView(APIView):
         )
 
         if export_format == "csv":
-            rows = data.get("rows") or []
-            if not rows:
-                return HttpResponse("No data", content_type="text/plain", status=404)
-            buffer = io.StringIO()
-            writer = csv.DictWriter(buffer, fieldnames=list(rows[0].keys()))
-            writer.writeheader()
-            writer.writerows(rows)
-            response = HttpResponse(buffer.getvalue(), content_type="text/csv")
-            response["Content-Disposition"] = f'attachment; filename="finance-{report_type}.csv"'
-            return response
+            return csv_attachment_response(
+                rows=data.get("rows") or [],
+                filename=f"finance-{report_type}.csv",
+            )
 
         return Response({"success": True, "data": data})
 

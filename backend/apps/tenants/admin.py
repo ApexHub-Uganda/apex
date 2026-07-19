@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.tenants.models import SchoolRoleFeaturePermission, SchoolRoleModulePermission, Tenant
+from apps.tenants.models import Campus, SchoolRoleFeaturePermission, SchoolRoleModulePermission, Tenant
 
 
 @admin.register(Tenant)
@@ -9,6 +9,14 @@ class TenantAdmin(admin.ModelAdmin):
     list_filter = ["status", "is_verified", "is_suspended", "country"]
     search_fields = ["name", "code", "email"]
     readonly_fields = ["id", "slug", "created_at", "updated_at"]
+
+
+@admin.register(Campus)
+class CampusAdmin(admin.ModelAdmin):
+    list_display = ["name", "code", "tenant", "city", "is_main", "is_active", "updated_at"]
+    list_filter = ["is_main", "is_active"]
+    search_fields = ["name", "code", "tenant__name", "tenant__code", "city"]
+    readonly_fields = ["id", "created_at", "updated_at"]
 
 
 @admin.register(SchoolRoleFeaturePermission)

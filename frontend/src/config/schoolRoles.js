@@ -40,6 +40,7 @@ export const ROLE_LABELS = {
   teacher: 'Teacher',
   class_teacher: 'Class Teacher',
   parent: 'Parent',
+  student: 'Learner',
   bursar: 'Bursar / Accountant',
   assistant_bursar: 'Assistant Bursar',
   librarian: 'Librarian',
