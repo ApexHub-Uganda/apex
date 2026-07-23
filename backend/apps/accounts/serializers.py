@@ -75,6 +75,24 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             user_agent=request.META.get("HTTP_USER_AGENT", "") if request else "",
         )
 
+        try:
+            from apps.accounts.dual_roles import ensure_primary_assignment, role_payload
+
+            ensure_primary_assignment(user)
+            # Login with primary role when dual roles exist
+            dual = role_payload(user)
+            primary = dual.get("primary_role")
+            if primary and normalize_role(user.role) != primary and primary in dual.get("available_roles", []):
+                from apps.accounts.dual_roles import switch_role
+
+                user = switch_role(user=user, role=primary)
+                # Re-issue token claims after primary restore
+                refresh = self.get_token(user)
+                data["refresh"] = str(refresh)
+                data["access"] = str(refresh.access_token)
+        except Exception:
+            pass
+
         data["user"] = UserSerializer(user).data
         return data
 
@@ -144,10 +162,33 @@ class UserSerializer(AvatarFieldsMixin, serializers.ModelSerializer):
         return normalize_role(obj.role)
 
     def get_is_school_admin(self, obj: User) -> bool:
-        return obj.role in (UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
+        return normalize_role(obj.role) in (UserRole.SUPER_ADMIN, UserRole.SCHOOL_ADMIN)
 
     def get_is_school_portal_user(self, obj: User) -> bool:
-        return obj.role in UserRole.SCHOOL_PORTAL_ROLES or obj.role == UserRole.SUPER_ADMIN
+        return (
+            normalize_role(obj.role) in UserRole.SCHOOL_PORTAL_ROLES
+            or obj.role == UserRole.SUPER_ADMIN
+        )
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        try:
+            from apps.accounts.dual_roles import ensure_primary_assignment, role_payload
+
+            ensure_primary_assignment(instance)
+            dual = role_payload(instance)
+            data["available_roles"] = dual["available_roles"]
+            data["can_switch_role"] = dual["can_switch_role"]
+            data["primary_role"] = dual["primary_role"]
+            data["active_role"] = dual["active_role"]
+            data["role_labels"] = dual["role_labels"]
+        except Exception:
+            data.setdefault("available_roles", [normalize_role(instance.role)] if instance.role else [])
+            data.setdefault("can_switch_role", False)
+            data.setdefault("primary_role", normalize_role(instance.role))
+            data.setdefault("active_role", normalize_role(instance.role))
+            data.setdefault("role_labels", {})
+        return data
 
     def _resolve_module_permissions(self, obj: User) -> dict[str, dict[str, bool]]:
         if not obj.tenant_id:

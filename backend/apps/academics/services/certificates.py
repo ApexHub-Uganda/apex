@@ -47,7 +47,7 @@ def build_leaving_certificate_pdf(*, tenant, student: Student, reason: str = "",
                 ])
             w = ctx.content_width
             t = Table(rows, colWidths=[w * 0.25, w * 0.3, w * 0.2, w * 0.25])
-            t.setStyle(branded_table_style(ctx, header=True))
+            t.setStyle(branded_table_style(ctx, header=True, header_fill="white"))
             bits.append(t)
         if reason:
             bits.append(Spacer(1, 8))
@@ -64,6 +64,90 @@ def build_leaving_certificate_pdf(*, tenant, student: Student, reason: str = "",
         document_type="leaving_certificate",
         document_meta={"student": student.admission_number, "status": student.status},
         title="Leaving / Transfer Certificate",
+        subtitle=student.full_name,
+        build_story=story,
+        request=request,
+    )
+
+
+def build_completion_certificate_pdf(
+    *,
+    tenant,
+    student: Student,
+    final_class_name: str = "",
+    academic_year_name: str = "",
+    request=None,
+) -> bytes:
+    """Certificate issued when a learner completes the school's top/final class."""
+
+    def story(ctx, styles):
+        class_label = final_class_name
+        year_label = academic_year_name
+        if not class_label and student.school_class_id:
+            class_label = student.school_class.name
+        if not year_label and student.school_class_id and student.school_class.academic_year_id:
+            year_label = student.school_class.academic_year.name
+        bits = [
+            p("CERTIFICATE OF COMPLETION", styles["Heading"]),
+            Spacer(1, 10),
+            p("This is to certify that", styles["Body"]),
+            Spacer(1, 4),
+            p(student.full_name, styles["Heading"]),
+            p(
+                f"Admission No. {student.admission_number}"
+                + (f" · Reg. {student.registration_number}" if student.registration_number else ""),
+                styles["Meta"],
+            ),
+            Spacer(1, 8),
+            p(
+                "has successfully completed studies at this school"
+                + (f" in {class_label}" if class_label else "")
+                + (f" ({year_label})" if year_label else "")
+                + " and is hereby awarded this Certificate of Completion.",
+                styles["Body"],
+            ),
+            Spacer(1, 8),
+        ]
+        placements = StudentAcademicPlacement.objects.filter(
+            tenant=tenant, student=student, is_deleted=False,
+        ).select_related("academic_year", "school_class", "stream").order_by(
+            "academic_year__start_date"
+        )[:12]
+        if placements:
+            bits.append(p("Academic progression", styles["Label"]))
+            rows = [[
+                p("Year", styles["Label"]),
+                p("Class", styles["Label"]),
+                p("Stream", styles["Label"]),
+                p("Outcome", styles["Label"]),
+            ]]
+            for pl in placements:
+                rows.append([
+                    p(pl.academic_year.name if pl.academic_year_id else "—", styles["Small"]),
+                    p(pl.school_class.name if pl.school_class_id else "—", styles["Small"]),
+                    p(pl.stream.name if pl.stream_id else "—", styles["Small"]),
+                    p(pl.status.replace("_", " ").title(), styles["Small"]),
+                ])
+            w = ctx.content_width
+            t = Table(rows, colWidths=[w * 0.25, w * 0.3, w * 0.2, w * 0.25])
+            t.setStyle(branded_table_style(ctx, header=True, header_fill="white"))
+            bits.append(t)
+            bits.append(Spacer(1, 12))
+        bits.append(p("________________________          ________________________", styles["Meta"]))
+        bits.append(p("Head Teacher                                          Director of Studies", styles["Meta"]))
+        bits.append(Spacer(1, 6))
+        bits.append(p("School stamp / official seal", styles["Meta"]))
+        return bits
+
+    return build_branded_pdf(
+        tenant=tenant,
+        document_type="completion_certificate",
+        document_meta={
+            "student": student.admission_number,
+            "class": final_class_name or "",
+            "year": academic_year_name or "",
+        },
+        title="Certificate of Completion",
         subtitle=student.full_name,
         build_story=story,
         request=request,
@@ -113,7 +197,7 @@ def build_academic_transcript_pdf(*, tenant, student: Student, request=None) -> 
                 ])
             w = ctx.content_width
             t = Table(rows, colWidths=[w * 0.36, w * 0.16, w * 0.16, w * 0.16, w * 0.16])
-            t.setStyle(branded_table_style(ctx, header=True))
+            t.setStyle(branded_table_style(ctx, header=True, header_fill="white"))
             bits.append(t)
             bits.append(Spacer(1, 10))
         if not cards:

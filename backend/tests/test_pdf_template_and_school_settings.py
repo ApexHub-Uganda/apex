@@ -9,6 +9,7 @@ from PIL import Image
 
 from apps.core.pdf_template import (
     build_branded_pdf,
+    build_headed_paper_pdf,
     build_pdf_template_preview,
     encode_document_qr_payload,
     p,
@@ -224,6 +225,28 @@ class TestBrandedPdfTemplate:
         )
         assert pdf_bytes.startswith(b"%PDF")
         assert len(pdf_bytes) > 1500
+
+    def test_headed_paper_pdf_multi_page(self, tenant):
+        pdf_bytes = build_headed_paper_pdf(tenant=tenant, page_count=3)
+        assert pdf_bytes.startswith(b"%PDF")
+        assert len(pdf_bytes) > 800
+        # Multi-page letterhead should be larger than a single blank page
+        single = build_headed_paper_pdf(tenant=tenant, page_count=1)
+        assert len(pdf_bytes) > len(single)
+
+    def test_headed_paper_api_staff_ok_parent_denied(
+        self, api_client, school_admin, parent_user_simple, tenant,
+    ):
+        api_client.force_authenticate(user=school_admin)
+        ok = api_client.get("/api/v1/auth/me/headed-paper.pdf", {"pages": 2})
+        assert ok.status_code == 200, ok.content
+        assert ok["Content-Type"] == "application/pdf"
+        body = ok.content
+        assert body.startswith(b"%PDF")
+
+        api_client.force_authenticate(user=parent_user_simple)
+        denied = api_client.get("/api/v1/auth/me/headed-paper.pdf", {"pages": 1})
+        assert denied.status_code == 403
 
     def test_preview_helper_matches_public_builder(self, tenant):
         pdf_bytes = build_pdf_template_preview(tenant=tenant)

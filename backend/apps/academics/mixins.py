@@ -51,8 +51,14 @@ class AcademicSingletonListMixin:
             getattr(request.user, "is_super_admin", False)
             or user_is_school_admin(request.user)
         )
+        # Exam periods: DoS may also edit / end / delete (school-wide exam calendar).
+        if not can_mutate and self.singleton_kind == "examination_session":
+            from apps.core.constants import UserRole, normalize_role
+
+            role = normalize_role(getattr(request.user, "role", ""))
+            can_mutate = role == UserRole.DIRECTOR_OF_STUDIES
         meta["school_admin_can_manage"] = can_mutate
-        # Non-admins with create permission may create; only school admin may edit/delete/status.
+        # Non-admins with create permission may create; only managers may edit/delete/status.
         meta["can_mutate"] = can_mutate
         meta["can_edit"] = can_mutate
         meta["can_delete"] = can_mutate
@@ -66,9 +72,12 @@ class SchoolAdminManageSingletonMixin:
     Academic year / term / exam period lifecycle.
 
     - Any role with feature write may **create** (when creation is not locked).
-    - After creation, only the **school admin** may update, delete, or change status
-      (is_current, status, dates, names, etc.). Other users remain read-only.
+    - After creation, school admin (and for exam periods, DoS) may update, delete,
+      or change status. Other users remain read-only.
     """
+
+    # Override on mixins that should also allow DoS (exam sessions).
+    allow_dos_mutate: bool = False
 
     def _user_is_school_admin(self) -> bool:
         user = self.request.user
@@ -76,11 +85,22 @@ class SchoolAdminManageSingletonMixin:
             return False
         return bool(getattr(user, "is_super_admin", False) or user_is_school_admin(user))
 
-    def _assert_school_admin_mutate(self, *, action: str = "change") -> None:
+    def _user_can_mutate_singleton(self) -> bool:
         if self._user_is_school_admin():
+            return True
+        if not self.allow_dos_mutate:
+            return False
+        from apps.core.constants import UserRole, normalize_role
+
+        role = normalize_role(getattr(self.request.user, "role", ""))
+        return role == UserRole.DIRECTOR_OF_STUDIES
+
+    def _assert_school_admin_mutate(self, *, action: str = "change") -> None:
+        if self._user_can_mutate_singleton():
             return
+        who = "a school admin or Director of Studies" if self.allow_dos_mutate else "a school admin"
         raise PermissionDenied(
-            f"Only a school admin can {action} academic years, terms, or exam periods "
+            f"Only {who} can {action} academic years, terms, or exam periods "
             "after they are created. You may create a new one when the current period ends."
         )
 
@@ -113,11 +133,49 @@ class TermSingletonMixin(SchoolAdminManageSingletonMixin, AcademicSingletonListM
 
 class ExaminationSessionSingletonMixin(SchoolAdminManageSingletonMixin, AcademicSingletonListMixin):
     singleton_kind = "examination_session"
+    allow_dos_mutate = True
 
     def perform_create(self, serializer):
         tenant = self.request.user.tenant
         assert_can_create_examination_session(tenant)
         super().perform_create(serializer)
+        instance = serializer.instance
+        self._after_exam_period_saved(instance, created=True)
+
+    def perform_update(self, serializer):
+        super().perform_update(serializer)
+        self._after_exam_period_saved(serializer.instance, created=False)
+
+    def _after_exam_period_saved(self, instance, *, created: bool) -> None:
+        """Auto-open planned periods in window and provision mark sheets for teachers."""
+        from apps.examinations.constants import (
+            EXAMINATION_SESSION_ACTIVE,
+            EXAMINATION_SESSION_CLOSED,
+            EXAMINATION_SESSION_PLANNED,
+        )
+        from apps.examinations.marks_scoping import provision_period_mark_sheets
+        from django.utils import timezone
+
+        if instance is None or instance.status == EXAMINATION_SESSION_CLOSED:
+            return
+        today = timezone.now().date()
+        # Auto-activate planned sessions once their window has started
+        if (
+            instance.status == EXAMINATION_SESSION_PLANNED
+            and instance.start_date
+            and instance.start_date <= today
+            and (not instance.end_date or instance.end_date >= today)
+        ):
+            instance.status = EXAMINATION_SESSION_ACTIVE
+            instance.save(update_fields=["status", "updated_at"])
+
+        if instance.status in {EXAMINATION_SESSION_ACTIVE, EXAMINATION_SESSION_PLANNED}:
+            if not instance.end_date or instance.end_date >= today:
+                provision_period_mark_sheets(
+                    tenant=instance.tenant,
+                    period=instance,
+                    actor=self.request.user,
+                )
 
 
 class TimetableActiveTermMixin(AcademicSingletonListMixin):

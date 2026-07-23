@@ -50,6 +50,7 @@ from apps.academics.promotion_report_views import (
 from apps.academics.dos_ops_views import (
     AcademicTranscriptPdfView,
     AssessmentSchemeViewSet,
+    CompletionCertificatePdfView,
     DosMarksCompletenessView,
     DosPerformanceView,
     DosReportStatusView,
@@ -121,6 +122,7 @@ urlpatterns = [
     path("uganda-seed/", UgandaSeedView.as_view(), name="uganda-seed"),
     path("certificates/<uuid:student_id>/leaving.pdf", LeavingCertificatePdfView.as_view(), name="leaving-certificate"),
     path("certificates/<uuid:student_id>/transcript.pdf", AcademicTranscriptPdfView.as_view(), name="academic-transcript"),
+    path("certificates/<uuid:student_id>/completion.pdf", CompletionCertificatePdfView.as_view(), name="completion-certificate"),
     path("workspace/", AcademicWorkspaceView.as_view(), name="academic-workspace"),
     path("assignment-marks/options/", AssignmentMarksOptionsView.as_view(), name="assignment-marks-options"),
     path("assignment-marks/create/", AssignmentMarksCreateView.as_view(), name="assignment-marks-create"),

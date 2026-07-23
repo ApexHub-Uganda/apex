@@ -31,8 +31,33 @@ COMMON_SCHOOL_ENTRIES: list[dict[str, Any]] = [
 ]
 
 SCHOOL_ADMIN_EXTRA_ENTRIES: list[dict[str, Any]] = [
-    {"title": "School Settings", "subtitle": "School profile and branding", "path": "/school-admin/settings", "icon": "FiSettings", "category": "System", "keywords": ["config", "branding"]},
+    {"title": "School Settings", "subtitle": "School profile and branding", "path": "/school-admin/settings", "icon": "FiSettings", "category": "System", "keywords": ["config", "branding", "school settings"]},
     {"title": "Permission Settings", "subtitle": "Role module permissions", "path": "/school-admin/settings/permissions", "icon": "FiShield", "category": "System", "keywords": ["rbac", "roles", "access"]},
+    {
+        "title": "Dual Roles",
+        "subtitle": "Grant staff and parent access to the same login",
+        "path": "/school-admin/settings/dual-roles",
+        "icon": "FiUsers",
+        "category": "System",
+        "keywords": [
+            "dual", "duals", "dualroles", "dual roles", "dual role", "dual-roles",
+            "switch role", "switch roles", "two roles", "second role", "multi role",
+            "multiple roles", "parent and teacher", "teacher parent", "portal roles",
+            "role grant", "grant role",
+        ],
+    },
+    {
+        "title": "School Boundary",
+        "subtitle": "GPS geofence for staff attendance",
+        "path": "/school-admin/settings/school-boundary",
+        "icon": "FiMapPin",
+        "category": "System",
+        "keywords": [
+            "boundary", "boundaries", "geofence", "geo fence", "location", "gps",
+            "perimeter", "campus map", "school map", "staff attendance",
+            "coordinates", "openstreetmap", "leaflet", "campus boundary",
+        ],
+    },
     {"title": "Plans & Subscriptions", "subtitle": "Your school's subscription", "path": "/school-admin/settings/plans", "icon": "FiLayers", "category": "System", "keywords": ["billing", "upgrade"]},
 ]
 

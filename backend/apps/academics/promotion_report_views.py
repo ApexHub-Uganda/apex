@@ -96,12 +96,17 @@ class PromotionCommitView(APIView):
     def post(self, request: Request, batch_id=None) -> Response:
         if not _can_promote(request.user):
             return Response({"success": False, "message": "Permission denied."}, status=403)
+        issue_certs = bool(
+            request.data.get("issue_certificates")
+            or request.query_params.get("issue_certificates")
+        )
         try:
             data = commit_promotion(
                 tenant=request.user.tenant,
                 user=request.user,
                 batch_id=batch_id or request.data.get("batch_id"),
                 request=request,
+                issue_certificates=issue_certs,
             )
         except PromotionError as exc:
             return Response({"success": False, "message": exc.message, "code": exc.code}, status=400)
@@ -150,19 +155,28 @@ class PromotionContextView(APIView):
                 tenant=tenant, is_deleted=False,
             ).order_by("-start_date").values("id", "name", "is_current", "start_date", "end_date")
         )
+        from apps.academics.services.promotion import class_progression_meta
+
         classes = Class.objects.filter(tenant=tenant, is_deleted=False).select_related("academic_year").order_by("name")
         class_rows = []
         for c in classes:
             streams = list(c.streams.filter(is_deleted=False).values("id", "name"))
             count = Student.objects.filter(tenant=tenant, school_class=c, is_deleted=False, status="active").count()
+            prog = class_progression_meta(tenant=tenant, school_class=c)
             class_rows.append({
                 "id": str(c.id),
                 "name": c.name,
                 "code": c.code,
+                "level_type": c.level_type or "",
                 "academic_year_id": str(c.academic_year_id) if c.academic_year_id else None,
                 "academic_year_name": c.academic_year.name if c.academic_year_id else None,
                 "streams": [{"id": str(s["id"]), "name": s["name"]} for s in streams],
                 "active_students": count,
+                "is_terminal": prog["is_terminal"],
+                "default_action": prog["default_action"],
+                "suggested_next_class_id": prog["suggested_next_class_id"],
+                "suggested_next_class_name": prog["suggested_next_class_name"],
+                "suggested_next_class_code": prog["suggested_next_class_code"],
             })
         recent = list(
             PromotionBatch.objects.filter(tenant=tenant, is_deleted=False)
@@ -355,8 +369,27 @@ class ReportCardListLatestView(APIView):
             qs = qs.filter(is_published=True)
         if request.query_params.get("published") == "0":
             qs = qs.filter(is_published=False)
+        qs = qs.prefetch_related("subject_lines")
+        subject_columns: list[dict] = []
+        seen_subjects: set[str] = set()
         rows = []
         for rc in qs.order_by("rank", "student__last_name")[:500]:
+            subject_scores: dict[str, dict] = {}
+            for line in rc.subject_lines.filter(is_deleted=False).order_by("sort_order"):
+                key = line.subject_code or line.subject_name
+                if key not in seen_subjects:
+                    seen_subjects.add(key)
+                    subject_columns.append({
+                        "key": key,
+                        "code": line.subject_code or "",
+                        "name": line.subject_name or key,
+                    })
+                subject_scores[key] = {
+                    "total": str(line.total_score) if line.total_score is not None else None,
+                    "grade": line.grade or "",
+                    "ca": str(line.ca_score) if line.ca_score is not None else None,
+                    "exam": str(line.exam_score) if line.exam_score is not None else None,
+                }
             rows.append({
                 "id": str(rc.id),
                 "student_id": str(rc.student_id),
@@ -373,11 +406,13 @@ class ReportCardListLatestView(APIView):
                 "days_present": rc.days_present,
                 "days_absent": rc.days_absent,
                 "teacher_remarks": rc.teacher_remarks or "",
+                "subject_scores": subject_scores,
             })
         return Response({
             "success": True,
             "data": {
                 "results": rows,
+                "subject_columns": subject_columns,
                 "count": len(rows),
                 "capabilities": results_role_capabilities(request.user),
             },
@@ -464,10 +499,12 @@ class ClassResultsOverviewView(APIView):
     """
     Read-only class results matrix for a term.
 
-    - Subject teachers: only subjects they teach in that class.
-    - Class teachers: all subjects for headed classes.
-    - DoS / leadership: all subjects for any class.
-    Does not allow mark edits or report-card generation.
+    Visibility:
+    - Class teachers / DoS / leadership: all subjects and statuses for in-scope classes.
+    - Subject teachers: own subjects at any marks status; other subjects only when
+      marks are approved or locked. Never write outside teaching pairs (this view is read-only).
+
+    Response includes per-subject totals and student average as separate columns.
     """
 
     permission_classes = [IsAuthenticated, IsStaffMember, TenantActivePermission]
@@ -481,7 +518,14 @@ class ClassResultsOverviewView(APIView):
         ]
 
     def get(self, request: Request) -> Response:
+        from decimal import Decimal, InvalidOperation
+        from uuid import UUID
+
         from apps.academics.scoping import get_academic_context
+        from apps.examinations.constants import (
+            MARKS_STATUS_APPROVED,
+            MARKS_STATUS_LOCKED,
+        )
         from apps.examinations.models import Exam, Grade
 
         tenant = request.user.tenant
@@ -522,26 +566,37 @@ class ClassResultsOverviewView(APIView):
             is_deleted=False,
         ).exclude(exam_type="assignment").select_related("subject", "paper")
 
-        # Narrow subject teachers to their teaching pairs for this class
         caps = results_role_capabilities(request.user)
-        if not caps.get("can_read_all_classes"):
-            ctx = get_academic_context(request.user)
-            headed = set(ctx.class_teacher_class_ids) if ctx else set()
-            try:
-                from uuid import UUID
-                cid = UUID(str(class_id))
-            except (TypeError, ValueError):
-                cid = None
-            is_heading = cid is not None and cid in headed
-            if not is_heading and ctx and ctx.teaching_pairs:
-                allowed_subjects = {
-                    sid for sid, clid in ctx.teaching_pairs if clid == cid
-                }
-                exam_qs = exam_qs.filter(subject_id__in=allowed_subjects)
-            elif not is_heading and not (ctx and ctx.teaching_pairs):
-                exam_qs = exam_qs.none()
+        ctx = get_academic_context(request.user)
+        try:
+            cid = UUID(str(class_id))
+        except (TypeError, ValueError):
+            cid = None
 
-        exams = list(exam_qs.order_by("subject__name", "paper__sort_order", "name"))
+        headed = set(ctx.class_teacher_class_ids) if ctx else set()
+        is_heading = cid is not None and cid in headed
+        can_see_all_statuses = bool(caps.get("can_read_all_classes") or is_heading)
+
+        own_subject_ids: set = set()
+        if ctx and ctx.teaching_pairs and cid is not None:
+            own_subject_ids = {sid for sid, clid in ctx.teaching_pairs if clid == cid}
+
+        all_exams = list(exam_qs.order_by("subject__name", "paper__sort_order", "name"))
+        approved_statuses = {MARKS_STATUS_APPROVED, MARKS_STATUS_LOCKED}
+
+        visible_exams = []
+        for exam in all_exams:
+            if can_see_all_statuses:
+                visible_exams.append(exam)
+                continue
+            if exam.subject_id in own_subject_ids:
+                visible_exams.append(exam)
+                continue
+            # Other subjects: only once marks are approved/locked
+            if exam.marks_status in approved_statuses:
+                visible_exams.append(exam)
+
+        exams = visible_exams
         subjects_map: dict[str, dict] = {}
         for exam in exams:
             sid = str(exam.subject_id)
@@ -551,6 +606,8 @@ class ClassResultsOverviewView(APIView):
                     "name": exam.subject.name if exam.subject_id else "",
                     "code": exam.subject.code if exam.subject_id else "",
                     "exams": [],
+                    "can_edit": exam.subject_id in own_subject_ids,
+                    "is_own_subject": exam.subject_id in own_subject_ids,
                 }
             subjects_map[sid]["exams"].append({
                 "id": str(exam.id),
@@ -558,32 +615,87 @@ class ClassResultsOverviewView(APIView):
                 "paper": exam.paper.code if exam.paper_id else "",
                 "max_score": str(exam.max_score),
                 "marks_status": exam.marks_status,
+                "can_edit": exam.subject_id in own_subject_ids,
             })
+            # can_edit true if any owned exam for subject
+            if exam.subject_id in own_subject_ids:
+                subjects_map[sid]["can_edit"] = True
+                subjects_map[sid]["is_own_subject"] = True
 
         grade_rows = Grade.objects.filter(
             tenant=tenant,
             exam_id__in=[e.id for e in exams],
             is_deleted=False,
         ).select_related("student", "exam")
-        # cell: student_id -> exam_id -> {score, grade, remarks}
         cells: dict[str, dict[str, dict]] = {}
         for g in grade_rows:
             sid = str(g.student_id)
             eid = str(g.exam_id)
             cells.setdefault(sid, {})[eid] = {
-                "score": str(g.score),
+                "score": str(g.score) if g.score is not None else "",
                 "grade": g.grade or "",
                 "remarks": g.remarks or "",
             }
 
+        def _to_decimal(value) -> Decimal | None:
+            if value in (None, ""):
+                return None
+            try:
+                return Decimal(str(value))
+            except (InvalidOperation, TypeError, ValueError):
+                return None
+
         student_rows = []
         for s in students:
+            student_marks = cells.get(str(s.id), {})
+            subject_totals: dict[str, dict] = {}
+            subject_scores: list[Decimal] = []
+            for subject in subjects_map.values():
+                scores: list[Decimal] = []
+                grades_seen: list[str] = []
+                statuses: list[str] = []
+                for exam in subject["exams"]:
+                    cell = student_marks.get(exam["id"])
+                    if not cell:
+                        continue
+                    score = _to_decimal(cell.get("score"))
+                    if score is not None:
+                        scores.append(score)
+                    if cell.get("grade"):
+                        grades_seen.append(cell["grade"])
+                    statuses.append(exam.get("marks_status") or "")
+                if not scores:
+                    subject_totals[subject["id"]] = {
+                        "score": None,
+                        "grade": "",
+                        "marks_status": statuses[-1] if statuses else "",
+                        "exam_count": len(subject["exams"]),
+                        "scored_count": 0,
+                    }
+                    continue
+                avg = sum(scores) / Decimal(len(scores))
+                avg = avg.quantize(Decimal("0.01"))
+                subject_scores.append(avg)
+                subject_totals[subject["id"]] = {
+                    "score": str(avg),
+                    "grade": grades_seen[-1] if grades_seen else "",
+                    "marks_status": statuses[-1] if statuses else "",
+                    "exam_count": len(subject["exams"]),
+                    "scored_count": len(scores),
+                }
+
+            average = None
+            if subject_scores:
+                average = (sum(subject_scores) / Decimal(len(subject_scores))).quantize(Decimal("0.01"))
+
             student_rows.append({
                 "id": str(s.id),
                 "admission_number": s.admission_number,
                 "full_name": s.full_name,
                 "stream_id": str(s.stream_id) if s.stream_id else None,
-                "marks": cells.get(str(s.id), {}),
+                "marks": student_marks,
+                "subject_totals": subject_totals,
+                "average": str(average) if average is not None else None,
             })
 
         return Response({
@@ -600,6 +712,12 @@ class ClassResultsOverviewView(APIView):
                 "exam_count": len(exams),
                 "student_count": len(student_rows),
                 "capabilities": caps,
+                "own_subject_ids": [str(x) for x in own_subject_ids],
+                "view_mode": "class_matrix",
                 "read_only": True,
+                "visibility": {
+                    "sees_all_statuses": can_see_all_statuses,
+                    "approved_only_for_other_subjects": not can_see_all_statuses,
+                },
             },
         })

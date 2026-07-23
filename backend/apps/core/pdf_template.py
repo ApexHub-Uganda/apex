@@ -40,8 +40,12 @@ from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 from reportlab.platypus import (
+    BaseDocTemplate,
     Flowable,
+    Frame,
     KeepTogether,
+    NextPageTemplate,
+    PageTemplate,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -55,10 +59,11 @@ from apps.core.pdf_branding import build_tenant_branding, normalize_hex_color
 # A4
 PAGE_WIDTH, PAGE_HEIGHT = A4  # 595.27 × 841.89 pt
 
-# Margins leave room for fixed header/footer drawn on every page.
+# Margins: full header band on page 1 only; later pages keep a slim top inset + footer.
 LEFT_MARGIN = 16 * mm
 RIGHT_MARGIN = 16 * mm
-TOP_MARGIN = 38 * mm
+TOP_MARGIN = 38 * mm  # first page (logo + school block + rules)
+TOP_MARGIN_LATER = 14 * mm  # subsequent pages — footer only chrome
 BOTTOM_MARGIN = 22 * mm
 
 HEADER_TOP_PAD = 10 * mm
@@ -555,8 +560,19 @@ def p(text: Any, style: ParagraphStyle) -> Paragraph:
     return Paragraph(escape_pdf_text(text), style)
 
 
-def branded_table_style(ctx: PDFDocumentContext, *, header: bool = True) -> TableStyle:
-    """Common table chrome using school colours."""
+def branded_table_style(
+    ctx: PDFDocumentContext,
+    *,
+    header: bool = True,
+    header_fill: str | None = None,
+) -> TableStyle:
+    """Common table chrome using school colours.
+
+    *header_fill*:
+      - None / \"brand\" — tenant primary background with white text (default)
+      - \"white\" / \"light\" — white header row with dark text (better contrast on
+        report cards, broadsheets, and certificates)
+    """
     primary = ctx.branding["primary_color"]
     commands = [
         ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
@@ -570,16 +586,31 @@ def branded_table_style(ctx: PDFDocumentContext, *, header: bool = True) -> Tabl
         ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
     ]
     if header:
-        commands.extend([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(primary)),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, 0), 8.5),
-        ])
+        fill = (header_fill or "brand").strip().lower()
+        if fill in {"white", "light", "plain"}:
+            commands.extend([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.white),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#0F172A")),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 8.5),
+                ("LINEBELOW", (0, 0), (-1, 0), 1.0, colors.HexColor(primary)),
+            ])
+        else:
+            commands.extend([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(primary)),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, 0), 8.5),
+            ])
     return TableStyle(commands)
 
 
 StoryBuilder = Callable[[PDFDocumentContext, dict[str, ParagraphStyle]], Sequence[Flowable]]
+
+
+def _paint_page_background(canv: canvas.Canvas, page_w: float, page_h: float) -> None:
+    canv.setFillColor(colors.white)
+    canv.rect(0, 0, page_w, page_h, fill=1, stroke=0)
 
 
 def build_branded_pdf(
@@ -597,7 +628,11 @@ def build_branded_pdf(
     Build a complete A4 branded PDF (portrait by default; landscape supported).
 
     *build_story(ctx, styles)* must return a sequence of ReportLab flowables
-    for the document body only (header/footer are drawn automatically).
+    for the document body only.
+
+    Chrome rules:
+      - **Page 1**: school header (logo, identity, QR) + footer
+      - **Page 2+**: footer only (no repeating header) with a tighter top margin
     """
     orientation = (orientation or "portrait").lower()
     if orientation not in ("portrait", "landscape"):
@@ -622,18 +657,59 @@ def build_branded_pdf(
     styles = get_pdf_styles(ctx)
 
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(
+    frame_w = page_w - LEFT_MARGIN - RIGHT_MARGIN
+    frame_h_first = page_h - TOP_MARGIN - BOTTOM_MARGIN
+    frame_h_later = page_h - TOP_MARGIN_LATER - BOTTOM_MARGIN
+
+    frame_first = Frame(
+        LEFT_MARGIN,
+        BOTTOM_MARGIN,
+        frame_w,
+        frame_h_first,
+        id="first",
+        leftPadding=0,
+        rightPadding=0,
+        topPadding=0,
+        bottomPadding=0,
+    )
+    frame_later = Frame(
+        LEFT_MARGIN,
+        BOTTOM_MARGIN,
+        frame_w,
+        frame_h_later,
+        id="later",
+        leftPadding=0,
+        rightPadding=0,
+        topPadding=0,
+        bottomPadding=0,
+    )
+
+    def _on_first(canv: canvas.Canvas, doc_):
+        canv.saveState()
+        _paint_page_background(canv, page_w, page_h)
+        _draw_header(canv, ctx)
+        _draw_footer(canv, ctx, page_number=doc_.page)
+        canv.restoreState()
+
+    def _on_later(canv: canvas.Canvas, doc_):
+        canv.saveState()
+        _paint_page_background(canv, page_w, page_h)
+        # Header intentionally omitted — footer only on continuation pages
+        _draw_footer(canv, ctx, page_number=doc_.page)
+        canv.restoreState()
+
+    doc = BaseDocTemplate(
         buffer,
         pagesize=pagesize,
-        leftMargin=LEFT_MARGIN,
-        rightMargin=RIGHT_MARGIN,
-        topMargin=TOP_MARGIN,
-        bottomMargin=BOTTOM_MARGIN,
         title=title or f"{branding.get('school_name')} — {document_type}",
         author=branding.get("school_name") or "Apex Hub",
     )
+    doc.addPageTemplates([
+        PageTemplate(id="First", frames=[frame_first], onPage=_on_first),
+        PageTemplate(id="Later", frames=[frame_later], onPage=_on_later),
+    ])
 
-    story: list[Flowable] = []
+    story: list[Flowable] = [NextPageTemplate("Later")]
     if title:
         story.append(p(title, styles["Title"]))
     if subtitle:
@@ -642,23 +718,93 @@ def build_branded_pdf(
     body = list(build_story(ctx, styles) or [])
     story.extend(body)
 
-    page_state: dict[str, int] = {"count": 0}
-
-    def _on_page(canv: canvas.Canvas, doc_):
-        canv.saveState()
-        # Ensure white page background
-        canv.setFillColor(colors.white)
-        canv.rect(0, 0, page_w, page_h, fill=1, stroke=0)
-        page_state["count"] = doc_.page
-        _draw_header(canv, ctx)
-        _draw_footer(canv, ctx, page_number=doc_.page)
-        canv.restoreState()
-
-    doc.build(story, onFirstPage=_on_page, onLaterPages=_on_page)
+    doc.build(story)
     buffer.seek(0)
     pdf_bytes = buffer.getvalue()
     if not pdf_bytes.startswith(b"%PDF"):
         raise ValueError("PDF generation produced an invalid document.")
+    return pdf_bytes
+
+
+def build_headed_paper_pdf(
+    *,
+    tenant,
+    page_count: int = 1,
+    request=None,
+) -> bytes:
+    """
+    Blank professional letterhead sheets for school staff.
+
+    - Page 1: full branded header + footer
+    - Pages 2…N: footer only (no header) — ready for handwriting or printing
+    """
+    try:
+        pages = int(page_count)
+    except (TypeError, ValueError):
+        pages = 1
+    pages = max(1, min(pages, 50))
+
+    branding = build_tenant_branding(tenant, request=request)
+    printed_at = _resolve_print_datetime(branding.get("timezone"))
+    ctx = PDFDocumentContext(
+        branding=branding,
+        document_type="headed_paper",
+        document_meta={
+            "name": "Headed paper",
+            "pages": pages,
+        },
+        title="Headed paper",
+        subtitle="",
+        printed_at=printed_at,
+        content_width=PAGE_WIDTH - LEFT_MARGIN - RIGHT_MARGIN,
+        page_width=PAGE_WIDTH,
+        page_height=PAGE_HEIGHT,
+        orientation="portrait",
+    )
+
+    buffer = io.BytesIO()
+    canv = canvas.Canvas(buffer, pagesize=A4)
+    canv.setTitle(f"{branding.get('school_name') or 'School'} — Headed paper")
+    canv.setAuthor(branding.get("school_name") or "Apex Hub")
+
+    for page_no in range(1, pages + 1):
+        _paint_page_background(canv, PAGE_WIDTH, PAGE_HEIGHT)
+        if page_no == 1:
+            _draw_header(canv, ctx)
+            # Subtle guide for writable area under the header rule
+            canv.setStrokeColor(colors.HexColor("#E2E8F0"))
+            canv.setDash(1, 3)
+            canv.setLineWidth(0.4)
+            guide_top = HEADER_RULE_Y - 8 * mm
+            guide_bottom = FOOTER_RULE_Y + 14 * mm
+            # light horizontal writing guides (professional notepad feel, not busy)
+            y = guide_top
+            step = 8 * mm
+            while y > guide_bottom:
+                canv.line(LEFT_MARGIN, y, PAGE_WIDTH - RIGHT_MARGIN, y)
+                y -= step
+            canv.setDash()
+        else:
+            # Continuation pages: clean writable field, footer chrome only
+            canv.setStrokeColor(colors.HexColor("#F1F5F9"))
+            canv.setDash(1, 4)
+            canv.setLineWidth(0.35)
+            y = PAGE_HEIGHT - TOP_MARGIN_LATER - 4 * mm
+            guide_bottom = FOOTER_RULE_Y + 14 * mm
+            step = 8 * mm
+            while y > guide_bottom:
+                canv.line(LEFT_MARGIN, y, PAGE_WIDTH - RIGHT_MARGIN, y)
+                y -= step
+            canv.setDash()
+
+        _draw_footer(canv, ctx, page_number=page_no, page_count=pages)
+        canv.showPage()
+
+    canv.save()
+    buffer.seek(0)
+    pdf_bytes = buffer.getvalue()
+    if not pdf_bytes.startswith(b"%PDF"):
+        raise ValueError("Headed paper PDF generation produced an invalid document.")
     return pdf_bytes
 
 
@@ -677,7 +823,8 @@ def sample_preview_story(ctx: PDFDocumentContext, styles: dict[str, ParagraphSty
     story.append(p("Document sample section", styles["Heading"]))
     story.append(p(
         "Place report cards, admission letters, fee statements, or any other school "
-        "document content in this middle region. Header and footer are applied on every page.",
+        "document content in this middle region. The full school header appears on page 1 only; "
+        "continuation pages keep the footer (motto, contacts, page number) without repeating the header.",
         styles["Body"],
     ))
     story.append(Spacer(1, 8))

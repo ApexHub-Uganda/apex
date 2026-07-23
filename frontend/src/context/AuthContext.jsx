@@ -74,9 +74,41 @@ export function AuthProvider({ children }) {
     setUser((prev) => (prev ? { ...prev, ...updates } : null));
   };
 
+  /** Switch dual-role active portal (reloads tokens + tenant context). */
+  const switchRole = async (role) => {
+    const payload = await authService.switchRole(role);
+    if (payload?.user) {
+      setUser(payload.user);
+      setIsAuthenticated(true);
+    }
+    await queryClient.invalidateQueries({ queryKey: ['tenant'] });
+    await queryClient.invalidateQueries({ queryKey: ['school-admin-dashboard'] });
+    await queryClient.invalidateQueries({ queryKey: ['profile'] });
+    // Hard navigation so layouts/menus remount for the new role
+    const nextRole = normalizeRole(payload?.user?.effective_role || payload?.user?.role || role);
+    if (nextRole === 'parent') {
+      window.location.assign('/school-admin');
+    } else if (nextRole === 'super_admin') {
+      window.location.assign('/super-admin');
+    } else {
+      window.location.assign('/school-admin');
+    }
+    return payload;
+  };
+
   const effectiveRole = useMemo(
-    () => normalizeRole(user?.effective_role || user?.role),
-    [user?.effective_role, user?.role],
+    () => normalizeRole(user?.active_role || user?.effective_role || user?.role),
+    [user?.active_role, user?.effective_role, user?.role],
+  );
+
+  const availableRoles = useMemo(
+    () => user?.available_roles || (user?.role ? [normalizeRole(user.role)] : []),
+    [user?.available_roles, user?.role],
+  );
+
+  const canSwitchRole = Boolean(
+    user?.can_switch_role
+    || (availableRoles && availableRoles.length > 1),
   );
 
   return (
@@ -87,10 +119,13 @@ export function AuthProvider({ children }) {
         isAuthenticated,
         login,
         logout,
+        switchRole,
         updateUser,
         effectiveRole,
+        availableRoles,
+        canSwitchRole,
         isSuperAdmin: user?.role === 'super_admin' || effectiveRole === 'super_admin',
-        // Prefer effective_role so portal role switches still count as school admin
+        // Active role drives admin chrome (after dual-role switch)
         isSchoolAdmin: Boolean(
           user?.is_school_admin
           || isSchoolAdminRole(user?.role)

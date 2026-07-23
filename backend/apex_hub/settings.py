@@ -140,7 +140,7 @@ else:
     DATABASES = {
         "default": env.db(
             "DATABASE_URL",
-            default="postgres://apex_user:apex_secure_password@localhost:5432/apex_hub",
+            default="postgres://apex_user:emmie@localhost:5432/apex_hub",
         )
     }
     DATABASES["default"]["CONN_MAX_AGE"] = 60
@@ -197,7 +197,6 @@ CORS_ALLOW_CREDENTIALS = True
 if TRUST_PROXY_HEADERS:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True
-
 # Redis & Cache
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 
@@ -212,6 +211,9 @@ else:
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "protocol": 2,  # Forces RESP2 protocol for Redis 5 compatibility
+            },
         }
     }
 

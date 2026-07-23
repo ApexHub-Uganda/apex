@@ -154,26 +154,30 @@ export function EntityListPage({
   const records = listPayload?.records ?? [];
   const listMeta = listPayload?.meta ?? null;
   const creationLocked = Boolean(listMeta?.creation_locked);
-  // Academic years, terms, exam periods: non-admins may create (when unlocked) then only read.
-  // School admin alone may edit, delete, or change status after creation.
+  // Academic years, terms, exam periods: create when unlocked; edit/end/delete for managers.
   const isPeriodSingleton = Boolean(
     config.singleton
     && (featureKey === 'academic_years' || featureKey === 'terms' || featureKey === 'examination_sessions'),
   );
-  // Prefer API meta when present; always allow school admin
-  const canMutatePeriods = Boolean(isSchoolAdmin || listMeta?.can_mutate);
+  // Prefer API meta (includes school admin + DoS for exam sessions); always allow school admin
+  const canMutatePeriods = Boolean(
+    isSchoolAdmin
+    || listMeta?.can_mutate
+    || listMeta?.can_edit
+    || listMeta?.school_admin_can_manage,
+  );
   const canCreate = canManage && config.creatable !== false && !creationLocked;
   const canEditRecords = isPeriodSingleton
     ? canMutatePeriods
     : (canManage || isSchoolAdmin);
   const isReadOnlyViewer = !canEditRecords;
-  // Non-admins hide the full table while a period is active (panel is enough).
-  // School admins always see the table + panel actions.
+  // Only hide the table for pure read-only viewers while a period is locked.
+  // Managers always see the full list with Edit / End / Delete / status actions.
   const hideSingletonTable = Boolean(
     isPeriodSingleton
     && creationLocked
     && listMeta?.active_record
-    && !canMutatePeriods,
+    && !canEditRecords,
   );
   const scopedEmptyTitle = `No ${title.toLowerCase()} assigned to you`;
   const scopedEmptyMessage = 'You only see records linked to your teaching assignments. Contact the Director of Studies if something is missing.';
@@ -227,10 +231,13 @@ export function EntityListPage({
   const handleRowAction = async (row, actionDef) => {
     const actionName = actionDef.action;
     const serviceAction = config.service?.[actionName];
-    if (!serviceAction) return;
+    if (!serviceAction) {
+      notify.error(`Action “${actionDef.label}” is not available.`);
+      return;
+    }
 
     if (!actionDef.skipConfirm) {
-      const label = row.title || row.subject || actionDef.label;
+      const label = row.title || row.subject || row.name || actionDef.label;
       const confirmResult = await alert.confirm(
         actionDef.confirm || {
           title: `${actionDef.label}?`,
@@ -246,7 +253,10 @@ export function EntityListPage({
 
     setActionLoadingId(`${row.id}-${actionDef.key}`);
     try {
-      const result = await serviceAction(row.id, actionDef.payload?.(row));
+      const payload = typeof actionDef.payload === 'function'
+        ? actionDef.payload(row)
+        : actionDef.payload;
+      const result = await serviceAction(row.id, payload);
       const warnings = result?.warnings || result?.data?.warnings;
       if (warnings?.length) {
         notify.warning(warnings.join(' '));
@@ -373,12 +383,14 @@ export function EntityListPage({
               <button
                 key={actionDef.key}
                 type="button"
-                className={`btn btn-sm ${actionDef.variant === 'primary' ? 'btn-primary' : 'btn-outline-primary'}`}
+                className={`btn btn-sm ${actionDef.variant === 'primary' ? 'btn-primary' : actionDef.variant === 'warning' ? 'btn-warning' : 'btn-outline-primary'}`}
                 disabled={actionLoadingId === `${row.id}-${actionDef.key}`}
                 onClick={(e) => { e.stopPropagation(); handleRowAction(row, actionDef); }}
                 title={actionDef.label}
               >
-                {actionLoadingId === `${row.id}-${actionDef.key}` ? '…' : <FiSend size={14} />}
+                {actionLoadingId === `${row.id}-${actionDef.key}`
+                  ? '…'
+                  : (actionDef.showLabel !== false ? actionDef.label : <FiSend size={14} />)}
               </button>
             ))}
           <button

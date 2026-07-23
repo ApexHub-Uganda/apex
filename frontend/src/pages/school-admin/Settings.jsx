@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Link, Navigate } from 'react-router-dom';
 import {
-  FiSave, FiDroplet, FiShield, FiImage, FiFileText, FiMapPin, FiMail, FiPhone, FiGlobe, FiRotateCcw,
+  FiSave, FiDroplet, FiShield, FiImage, FiFileText, FiMapPin, FiMail, FiPhone, FiGlobe, FiRotateCcw, FiUsers,
 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import { useTenant } from '../../hooks/useTenant';
@@ -419,6 +419,38 @@ export function SchoolAdminSettings() {
                 </div>
                 <Link to="/school-admin/settings/permissions" className="btn btn-outline-primary btn-sm">
                   Open permission settings
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+
+          <div className="col-12">
+            <motion.div className="apex-card p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }}>
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                  <h5 className="fw-bold mb-1 d-flex align-items-center gap-2"><FiUsers /> Dual roles</h5>
+                  <p className="text-muted small mb-0">
+                    Grant a second portal role to a user (e.g. teacher + parent). Same login; they switch from the avatar menu.
+                  </p>
+                </div>
+                <Link to="/school-admin/settings/dual-roles" className="btn btn-outline-primary btn-sm">
+                  Configure dual roles
+                </Link>
+              </div>
+            </motion.div>
+          </div>
+
+          <div className="col-12">
+            <motion.div className="apex-card p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                  <h5 className="fw-bold mb-1 d-flex align-items-center gap-2"><FiMapPin /> School boundary</h5>
+                  <p className="text-muted small mb-0">
+                    Set the campus GPS perimeter on free OpenStreetMap (at least 4 corners). Staff must be on campus to sign in and to mark class attendance.
+                  </p>
+                </div>
+                <Link to="/school-admin/settings/school-boundary" className="btn btn-outline-primary btn-sm">
+                  Configure school boundary
                 </Link>
               </div>
             </motion.div>

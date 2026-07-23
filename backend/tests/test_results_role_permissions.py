@@ -394,7 +394,33 @@ class TestClassResultsOverview:
         assert data["read_only"] is True
         assert data["student_count"] == 1
 
-    def test_subject_teacher_sees_only_own_subject(self, api_client, results_setup):
+    def test_subject_teacher_sees_own_subject_even_when_draft(self, api_client, results_setup):
+        """Own subjects visible at any marks_status; unapproved other subjects hidden."""
+        api_client.force_authenticate(user=results_setup["subject_teacher_user"])
+        response = api_client.get(
+            "/api/v1/academics/results/class-overview/",
+            {
+                "term": str(results_setup["term"].id),
+                "school_class": str(results_setup["school_class"].id),
+            },
+        )
+        assert response.status_code == 200
+        data = response.data["data"]
+        codes = {s["code"] for s in data["subjects"]}
+        assert codes == {"MATH"}
+        assert data["visibility"]["approved_only_for_other_subjects"] is True
+        # Subject totals + average columns present
+        student = data["students"][0]
+        assert "subject_totals" in student
+        assert "average" in student
+        math_id = next(s["id"] for s in data["subjects"] if s["code"] == "MATH")
+        assert student["subject_totals"][math_id]["score"] is not None
+
+    def test_subject_teacher_sees_other_subjects_when_approved(self, api_client, results_setup):
+        eng_exam = results_setup["eng_exam"]
+        eng_exam.marks_status = "approved"
+        eng_exam.save(update_fields=["marks_status"])
+
         api_client.force_authenticate(user=results_setup["subject_teacher_user"])
         response = api_client.get(
             "/api/v1/academics/results/class-overview/",
@@ -405,7 +431,12 @@ class TestClassResultsOverview:
         )
         assert response.status_code == 200
         codes = {s["code"] for s in response.data["data"]["subjects"]}
-        assert codes == {"MATH"}
+        assert "MATH" in codes
+        assert "ENG" in codes
+        # Can edit only own subject
+        by_code = {s["code"]: s for s in response.data["data"]["subjects"]}
+        assert by_code["MATH"]["can_edit"] is True
+        assert by_code["ENG"]["can_edit"] is False
 
     def test_dos_can_read_any_class(self, api_client, results_setup):
         api_client.force_authenticate(user=results_setup["dos_user"])

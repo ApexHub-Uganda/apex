@@ -145,9 +145,9 @@ export function MarksEntry({ context = 'examinations' }) {
       const onlySubject = autoSelect.subject || singleValue(subjects);
       ensure('subject', onlySubject);
 
-      // Single paper when subject uses papers
-      if (next.subject && requiresPaper) {
-        const onlyPaper = autoSelect.paper || singleValue(papers);
+      // Paper: auto single; for multi-paper pick first so mark sheets resolve immediately
+      if (next.subject && requiresPaper && papers.length) {
+        const onlyPaper = autoSelect.paper || singleValue(papers) || papers[0]?.value;
         ensure('paper', onlyPaper);
       }
 
@@ -157,9 +157,9 @@ export function MarksEntry({ context = 'examinations' }) {
         ensure('school_class', onlyClass);
       }
 
-      // Single exam for subject/class/term
+      // Exam: prefer server auto_select (provisioned sheet), else single option
       if (next.school_class) {
-        const onlyExam = autoSelect.exam || singleValue(exams);
+        const onlyExam = autoSelect.exam || singleValue(exams) || exams[0]?.value;
         ensure('exam', onlyExam);
       }
 
@@ -586,12 +586,22 @@ export function MarksEntry({ context = 'examinations' }) {
         {!isAssignments && selection.school_class && !isLoading && exams.length === 0 && !selection.exam && (
           <div className="alert alert-warning mt-3 mb-0 small">
             {scopeMeta?.has_active_exam_period
-              ? 'No mark sheet could be opened for this subject and class. Confirm you are assigned to teach this pair, then try Start over.'
+              ? (
+                <>
+                  No mark sheet is available yet for this subject and class under{' '}
+                  <strong>{scopeMeta.active_exam_period?.name || 'the open exam period'}</strong>.
+                  Confirm you are assigned to teach this pair, pick a paper if required, then try{' '}
+                  <button type="button" className="btn btn-link btn-sm p-0 align-baseline" onClick={() => refetch()}>
+                    Refresh
+                  </button>
+                  {' '}or Start over. If it still fails, ask the school admin to re-save the Exam Session (status Active).
+                </>
+              )
               : (
                 <>
                   No open exam period. A school admin or DoS must create and activate an{' '}
                   <Link to="/school-admin/examinations/sessions">Exam Session</Link>
-                  {' '}(exam period). Mark sheets are then created automatically when you select a subject and class you teach.
+                  {' '}(exam period). Mark sheets are then created automatically for subjects you teach.
                 </>
               )}
           </div>

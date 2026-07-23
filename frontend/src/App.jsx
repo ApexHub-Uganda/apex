@@ -50,6 +50,7 @@ import MarksApproval from './pages/school-admin/MarksApproval';
 import ExaminationResults from './pages/school-admin/ExaminationResults';
 import Assessments from './pages/school-admin/Assessments';
 import LessonAttendance from './pages/school-admin/LessonAttendance';
+import AttendanceSessions from './pages/school-admin/AttendanceSessions';
 import TeacherWorkspace from './pages/school-admin/TeacherWorkspace';
 import HoDWorkspace from './pages/school-admin/HoDWorkspace';
 import DoSWorkspace from './pages/school-admin/DoSWorkspace';
@@ -62,7 +63,6 @@ import FinanceAnalytics from './pages/school-admin/FinanceAnalytics';
 import FinanceReports from './pages/school-admin/FinanceReports';
 import ParentFeeStatements from './pages/school-admin/ParentFeeStatements';
 import FinanceBilling from './pages/school-admin/FinanceBilling';
-import PromotionWizard from './pages/school-admin/PromotionWizard';
 import AcademicReportCards from './pages/school-admin/AcademicReportCards';
 import DoSOps from './pages/school-admin/DoSOps';
 import Library from './pages/school-admin/Library';
@@ -77,6 +77,9 @@ import Reports from './pages/school-admin/Reports';
 import Communication from './pages/school-admin/Communication';
 import SchoolAdminSettings from './pages/school-admin/Settings';
 import PermissionSettings from './pages/school-admin/PermissionSettings';
+import DualRolesSettings from './pages/school-admin/DualRolesSettings';
+import SchoolBoundarySettings from './pages/school-admin/SchoolBoundarySettings';
+import StaffAttendance from './pages/school-admin/StaffAttendance';
 import SchoolPlansAndSubscriptions from './pages/school-admin/PlansAndSubscriptions';
 import UserAccounts from './pages/school-admin/UserAccounts';
 import Campuses from './pages/school-admin/Campuses';
@@ -98,8 +101,8 @@ import { ApexLoader } from './components/ApexLoader';
 const HomeEntry = lazy(() => import('./pages/landing/HomeEntry'));
 const TermsPage = lazy(() => import('./pages/landing/TermsPage'));
 
-const Gated = ({ featureKey, children }) => (
-  <FeatureGate featureKey={featureKey}>{children}</FeatureGate>
+const Gated = ({ featureKey, featureKeys, children }) => (
+  <FeatureGate featureKey={featureKey} featureKeys={featureKeys}>{children}</FeatureGate>
 );
 
 const queryClient = new QueryClient({
@@ -204,8 +207,24 @@ function AppRoutes() {
         <Route path="examinations/grades" element={<Gated featureKey="grade_calculation"><GradeCalculation /></Gated>} />
         <Route path="examinations/results" element={<Gated featureKeys={['result_processing', 'report_cards', 'marks_entry']}><ExaminationResults /></Gated>} />
         <Route path="examinations/approval" element={<Gated featureKey="marks_approval"><MarksApproval /></Gated>} />
-        <Route path="examinations/assessments" element={<Gated featureKey="assessment_management"><Assessments /></Gated>} />
+        <Route path="examinations/assessments" element={<Gated featureKeys={['assessment_management', 'student_promotion', 'dos_workspace']}><Assessments /></Gated>} />
         <Route path="attendance/lessons" element={<Gated featureKey="lesson_attendance"><LessonAttendance /></Gated>} />
+        <Route
+          path="attendance/staff"
+          element={(
+            <Gated featureKey="staff_attendance">
+              <StaffAttendance />
+            </Gated>
+          )}
+        />
+        <Route
+          path="attendance/sessions"
+          element={(
+            <Gated featureKeys={['attendance_sessions', 'student_attendance', 'lesson_attendance']}>
+              <AttendanceSessions />
+            </Gated>
+          )}
+        />
         <Route path="finance" element={<Gated featureKey="student_billing"><FinanceBilling /></Gated>} />
         <Route path="finance/bursar" element={<Gated featureKey="bursar_workspace"><BursarWorkspace /></Gated>} />
         <Route path="finance/assistant" element={<Gated featureKey="assistant_bursar_workspace"><AssistantBursarWorkspace /></Gated>} />
@@ -246,6 +265,22 @@ function AppRoutes() {
           )}
         />
         <Route
+          path="settings/dual-roles"
+          element={(
+            <ProtectedRoute roles={['school_admin']}>
+              <DualRolesSettings />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
+          path="settings/school-boundary"
+          element={(
+            <ProtectedRoute roles={['school_admin']}>
+              <SchoolBoundarySettings />
+            </ProtectedRoute>
+          )}
+        />
+        <Route
           path="settings/plans"
           element={(
             <ProtectedRoute roles={['school_admin']}>
@@ -256,7 +291,7 @@ function AppRoutes() {
         <Route path="core/user-accounts" element={<Gated featureKey="user_accounts"><UserAccounts /></Gated>} />
         <Route path="core/campuses" element={<Gated featureKey="multi_campus_support"><Campuses /></Gated>} />
         <Route path="academics/timetable/wizard" element={<Gated featureKey="timetables"><TimetableWizard /></Gated>} />
-        <Route path="academics/promotion" element={<Gated featureKey="student_promotion"><PromotionWizard /></Gated>} />
+        <Route path="academics/promotion" element={<Navigate to="/school-admin/examinations/assessments" replace />} />
         <Route path="academics/report-cards" element={<Gated featureKeys={['report_cards', 'class_report_cards', 'result_processing']}><AcademicReportCards /></Gated>} />
         <Route path="academics/dos-ops" element={<Gated featureKey="dos_workspace"><DoSOps /></Gated>} />
         <Route path="examinations/report-cards" element={<Navigate to="/school-admin/academics/report-cards" replace />} />

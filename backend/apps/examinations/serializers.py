@@ -116,6 +116,21 @@ class ExamSerializer(serializers.ModelSerializer):
     def get_term_name(self, obj) -> str:
         return obj.term.name if obj.term_id else ""
 
+    def create(self, validated_data):
+        # Auto-link to the open exam period when scheduling under Examinations
+        if not validated_data.get("examination_session"):
+            request = self.context.get("request")
+            tenant = getattr(request.user, "tenant", None) if request else None
+            if tenant is not None:
+                from apps.examinations.marks_scoping import resolve_active_exam_period
+
+                period = resolve_active_exam_period(tenant)
+                if period is not None:
+                    validated_data["examination_session"] = period
+                    if not validated_data.get("term") and period.term_id:
+                        validated_data["term"] = period.term
+        return super().create(validated_data)
+
     class Meta:
         model = Exam
         fields = [

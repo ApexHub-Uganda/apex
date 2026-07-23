@@ -164,6 +164,22 @@ class MeProfileSerializer(AvatarFieldsMixin, serializers.ModelSerializer):
         from apps.core.constants import normalize_role
         return normalize_role(obj.role)
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        try:
+            from apps.accounts.dual_roles import ensure_primary_assignment, role_payload
+
+            ensure_primary_assignment(instance)
+            dual = role_payload(instance)
+            data["available_roles"] = dual["available_roles"]
+            data["can_switch_role"] = dual["can_switch_role"]
+            data["primary_role"] = dual["primary_role"]
+            data["active_role"] = dual["active_role"]
+            data["role_labels"] = dual["role_labels"]
+        except Exception:
+            pass
+        return data
+
     def get_staff_profile(self, obj: User) -> dict | None:
         try:
             staff = obj.staff_profile

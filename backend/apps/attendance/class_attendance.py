@@ -53,10 +53,17 @@ def _parse_time(value) -> time | None:
 
 
 def class_attendance_scope_meta(user) -> dict:
+    from apps.attendance.geofence import geofence_payload, get_geofence
+
     ctx = get_academic_context(user)
+    tenant = getattr(user, "tenant", None)
+    fence = get_geofence(tenant)
+    geo = geofence_payload(fence)
     return {
         "is_teacher_scoped": not user_has_school_wide_academic_access(user),
         "is_class_teacher": bool(ctx and ctx.is_class_teacher),
+        "geofence_enforced": bool(geo.get("is_enabled")),
+        "geofence": geo,
     }
 
 
@@ -251,9 +258,23 @@ def bulk_save_class_attendance(
     mark_date,
     check_in=None,
     entries: list[dict[str, Any]],
+    lat=None,
+    lng=None,
+    accuracy_m=None,
 ) -> dict[str, Any]:
     if not user_can_access_class(user, school_class_id):
         raise ClassAttendanceError("You do not have access to this class.", code="forbidden")
+
+    # Campus geofence: teachers must be on school grounds when enforcement is on
+    from apps.attendance.geofence import evaluate_location
+
+    evaluation = evaluate_location(tenant=tenant, lat=lat, lng=lng, accuracy_m=accuracy_m)
+    if evaluation.get("enforced") and not evaluation.get("allowed"):
+        raise ClassAttendanceError(
+            evaluation.get("reason")
+            or "You must be within the school boundary to mark class attendance.",
+            code=evaluation.get("code") or "outside_geofence",
+        )
 
     resolved_date = _parse_date(mark_date)
     if resolved_date is None:

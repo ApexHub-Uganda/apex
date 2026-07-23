@@ -47,19 +47,33 @@ def get_active_term(tenant, *, academic_year=None):
 
 
 def get_active_examination_session(tenant):
-    """Return the school's open exam period (active status, or planned/active not yet ended)."""
+    """Return the school's open exam period.
+
+    Open means:
+    - status is *active*, or
+    - status is *planned* and the calendar window has not ended (end_date >= today), or
+    - any non-closed session whose end_date is still in the future.
+
+    Planned sessions that have already started (start_date <= today) are treated as
+    open so teachers can enter marks without a separate “activate” click.
+    """
     if tenant is None:
         return None
+    from apps.examinations.constants import EXAMINATION_SESSION_PLANNED
     from apps.examinations.models import ExaminationSession
 
     today = _today()
     return (
         ExaminationSession.objects.filter(tenant=tenant, is_deleted=False)
         .exclude(status=EXAMINATION_SESSION_CLOSED)
-        .filter(Q(status=EXAMINATION_SESSION_ACTIVE) | Q(end_date__gte=today))
+        .filter(
+            Q(status=EXAMINATION_SESSION_ACTIVE)
+            | Q(status=EXAMINATION_SESSION_PLANNED, end_date__gte=today)
+            | Q(end_date__gte=today)
+        )
         .select_related("academic_year", "term")
         .order_by(
-            # Prefer explicitly active sessions, then latest start.
+            # Prefer explicitly active, then in-window planned, then latest start.
             models_order_active_first(),
             "-start_date",
         )

@@ -43,7 +43,7 @@ export const SCHOOL_MODULES = [
       { feature_key: 'subjects', label: 'Subjects', path: '/school-admin/academics/subjects', icon: 'FiBookOpen' },
       { feature_key: 'subject_assignment', label: 'Subject Assignments', path: '/school-admin/academics/subject-assignments', icon: 'FiUserCheck' },
       { feature_key: 'grading', label: 'Grading', path: '/school-admin/academics/grading', icon: 'FiAward' },
-      { feature_key: 'student_promotion', label: 'Student Promotion', path: '/school-admin/academics/promotion', icon: 'FiTrendingUp' },
+      { feature_key: 'student_promotion', label: 'Student Promotion', path: '/school-admin/examinations/assessments', icon: 'FiTrendingUp' },
       { feature_key: 'report_cards', label: 'Report Cards', path: '/school-admin/academics/report-cards', icon: 'FiFileText' },
       { feature_key: 'class_report_cards', label: 'Class Broadsheets', path: '/school-admin/academics/report-cards', icon: 'FiFileText' },
       { feature_key: 'result_processing', label: 'Results', path: '/school-admin/examinations/results', icon: 'FiCheckCircle' },
@@ -106,7 +106,7 @@ export const SCHOOL_MODULES = [
     ],
     children: [
       { feature_key: 'examination_management', label: 'Examinations', path: '/school-admin/examinations', icon: 'FiAward' },
-      { feature_key: 'assessment_management', label: 'Assessments', path: '/school-admin/examinations/assessments', icon: 'FiClipboard' },
+      { feature_key: 'assessment_management', label: 'Assessment & Progression', path: '/school-admin/examinations/assessments', icon: 'FiClipboard' },
       { feature_key: 'marks_entry', label: 'Marks Entry', path: '/school-admin/examinations/marks', icon: 'FiEdit' },
       { feature_key: 'grade_calculation', label: 'Grade Calculation', path: '/school-admin/examinations/grades', icon: 'FiPercent' },
       { feature_key: 'result_processing', label: 'Results', path: '/school-admin/examinations/results', icon: 'FiCheckCircle' },

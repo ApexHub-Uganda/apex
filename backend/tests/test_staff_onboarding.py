@@ -114,6 +114,62 @@ class TestStaffOnboarding:
         assert staff.user.must_change_password is True
         mock_send.assert_called_once()
 
+    @patch("apps.staff.portal_credentials.EmailService.send")
+    def test_api_create_non_teacher_with_empty_years_experience(self, mock_send, tenant, school_admin):
+        """Switching role away from teacher often leaves teacher.years_experience as ''."""
+        mock_send.return_value = type("Result", (), {"success": True, "message": ""})()
+        client = APIClient()
+        client.force_authenticate(user=school_admin)
+        response = client.post(
+            "/api/v1/staff/",
+            {
+                "first_name": "Lib",
+                "last_name": "Rarian",
+                "email": "librarian.emptyyears@test.edu",
+                "phone": "+254722222222",
+                "portal_role": UserRole.LIBRARIAN,
+                "has_portal_access": True,
+                # Mimic browser form: nested teacher left over from teacher role default
+                "teacher": {
+                    "qualification": "",
+                    "specialization": "",
+                    "years_experience": "",
+                    "is_class_teacher": False,
+                },
+            },
+            format="json",
+        )
+        assert response.status_code == 201, response.content
+        body = response.json()
+        assert body["success"] is True
+        staff = Staff.objects.get(email="librarian.emptyyears@test.edu")
+        assert staff.portal_role == UserRole.LIBRARIAN
+        assert not Teacher.objects.filter(staff=staff).exists()
+
+    @patch("apps.staff.portal_credentials.EmailService.send")
+    def test_api_create_teacher_without_years_experience(self, mock_send, tenant, school_admin):
+        """Years of experience is optional; blank creates teacher profile with 0."""
+        mock_send.return_value = type("Result", (), {"success": True, "message": ""})()
+        client = APIClient()
+        client.force_authenticate(user=school_admin)
+        response = client.post(
+            "/api/v1/staff/",
+            {
+                "first_name": "Teach",
+                "last_name": "Er",
+                "email": "teacher.noyears@test.edu",
+                "phone": "+254733333333",
+                "portal_role": UserRole.TEACHER,
+                "has_portal_access": True,
+                "teacher": {"years_experience": ""},
+            },
+            format="json",
+        )
+        assert response.status_code == 201, response.content
+        staff = Staff.objects.get(email="teacher.noyears@test.edu")
+        assert Teacher.objects.filter(staff=staff).exists()
+        assert staff.teacher_profile.years_experience == 0
+
     def test_role_options_endpoint(self, school_admin):
         client = APIClient()
         client.force_authenticate(user=school_admin)

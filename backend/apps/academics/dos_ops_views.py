@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from apps.academics.models import AssessmentScheme, StudentSubjectRegistration, SubjectCombination
 from apps.academics.services.certificates import (
     build_academic_transcript_pdf,
+    build_completion_certificate_pdf,
     build_leaving_certificate_pdf,
 )
 from apps.academics.services.dos_ops import (
@@ -185,6 +186,38 @@ class AcademicTranscriptPdfView(APIView):
         return pdf_attachment_response(
             pdf_bytes=pdf,
             filename=f"transcript-{student.admission_number}.pdf".replace(" ", "-"),
+        )
+
+
+class CompletionCertificatePdfView(APIView):
+    """Certificate of Completion for learners who finished the top/final class."""
+
+    permission_classes = [IsAuthenticated, IsStaffMember, TenantActivePermission]
+
+    def get_permissions(self):
+        return [
+            IsAuthenticated(), IsStaffMember(), TenantActivePermission(),
+            RequiresFeature("student_promotion")(),
+        ]
+
+    def get(self, request: Request, student_id=None):
+        student = (
+            Student.objects.filter(tenant=request.user.tenant, pk=student_id, is_deleted=False)
+            .select_related("school_class", "school_class__academic_year")
+            .first()
+        )
+        if not student:
+            return Response({"success": False, "message": "Student not found."}, status=404)
+        pdf = build_completion_certificate_pdf(
+            tenant=request.user.tenant,
+            student=student,
+            final_class_name=request.query_params.get("class_name") or "",
+            academic_year_name=request.query_params.get("year_name") or "",
+            request=request,
+        )
+        return pdf_attachment_response(
+            pdf_bytes=pdf,
+            filename=f"completion-cert-{student.admission_number}.pdf".replace(" ", "-"),
         )
 
 

@@ -536,7 +536,7 @@ export const assignmentGradeService = {
 export const promotionService = {
   context: () => api.get('/academics/promotion/context/').then((r) => unwrapData(r)),
   preview: (payload) => api.post('/academics/promotion/preview/', payload).then((r) => unwrapData(r)),
-  commit: (batchId) => api.post(`/academics/promotion/${batchId}/commit/`).then((r) => unwrapData(r)),
+  commit: (batchId, payload = {}) => api.post(`/academics/promotion/${batchId}/commit/`, payload).then((r) => unwrapData(r)),
   undo: (batchId) => api.post(`/academics/promotion/${batchId}/undo/`).then((r) => unwrapData(r)),
 };
 export const academicReportCardsService = {
@@ -595,12 +595,28 @@ export const subjectRegistrationsService = createCrudService('/academics/subject
 
 export const academicCertificatesService = {
   leaving: async (studentId, params = {}) => {
-    const r = await api.get(`/academics/certificates/${studentId}/leaving.pdf`, { params, responseType: 'blob' });
-    return r.data;
+    await downloadAuthenticatedFile(
+      `/academics/certificates/${studentId}/leaving.pdf`,
+      params,
+      `leaving-cert-${studentId}.pdf`,
+      ['pdf'],
+    );
   },
   transcript: async (studentId) => {
-    const r = await api.get(`/academics/certificates/${studentId}/transcript.pdf`, { responseType: 'blob' });
-    return r.data;
+    await downloadAuthenticatedFile(
+      `/academics/certificates/${studentId}/transcript.pdf`,
+      {},
+      `transcript-${studentId}.pdf`,
+      ['pdf'],
+    );
+  },
+  completion: async (studentId, params = {}) => {
+    await downloadAuthenticatedFile(
+      `/academics/certificates/${studentId}/completion.pdf`,
+      params,
+      `completion-cert-${studentId}.pdf`,
+      ['pdf'],
+    );
   },
 };
 export const examsService = {
@@ -630,7 +646,14 @@ export const examsService = {
     return { ...(body?.data ?? body), message: body?.message, success: body?.success };
   }),
 };
-export const examinationSessionsService = createCrudService('/examinations/sessions/');
+export const examinationSessionsService = {
+  ...createCrudService('/examinations/sessions/'),
+  // Used by EntityListPage rowActions (activate / close)
+  update: (id, payload) => api.patch(`/examinations/sessions/${id}/`, payload).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message || 'Exam session updated.' };
+  }),
+};
 export const classNoticesService = {
   ...createCrudService('/academics/class-notices/'),
   publish: (id) => api.post(`/academics/class-notices/${id}/publish/`).then((r) => {
@@ -665,6 +688,52 @@ export const classAttendanceService = {
       const body = r?.data ?? r;
       return { ...(body?.data ?? body), message: body?.message, success: body?.success };
     }),
+};
+/** School admin campus perimeter (OpenStreetMap geofence). */
+export const schoolGeofenceService = {
+  get: () => api.get('/attendance/geofence/').then((r) => unwrapData(r)),
+  save: (payload) =>
+    api.put('/attendance/geofence/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+    }),
+};
+/** Staff self check-in / check-out with GPS + location dry-run. */
+export const staffGeoAttendanceService = {
+  status: () => api.get('/attendance/staff/status/').then((r) => unwrapData(r)),
+  checkIn: (payload) =>
+    api.post('/attendance/staff/check-in/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+    }),
+  checkOut: (payload = {}) =>
+    api.post('/attendance/staff/check-out/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+    }),
+  checkLocation: (payload) =>
+    api.post('/attendance/location-check/', payload).then((r) => unwrapData(r)),
+};
+export const attendanceSessionsHistoryService = {
+  recent: (params = {}) =>
+    api.get('/attendance/sessions/recent/', { params }).then((r) => unwrapData(r)),
+  detail: (sessionKey) =>
+    api.get(`/attendance/sessions/${encodeURIComponent(sessionKey)}/`).then((r) => unwrapData(r)),
+  pdf: async (sessionKey) => {
+    const r = await api.get(
+      `/attendance/sessions/${encodeURIComponent(sessionKey)}/pdf/`,
+      { responseType: 'blob' },
+    );
+    const blob = r.data;
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `attendance-session-${String(sessionKey).replace(/[:/]/g, '-')}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };
 export const booksService = createCrudService('/library/books/');
 export const borrowsService = createCrudService('/library/borrows/');

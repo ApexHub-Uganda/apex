@@ -310,7 +310,7 @@ class TestAcademicSingleton:
         assert meta.get("can_edit") is True
         assert meta.get("school_admin_can_manage") is True
 
-    def test_dos_cannot_change_exam_session_status(
+    def test_dos_can_change_exam_session_status(
         self, api_client, dos_user, school_admin_user, active_year_and_term, singleton_plan,
     ):
         from apps.examinations.models import ExaminationSession
@@ -331,25 +331,27 @@ class TestAcademicSingleton:
             end_date=date(2026, 3, 20),
             status="active",
         )
+        # DoS may manage exam period lifecycle (edit / end / status)
         api_client.force_authenticate(user=dos_user)
         response = api_client.patch(
             f"/api/v1/examinations/sessions/{session.id}/",
             {"status": "closed"},
             format="json",
         )
-        assert response.status_code == 403
+        assert response.status_code == 200, response.content
         session.refresh_from_db()
-        assert session.status == "active"
+        assert session.status == "closed"
 
+        # School admin can re-open
         api_client.force_authenticate(user=school_admin_user)
         ok = api_client.patch(
             f"/api/v1/examinations/sessions/{session.id}/",
-            {"status": "closed"},
+            {"status": "active", "end_date": "2026-03-25"},
             format="json",
         )
         assert ok.status_code == 200
         session.refresh_from_db()
-        assert session.status == "closed"
+        assert session.status == "active"
 
     def test_school_admin_still_cannot_create_second_term_while_active(
         self, api_client, school_admin_user, active_year_and_term,

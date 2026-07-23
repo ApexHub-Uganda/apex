@@ -83,6 +83,9 @@ class ClassAttendanceBulkView(APIView):
                 mark_date=request.data.get("date"),
                 check_in=request.data.get("check_in"),
                 entries=entries,
+                lat=request.data.get("lat"),
+                lng=request.data.get("lng"),
+                accuracy_m=request.data.get("accuracy_m") or request.data.get("accuracy"),
             )
         except ClassAttendanceError as exc:
             status_code = status.HTTP_400_BAD_REQUEST

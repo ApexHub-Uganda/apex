@@ -144,6 +144,8 @@ class TestPromotionAndReports:
         api_client.force_authenticate(user=school_ctx["admin"])
         r = api_client.get("/api/v1/academics/promotion/context/")
         assert r.status_code == 200
+        classes = r.data["data"]["classes"]
+        assert any("is_terminal" in c for c in classes)
         r = api_client.post("/api/v1/academics/promotion/preview/", {
             "source_class": str(school_ctx["c1"].id),
             "target_class": str(school_ctx["c2"].id),
@@ -151,8 +153,49 @@ class TestPromotionAndReports:
         }, format="json")
         assert r.status_code == 200, r.data
         batch_id = r.data["data"]["batch_id"]
-        r2 = api_client.post(f"/api/v1/academics/promotion/{batch_id}/commit/")
+        r2 = api_client.post(
+            f"/api/v1/academics/promotion/{batch_id}/commit/",
+            {"issue_certificates": True},
+            format="json",
+        )
         assert r2.status_code == 200
+
+    def test_terminal_class_defaults_to_graduate(self, tenant, school_admin):
+        from apps.academics.models import AcademicYear, Class
+        from apps.academics.services.promotion import is_terminal_class, preview_promotion
+        from apps.students.models import Student
+        from datetime import date
+
+        year = AcademicYear.objects.create(
+            tenant=tenant, name="2026", start_date=date(2026, 1, 1), end_date=date(2026, 12, 31), is_current=True,
+        )
+        p7 = Class.objects.create(
+            tenant=tenant, name="Primary 7", code="P7", academic_year=year, level_type="primary",
+        )
+        assert is_terminal_class(p7) is True
+        s = Student.objects.create(
+            tenant=tenant, admission_number="P7-1", first_name="Top", last_name="Class",
+            date_of_birth=date(2012, 1, 1), gender="male", school_class=p7,
+            enrollment_date=date(2026, 1, 1), status="active",
+        )
+        preview = preview_promotion(
+            tenant=tenant, user=school_admin, source_class_id=str(p7.id),
+        )
+        assert preview["progression"]["is_terminal"] is True
+        assert preview["preview"]["graduate"] == 1
+        assert all(r["action"] == "graduate" for r in preview["rows"])
+        assert s.admission_number == "P7-1"
+
+    def test_completion_certificate_pdf(self, tenant, school_ctx):
+        from apps.academics.services.certificates import build_completion_certificate_pdf
+
+        pdf = build_completion_certificate_pdf(
+            tenant=tenant,
+            student=school_ctx["s1"],
+            final_class_name=school_ctx["c1"].name,
+            academic_year_name=school_ctx["year"].name,
+        )
+        assert pdf.startswith(b"%PDF")
 
     def test_report_generate_api(self, api_client, school_ctx):
         api_client.force_authenticate(user=school_ctx["admin"])

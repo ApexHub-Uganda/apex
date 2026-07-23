@@ -297,7 +297,7 @@ export const ENTITY_REGISTRY_EXTRAS = {
 
   assessment_management: redirectEntry(
     '/school-admin/examinations/assessments',
-    'Publish draft assessments for marks entry',
+    'Promote learners, issue completion certificates, and publish draft exams',
     { to: '/school-admin/examinations', label: 'Examinations' },
   ),
 
@@ -336,7 +336,7 @@ export const ENTITY_REGISTRY_EXTRAS = {
     queryKey: ['examination-sessions'],
     singleton: { type: 'examination_session', title: 'Current exam period' },
     createLabel: 'Add Exam Session',
-    subtitle: 'School-wide examination windows and calendars — only one open period at a time',
+    subtitle: 'School-wide examination windows — open one period, edit or end it anytime. Mark sheets are created for assigned teachers automatically.',
     backLink: { to: '/school-admin/examinations', label: 'Examinations' },
     columns: [
       { key: 'name', label: 'Session', accessor: 'name', sortable: true },
@@ -354,15 +354,42 @@ export const ENTITY_REGISTRY_EXTRAS = {
       { name: 'end_date', label: 'End Date', type: 'date', required: true },
       { name: 'status', label: 'Status', type: 'select', options: [
         { value: 'planned', label: 'Planned' },
-        { value: 'active', label: 'Active' },
+        { value: 'active', label: 'Active (open for marks)' },
         { value: 'closed', label: 'Closed' },
       ] },
       { name: 'description', label: 'Description', type: 'textarea' },
     ],
     emptyForm: {
       name: '', academic_year: '', term: '', start_date: '', end_date: '',
-      status: 'planned', description: '',
+      status: 'active', description: '',
     },
+    rowActions: [
+      {
+        key: 'activate',
+        label: 'Activate',
+        action: 'update',
+        variant: 'primary',
+        show: (row) => row.status === 'planned' || row.status === 'closed',
+        payload: () => ({ status: 'active' }),
+        confirm: {
+          title: 'Activate exam period?',
+          text: 'Teachers will be able to enter marks. Mark sheets are provisioned for assigned subjects.',
+          confirmText: 'Yes, activate',
+        },
+      },
+      {
+        key: 'close',
+        label: 'Close',
+        action: 'update',
+        show: (row) => row.status === 'active' || row.status === 'planned',
+        payload: () => ({ status: 'closed', end_date: new Date().toISOString().slice(0, 10) }),
+        confirm: {
+          title: 'Close exam period?',
+          text: 'A new exam period can be created after this is closed. Entered marks are kept.',
+          confirmText: 'Yes, close',
+        },
+      },
+    ],
   },
 
   class_notices: {
@@ -460,57 +487,17 @@ export const ENTITY_REGISTRY_EXTRAS = {
   },
 
   // ── Attendance ──────────────────────────────────────────────────────────
-  attendance_sessions: {
-    service: attendanceService,
-    queryKey: ['attendance-sessions'],
-    createLabel: 'Record Session',
-    subtitle: 'Attendance session records by date, type, and status',
-    backLink: { to: '/school-admin/attendance', label: 'Attendance' },
-    columns: [
-      { key: 'date', label: 'Date', accessor: 'date', sortable: true },
-      { key: 'attendee_type', label: 'Type', accessor: 'attendee_type' },
-      { key: 'status', label: 'Status', accessor: 'status' },
-    ],
-    formFields: [
-      { name: 'attendee_type', label: 'Type', type: 'select', required: true, options: [
-        { value: 'student', label: 'Student' },
-        { value: 'staff', label: 'Staff' },
-      ] },
-      { name: 'student', label: 'Student', type: 'select', optionsFrom: 'students' },
-      { name: 'staff', label: 'Staff', type: 'select', optionsFrom: 'staff' },
-      { name: 'date', label: 'Date', type: 'date', required: true },
-      { name: 'status', label: 'Status', type: 'select', required: true, options: attendanceStatusOptions },
-      { name: 'remarks', label: 'Remarks', type: 'textarea' },
-    ],
-    emptyForm: {
-      attendee_type: 'student', student: '', staff: '',
-      date: new Date().toISOString().slice(0, 10), status: 'present', remarks: '',
-    },
-  },
+  attendance_sessions: redirectEntry(
+    '/school-admin/attendance/sessions',
+    'Recent class and lesson attendance rolls with present/absent summary and print',
+    { to: '/school-admin/attendance', label: 'Attendance' },
+  ),
 
-  staff_attendance: {
-    service: attendanceService,
-    queryKey: ['staff-attendance'],
-    createLabel: 'Mark Staff Attendance',
-    subtitle: 'Daily staff attendance records',
-    backLink: { to: '/school-admin/attendance', label: 'Attendance' },
-    columns: [
-      { key: 'date', label: 'Date', accessor: 'date', sortable: true },
-      { key: 'staff', label: 'Staff', accessor: 'staff' },
-      { key: 'status', label: 'Status', accessor: 'status' },
-    ],
-    formFields: [
-      { name: 'attendee_type', label: 'Type', type: 'hidden', defaultValue: 'staff' },
-      { name: 'staff', label: 'Staff', type: 'select', required: true, optionsFrom: 'staff' },
-      { name: 'date', label: 'Date', type: 'date', required: true },
-      { name: 'status', label: 'Status', type: 'select', required: true, options: attendanceStatusOptions },
-      { name: 'remarks', label: 'Remarks' },
-    ],
-    emptyForm: {
-      attendee_type: 'staff', staff: '',
-      date: new Date().toISOString().slice(0, 10), status: 'present', remarks: '',
-    },
-  },
+  staff_attendance: redirectEntry(
+    '/school-admin/attendance/staff',
+    'GPS staff sign-in / sign-out within the school campus boundary',
+    { to: '/school-admin/attendance', label: 'Attendance' },
+  ),
 
   // ── Finance & payroll ───────────────────────────────────────────────────
   fee_categories: {

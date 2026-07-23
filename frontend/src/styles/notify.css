@@ -75,6 +75,87 @@
   margin: 0.75rem auto 0.5rem !important;
 }
 
+/* Headed paper — compact page-count dialog */
+.apex-swal-headed-paper {
+  width: min(420px, 92vw) !important;
+}
+
+.apex-headed-paper-hint {
+  text-align: left;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--apex-text-muted, #64748b);
+  margin: 0 0 1rem;
+}
+
+.apex-headed-paper-field {
+  text-align: left;
+  margin: 0 auto;
+  max-width: 220px;
+}
+
+.apex-headed-paper-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--apex-text-muted, #64748b);
+  margin-bottom: 0.4rem;
+}
+
+.apex-headed-paper-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.apex-headed-paper-input {
+  width: 5.5rem !important;
+  max-width: 5.5rem !important;
+  flex: 0 0 5.5rem;
+  height: 2.5rem;
+  padding: 0.4rem 0.65rem !important;
+  border: 1px solid var(--apex-border, #e2e8f0) !important;
+  border-radius: 10px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  color: var(--apex-text, #1e293b) !important;
+  background: var(--apex-surface, #fff) !important;
+  box-shadow: none !important;
+}
+
+.apex-headed-paper-input:focus {
+  outline: none !important;
+  border-color: var(--apex-primary, #0f766e) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--apex-primary, #0f766e) 22%, transparent) !important;
+}
+
+/* Hide spinner arrows for a cleaner look (Chrome/Safari/Edge) */
+.apex-headed-paper-input::-webkit-outer-spin-button,
+.apex-headed-paper-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.apex-headed-paper-input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.apex-headed-paper-suffix {
+  font-size: 0.8125rem;
+  color: var(--apex-text-muted, #94a3b8);
+  white-space: nowrap;
+}
+
+.apex-swal-headed-paper .swal2-validation-message {
+  margin-top: 0.75rem !important;
+  border-radius: 10px !important;
+  font-size: 0.8125rem !important;
+}
+
 /* Compact loading modal — minimal modern animation, no heavy chrome */
 .apex-swal-loading {
   padding: 1.85rem 1.5rem 1.6rem !important;

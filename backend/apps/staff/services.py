@@ -29,6 +29,16 @@ def _coerce_uuid_pk(value: Any) -> Any:
     return value
 
 
+def _coerce_years_experience(value: Any) -> int:
+    """Optional onboarding field — empty/invalid values default to 0."""
+    if value in (None, ""):
+        return 0
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError):
+        return 0
+
+
 def _next_employee_id(tenant) -> str:
     prefix = tenant.code or "EMP"
     count = Staff.all_objects.filter(tenant=tenant).count() + 1
@@ -151,7 +161,7 @@ def onboard_staff(
             staff=staff,
             qualification=teacher_data.get("qualification", data.get("qualification_summary", "")),
             specialization=teacher_data.get("specialization", ""),
-            years_experience=teacher_data.get("years_experience", 0),
+            years_experience=_coerce_years_experience(teacher_data.get("years_experience")),
             is_class_teacher=bool(teacher_data.get("is_class_teacher", False)),
             created_by=actor,
             updated_by=actor,

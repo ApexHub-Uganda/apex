@@ -16,8 +16,9 @@ import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError } from '../../utils/notify';
 
 /**
- * Results workspace — view entered marks for classes in scope.
- * Capabilities drive which actions appear; role labels are never shown.
+ * Results workspace — class marks matrix with one column per subject + average.
+ * Subject teachers see approved marks for all subjects in taught classes;
+ * they only edit their assigned subjects via Marks Entry.
  */
 export function ExaminationResults() {
   const { canReadFeature } = usePermissions();
@@ -29,6 +30,7 @@ export function ExaminationResults() {
   const [term, setTerm] = useState('');
   const [schoolClass, setSchoolClass] = useState('');
   const [stream, setStream] = useState('');
+  const [showExamDetail, setShowExamDetail] = useState(false);
 
   const { data: caps, isLoading: capsLoading } = useQuery({
     queryKey: ['results-capabilities'],
@@ -93,17 +95,20 @@ export function ExaminationResults() {
   const subjects = overview?.subjects || [];
   const students = overview?.students || [];
 
-  const columns = useMemo(() => {
+  const examColumns = useMemo(() => {
     const cols = [];
     subjects.forEach((sub) => {
       (sub.exams || []).forEach((exam) => {
         cols.push({
           key: exam.id,
+          subjectId: sub.id,
           subject: sub.name,
           subjectCode: sub.code,
           examName: exam.name,
           paper: exam.paper,
           maxScore: exam.max_score,
+          marksStatus: exam.marks_status,
+          canEdit: Boolean(exam.can_edit || sub.can_edit),
         });
       });
     });
@@ -121,6 +126,10 @@ export function ExaminationResults() {
     );
   }
 
+  const visibilityNote = overview?.visibility?.approved_only_for_other_subjects
+    ? 'Other subjects appear only after their marks are approved. You can edit scores only for subjects assigned to you.'
+    : 'Read-only class matrix. Use Marks Entry to edit scores for subjects you teach.';
+
   return (
     <div>
       <div className="mb-3">
@@ -131,7 +140,7 @@ export function ExaminationResults() {
 
       <PageHeader
         title="Results"
-        subtitle="View entered marks by term and class. This view is read-only."
+        subtitle="All subjects in separate columns with class average. Approved marks are visible class-wide; edits stay on assigned subjects only."
         actions={(
           <div className="d-flex flex-wrap gap-2">
             {canEnter && (
@@ -155,11 +164,11 @@ export function ExaminationResults() {
 
       <div className="apex-card apex-card--responsive p-3 p-md-4 mb-4">
         <div className="row g-3 align-items-end apex-form-grid">
-          <div className="col-12 col-sm-6 col-lg-4">
+          <div className="col-12 col-sm-6 col-lg-3">
             <label className="form-label small fw-semibold">Term</label>
             <SearchableSelect options={termOptions} value={term} onChange={setTerm} placeholder="Select term…" />
           </div>
-          <div className="col-12 col-sm-6 col-lg-4">
+          <div className="col-12 col-sm-6 col-lg-3">
             <label className="form-label small fw-semibold">Class</label>
             <SearchableSelect
               options={classOptions}
@@ -169,11 +178,25 @@ export function ExaminationResults() {
             />
           </div>
           {streamOptions.length > 0 && (
-            <div className="col-12 col-sm-6 col-lg-4">
+            <div className="col-12 col-sm-6 col-lg-3">
               <label className="form-label small fw-semibold">Stream (optional)</label>
               <SearchableSelect options={streamOptions} value={stream} onChange={setStream} placeholder="Whole class" allowClear />
             </div>
           )}
+          <div className="col-12 col-sm-6 col-lg-3">
+            <div className="form-check form-switch mt-4">
+              <input
+                type="checkbox"
+                className="form-check-input"
+                id="showExamDetail"
+                checked={showExamDetail}
+                onChange={(e) => setShowExamDetail(e.target.checked)}
+              />
+              <label className="form-check-label small" htmlFor="showExamDetail">
+                Show per-exam columns
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -182,7 +205,7 @@ export function ExaminationResults() {
           <ModuleEmptyState
             icon={FiAward}
             title="Select term and class"
-            message="Choose a term and class to view entered subject marks."
+            message="Choose a term and class to view subject marks and averages."
           />
         </div>
       ) : isLoading ? (
@@ -198,14 +221,14 @@ export function ExaminationResults() {
             message="There are no active students for the selected class and stream."
           />
         </div>
-      ) : columns.length === 0 ? (
+      ) : subjects.length === 0 ? (
         <div className="apex-card p-5">
           <ModuleEmptyState
             title="No assessments with marks yet"
             message={
               canEnter
-                ? 'Enter marks under Marks Entry, then apply a grading scheme under Grade Calculation.'
-                : 'No marks have been entered for this class and term yet.'
+                ? 'Enter marks under Marks Entry, then apply a grading scheme under Grade Calculation. Other subjects appear here once approved.'
+                : 'No approved (or own-subject) marks are available for this class and term yet.'
             }
             actionLabel={canEnter ? 'Go to marks entry' : undefined}
             actionHref={canEnter ? '/school-admin/examinations/marks' : undefined}
@@ -219,8 +242,9 @@ export function ExaminationResults() {
                 {overview?.school_class?.name} · {overview?.term?.name}
               </h5>
               <p className="text-muted small mb-0">
-                {overview?.student_count} student(s) · {overview?.exam_count} assessment(s)
+                {overview?.student_count} student(s) · {subjects.length} subject(s) · {overview?.exam_count} assessment(s)
               </p>
+              <p className="text-muted small mb-0 mt-1">{visibilityNote}</p>
             </div>
             {canPrint && (
               <Link
@@ -237,7 +261,16 @@ export function ExaminationResults() {
                 <tr>
                   <th className="sticky-col">Adm #</th>
                   <th className="sticky-col sticky-col-2">Student</th>
-                  {columns.map((col) => (
+                  {subjects.map((sub) => (
+                    <th key={sub.id} className="text-center" style={{ whiteSpace: 'nowrap', padding: '0.3rem 0.45rem' }}>
+                      <div className="small fw-semibold text-nowrap">{sub.code || sub.name}</div>
+                      <div className="text-muted text-nowrap" style={{ fontSize: '0.65rem' }}>
+                        {sub.can_edit ? 'Your subject' : 'Approved'}
+                      </div>
+                    </th>
+                  ))}
+                  <th className="text-center fw-semibold">Average</th>
+                  {showExamDetail && examColumns.map((col) => (
                     <th key={col.key} className="text-center" style={{ whiteSpace: 'nowrap', padding: '0.3rem 0.45rem' }}>
                       <div className="small fw-semibold text-nowrap">{col.subjectCode || col.subject}</div>
                       <div className="text-muted text-nowrap" style={{ fontSize: '0.65rem' }}>
@@ -252,7 +285,27 @@ export function ExaminationResults() {
                   <tr key={student.id}>
                     <td className="sticky-col text-muted small">{student.admission_number}</td>
                     <td className="sticky-col sticky-col-2 fw-medium text-nowrap">{student.full_name}</td>
-                    {columns.map((col) => {
+                    {subjects.map((sub) => {
+                      const total = student.subject_totals?.[sub.id];
+                      return (
+                        <td key={sub.id} className="text-center font-monospace small">
+                          {total?.score != null && total.score !== '' ? (
+                            <span title={total.grade || undefined}>
+                              {total.score}
+                              {total.grade ? (
+                                <span className="ms-1 badge text-bg-primary-subtle border text-primary">{total.grade}</span>
+                              ) : null}
+                            </span>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
+                        </td>
+                      );
+                    })}
+                    <td className="text-center font-monospace small fw-semibold">
+                      {student.average != null && student.average !== '' ? student.average : <span className="text-muted">—</span>}
+                    </td>
+                    {showExamDetail && examColumns.map((col) => {
                       const cell = student.marks?.[col.key];
                       return (
                         <td key={col.key} className="text-center font-monospace small">
