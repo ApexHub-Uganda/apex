@@ -68,7 +68,8 @@ def marks_scope_meta(tenant, user) -> dict:
             "end_date": exam_period.end_date.isoformat() if exam_period.end_date else None,
             "term_id": str(exam_period.term_id) if exam_period.term_id else None,
             "term_name": exam_period.term.name if exam_period.term_id else None,
-            "is_active": exam_period.status == EXAMINATION_SESSION_ACTIVE,
+            # Open for marks whenever the period is returned by resolve_active_exam_period
+            "is_active": True,
         }
     return {
         # Always assignment-scoped for marks write (admin/DoS cannot enter marks)
@@ -281,6 +282,46 @@ def marks_exam_queryset(
     return qs.order_by("-exam_date", "name")
 
 
+def _create_period_exam(
+    *,
+    tenant,
+    period,
+    term,
+    subject,
+    school_class,
+    paper=None,
+    actor=None,
+):
+    from django.utils import timezone
+
+    from apps.examinations.models import Exam
+
+    paper_label = f" ({paper.code})" if paper is not None else ""
+    name = f"{period.name} — {subject.name}{paper_label}"
+    if len(name) > 255:
+        name = name[:252] + "…"
+
+    return Exam.objects.create(
+        tenant=tenant,
+        name=name,
+        subject_id=subject.id,
+        school_class_id=school_class.id,
+        paper_id=paper.id if paper is not None else None,
+        term=term,
+        examination_session=period,
+        exam_date=period.start_date or timezone.now().date(),
+        max_score=100,
+        weight=100,
+        exam_type="final",
+        lifecycle_status=EXAM_LIFECYCLE_PUBLISHED,
+        published_at=timezone.now(),
+        published_by=actor,
+        marks_status=MARKS_STATUS_DRAFT,
+        created_by=actor,
+        updated_by=actor,
+    )
+
+
 def ensure_marks_sheet_for_pair(
     tenant,
     user,
@@ -290,17 +331,18 @@ def ensure_marks_sheet_for_pair(
     paper_id=None,
 ):
     """
-    Guarantee a mark sheet exists for this teacher pair under the active exam period.
+    Guarantee mark sheet(s) exist for this teacher pair under the active exam period.
 
-    Exam Sessions are calendar windows only — they do not create per-subject mark
-    sheets. When a teacher opens marks entry for a taught subject/class during an
-    open exam period, we get-or-create a ready-to-use Exam linked to that period.
+    - Specific paper requested → one sheet for that paper
+    - Subject has papers and no paper chosen → provision every paper
+    - Subject has no papers → one whole-subject sheet
     """
-    from django.utils import timezone
-
+    from apps.academics.models import SubjectPaper
     from apps.examinations.models import Exam
 
-    if not user_teaches_pair(user, subject_id=subject_id, school_class_id=school_class_id):
+    if user is not None and not user_teaches_pair(
+        user, subject_id=subject_id, school_class_id=school_class_id,
+    ):
         return None
 
     period = resolve_active_exam_period(tenant)
@@ -311,25 +353,74 @@ def ensure_marks_sheet_for_pair(
     active_term = resolve_current_term(tenant)
     term = period.term or active_term
 
+    subject = Subject.objects.filter(tenant=tenant, pk=subject_id, is_deleted=False).first()
+    school_class = Class.objects.filter(tenant=tenant, pk=school_class_id, is_deleted=False).first()
+    if subject is None or school_class is None:
+        return None
+
+    papers = list(
+        SubjectPaper.objects.filter(tenant=tenant, subject_id=subject_id, is_deleted=False)
+        .order_by("sort_order", "code")
+    )
+
+    # Multi-paper subject, no paper filter: ensure one sheet per paper
+    if paper_uuid is None and papers:
+        created_or_linked = []
+        for paper in papers:
+            sheet = _ensure_single_sheet(
+                tenant=tenant,
+                period=period,
+                term=term,
+                subject=subject,
+                school_class=school_class,
+                paper=paper,
+                actor=user,
+            )
+            if sheet is not None:
+                created_or_linked.append(sheet)
+        return created_or_linked[0] if created_or_linked else None
+
+    paper = None
+    if paper_uuid is not None:
+        paper = next((p for p in papers if p.id == paper_uuid), None)
+        if paper is None:
+            paper = SubjectPaper.objects.filter(
+                tenant=tenant, pk=paper_uuid, subject_id=subject_id, is_deleted=False,
+            ).first()
+
+    return _ensure_single_sheet(
+        tenant=tenant,
+        period=period,
+        term=term,
+        subject=subject,
+        school_class=school_class,
+        paper=paper,
+        actor=user,
+    )
+
+
+def _ensure_single_sheet(
+    *,
+    tenant,
+    period,
+    term,
+    subject,
+    school_class,
+    paper=None,
+    actor=None,
+):
+    from apps.examinations.models import Exam
+
     base = Exam.objects.filter(
         tenant=tenant,
-        subject_id=subject_id,
-        school_class_id=school_class_id,
+        subject_id=subject.id,
+        school_class_id=school_class.id,
         is_deleted=False,
     ).exclude(exam_type="assignment").exclude(lifecycle_status=EXAM_LIFECYCLE_ARCHIVED)
 
-    if paper_uuid is not None:
-        base = base.filter(paper_id=paper_uuid)
+    if paper is not None:
+        base = base.filter(paper_id=paper.id)
     else:
-        # Prefer whole-subject sheet when no paper chosen; fall back to any paper.
-        whole = base.filter(paper__isnull=True).first()
-        if whole is not None:
-            base_match = whole
-        else:
-            base_match = base.first()
-        if base_match is not None:
-            _link_exam_to_period(base_match, period=period, term=term, user=user)
-            return base_match
         base = base.filter(paper__isnull=True)
 
     existing = (
@@ -338,46 +429,72 @@ def ensure_marks_sheet_for_pair(
         or base.first()
     )
     if existing is not None:
-        _link_exam_to_period(existing, period=period, term=term, user=user)
+        _link_exam_to_period(existing, period=period, term=term, user=actor)
         return existing
 
-    subject = Subject.objects.filter(tenant=tenant, pk=subject_id, is_deleted=False).first()
-    school_class = Class.objects.filter(tenant=tenant, pk=school_class_id, is_deleted=False).first()
-    if subject is None or school_class is None:
-        return None
-
-    paper_label = ""
-    if paper_uuid is not None:
-        from apps.academics.models import SubjectPaper
-        paper = SubjectPaper.objects.filter(tenant=tenant, pk=paper_uuid, subject_id=subject_id).first()
-        if paper is not None:
-            paper_label = f" ({paper.code})"
-
-    name = f"{period.name} — {subject.name}{paper_label}"
-    if len(name) > 255:
-        name = name[:252] + "…"
-
-    exam_date = period.start_date or timezone.now().date()
-    exam = Exam.objects.create(
+    return _create_period_exam(
         tenant=tenant,
-        name=name,
-        subject_id=subject_id,
-        school_class_id=school_class_id,
-        paper_id=paper_uuid,
+        period=period,
         term=term,
-        examination_session=period,
-        exam_date=exam_date,
-        max_score=100,
-        weight=100,
-        exam_type="final",
-        lifecycle_status=EXAM_LIFECYCLE_PUBLISHED,
-        published_at=timezone.now(),
-        published_by=user,
-        marks_status=MARKS_STATUS_DRAFT,
-        created_by=user,
-        updated_by=user,
+        subject=subject,
+        school_class=school_class,
+        paper=paper,
+        actor=actor,
     )
-    return exam
+
+
+def provision_period_mark_sheets(*, tenant, period, actor=None) -> int:
+    """
+    Create/link mark sheets for every active teaching assignment under *period*.
+
+    Called when an exam session is created or activated so Marks Entry is not empty.
+    """
+    from apps.academics.models import TeachingAssignment, Timetable
+    from apps.examinations.models import Exam
+
+    if period is None or tenant is None:
+        return 0
+
+    pairs: set[tuple] = set()
+    for row in TeachingAssignment.objects.filter(
+        tenant=tenant, is_deleted=False, is_active=True,
+    ).values_list("subject_id", "school_class_id"):
+        if row[0] and row[1]:
+            pairs.add(row)
+
+    if not pairs:
+        for row in Timetable.objects.filter(
+            tenant=tenant, is_deleted=False,
+        ).values_list("subject_id", "school_class_id").distinct():
+            if row[0] and row[1]:
+                pairs.add(row)
+
+    created = 0
+    for subject_id, school_class_id in pairs:
+        before = Exam.objects.filter(
+            tenant=tenant,
+            subject_id=subject_id,
+            school_class_id=school_class_id,
+            examination_session_id=period.id,
+            is_deleted=False,
+        ).count()
+        # user=None bypasses teaching-pair check for school-wide provisioning
+        ensure_marks_sheet_for_pair(
+            tenant,
+            None,
+            subject_id=subject_id,
+            school_class_id=school_class_id,
+            paper_id=None,
+        )
+        after = Exam.objects.filter(
+            tenant=tenant,
+            subject_id=subject_id,
+            school_class_id=school_class_id,
+            examination_session_id=period.id,
+            is_deleted=False,
+        ).count()
+        created += max(after - before, 0)
+    return created
 
 
 def _link_exam_to_period(exam, *, period, term, user) -> None:

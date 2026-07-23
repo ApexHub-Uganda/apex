@@ -208,7 +208,10 @@ def results_role_capabilities(user) -> dict[str, Any]:
         "teaching_pairs": teaching_pairs,
         "notes": {
             "marks_entry": "Only subject teachers enter/edit/delete marks for assigned subject–class pairs.",
-            "results_view": "Subject teachers see results for their subjects only (no report-card print).",
+            "results_view": (
+                "Subject teachers see all approved subject marks for classes they teach, "
+                "plus their own subjects at any approval stage. They edit only assigned pairs."
+            ),
             "class_teacher": "Class teachers view all subject marks for headed classes, add general remarks, and print report cards.",
             "dos": "Director of Studies may read all results and print report cards for any class (no marks edits).",
         },

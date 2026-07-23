@@ -155,3 +155,22 @@ class TestPortalSearch:
         response = client.get("/api/v1/search/", {"q": "a"})
         assert response.status_code == 200
         assert response.json()["data"]["results"] == []
+
+    def test_school_admin_finds_dual_roles(self, search_school_admin):
+        client = APIClient()
+        client.force_authenticate(user=search_school_admin)
+
+        for query in ("dual", "dual roles", "switch role"):
+            response = client.get("/api/v1/search/", {"q": query})
+            assert response.status_code == 200
+            paths = {item["path"] for item in response.json()["data"]["results"]}
+            assert "/school-admin/settings/dual-roles" in paths, f"missing for query={query!r}"
+
+    def test_school_admin_finds_school_boundary(self, search_school_admin):
+        client = APIClient()
+        client.force_authenticate(user=search_school_admin)
+
+        response = client.get("/api/v1/search/", {"q": "boundary"})
+        assert response.status_code == 200
+        paths = {item["path"] for item in response.json()["data"]["results"]}
+        assert "/school-admin/settings/school-boundary" in paths

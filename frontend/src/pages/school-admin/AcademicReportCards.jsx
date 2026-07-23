@@ -12,7 +12,7 @@ import {
   termsService,
 } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
-import { extractApiError, notify } from '../../utils/notify';
+import { alert, extractApiError, notify } from '../../utils/notify';
 
 export function AcademicReportCards() {
   const queryClient = useQueryClient();
@@ -100,6 +100,7 @@ export function AcademicReportCards() {
   }, [classes, schoolClass]);
 
   const rows = latest?.results || [];
+  const subjectColumns = latest?.subject_columns || [];
 
   const generate = async () => {
     if (!term || !schoolClass) {
@@ -133,7 +134,14 @@ export function AcademicReportCards() {
   const publish = async () => {
     if (!term || !schoolClass) return;
     if (!canPrint) return;
-    if (!window.confirm('Publish these report cards to the parent portal (fee gate still applies)?')) return;
+    const confirmed = await alert.confirm({
+      title: 'Publish report cards?',
+      text: 'Parents will see these report cards on the portal when their fee clearance meets your school results access policy.',
+      confirmText: 'Yes, publish',
+      cancelText: 'Cancel',
+      icon: 'question',
+    });
+    if (!confirmed.isConfirmed) return;
     setBusy(true);
     try {
       const data = await academicReportCardsService.publish({
@@ -171,6 +179,22 @@ export function AcademicReportCards() {
   const columns = [
     { key: 'admission_number', label: 'Adm #', accessor: 'admission_number', sortable: true },
     { key: 'student_name', label: 'Student', accessor: 'student_name', sortable: true },
+    ...subjectColumns.map((col) => ({
+      key: `subj_${col.key}`,
+      label: col.code || col.name,
+      render: (r) => {
+        const cell = r.subject_scores?.[col.key];
+        if (!cell?.total && cell?.total !== 0) return <span className="text-muted">—</span>;
+        return (
+          <span className="font-monospace small" title={cell.grade || undefined}>
+            {cell.total}
+            {cell.grade ? (
+              <span className="ms-1 badge text-bg-primary-subtle border text-primary">{cell.grade}</span>
+            ) : null}
+          </span>
+        );
+      },
+    })),
     { key: 'average_score', label: 'Average', accessor: 'average_score' },
     { key: 'rank', label: 'Class rank', accessor: 'rank' },
     { key: 'stream_rank', label: 'Stream rank', accessor: 'stream_rank' },
@@ -242,8 +266,8 @@ export function AcademicReportCards() {
         title="Report cards & broadsheets"
         subtitle={
           canPrint
-            ? 'Generate and print branded term report cards. Add general remarks per student where available.'
-            : 'Report card generation and print are not available for your account. Use Results to review marks.'
+            ? 'Subject marks, average, and ranks in one table. Generate branded PDFs with white table headers for clear print contrast.'
+            : 'View subject marks and averages for classes in your scope. Use Results for the live marks matrix.'
         }
         actions={(
           <Link to="/school-admin/examinations/results" className="btn btn-outline-secondary btn-sm">

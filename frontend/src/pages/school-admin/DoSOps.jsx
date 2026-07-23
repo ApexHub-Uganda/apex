@@ -7,7 +7,7 @@ import DataTable from '../../components/DataTable';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { dosOpsService, termsService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
-import { extractApiError, notify } from '../../utils/notify';
+import { alert, extractApiError, notify } from '../../utils/notify';
 import { ApexLoader } from '../../components/ApexLoader';
 
 export function DoSOps() {
@@ -77,7 +77,14 @@ export function DoSOps() {
   };
 
   const seedUganda = async () => {
-    if (!window.confirm('Apply Uganda assessment schemes, combinations, and D1–F9 grading presets? Existing named presets are kept.')) return;
+    const confirmed = await alert.confirm({
+      title: 'Apply Uganda presets?',
+      text: 'Adds assessment schemes, subject combinations, and D1–F9 grading presets. Existing named presets are kept.',
+      confirmText: 'Yes, apply',
+      cancelText: 'Cancel',
+      icon: 'question',
+    });
+    if (!confirmed.isConfirmed) return;
     setBusy(true);
     try {
       const data = await dosOpsService.seedUganda();

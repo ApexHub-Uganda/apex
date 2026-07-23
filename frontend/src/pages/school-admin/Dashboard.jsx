@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import TeacherAttendancePanel from '../../components/TeacherAttendancePanel';
+import StaffSignInPanel from '../../components/StaffSignInPanel';
 import SchoolNameWithBadge from '../../components/SchoolNameWithBadge';
 import DashboardHeaderMeta from '../../components/DashboardHeaderMeta';
 import StatCard from '../../components/StatCard';
@@ -156,6 +157,12 @@ export function SchoolAdminDashboard() {
   const userRole = roleProfile?.role;
   const showTeacherAttendance = ['teacher', 'class_teacher'].includes(userRole)
     && enabledFeatureKeys.includes('student_attendance');
+  // Any staff portal role (not parent/student) can self-sign-in when staff attendance is on plan
+  const showStaffSignIn = Boolean(
+    userRole
+    && !['parent', 'student', 'super_admin'].includes(userRole)
+    && (enabledFeatureKeys.includes('staff_attendance') || isSchoolAdmin),
+  );
   const isParent = userRole === 'parent';
   const showAdmissionVacancies = isParent && enabledFeatureKeys.includes('admission_vacancies');
 
@@ -232,9 +239,20 @@ export function SchoolAdminDashboard() {
         </motion.div>
       )}
 
-      {showTeacherAttendance && (
+      {(showStaffSignIn || showTeacherAttendance) && (
         <motion.div className="mb-4" {...sectionMotion}>
-          <TeacherAttendancePanel />
+          <div className="row g-3">
+            {showStaffSignIn && (
+              <div className={showTeacherAttendance ? 'col-lg-5' : 'col-12'}>
+                <StaffSignInPanel />
+              </div>
+            )}
+            {showTeacherAttendance && (
+              <div className={showStaffSignIn ? 'col-lg-7' : 'col-12'}>
+                <TeacherAttendancePanel />
+              </div>
+            )}
+          </div>
         </motion.div>
       )}
 

@@ -10,7 +10,12 @@ from apps.academics.models import Department
 from apps.staff.models import Staff, Teacher
 from apps.tenants.context import TenantContext
 from apps.staff.services import StaffOnboardingError, onboard_staff, update_staff_record
-from apps.staff.staff_roles import get_role_definition, list_staff_role_options
+from apps.staff.staff_roles import get_role_definition, list_staff_role_options, role_requires_teacher_profile
+
+
+def role_requires_teacher_for_data(data: dict) -> bool:
+    role = data.get("portal_role") or ""
+    return role_requires_teacher_profile(role) or bool(data.get("create_teacher_profile"))
 
 
 def _tenant_department_queryset(context: dict):
@@ -34,11 +39,26 @@ def _tenant_staff_queryset(context: dict):
 
 
 class TeacherNestedSerializer(serializers.ModelSerializer):
+    """Optional teacher extras — never block staff onboarding if left blank.
+
+    Years of experience and related fields can always be completed later in My Profile.
+    Empty HTML number inputs arrive as "" and must not fail integer validation.
+    """
+
     subject_ids = serializers.ListField(
         child=serializers.UUIDField(),
         write_only=True,
         required=False,
     )
+    qualification = serializers.CharField(required=False, allow_blank=True, default="")
+    specialization = serializers.CharField(required=False, allow_blank=True, default="")
+    years_experience = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        min_value=0,
+        default=0,
+    )
+    is_class_teacher = serializers.BooleanField(required=False, default=False)
 
     class Meta:
         model = Teacher
@@ -46,6 +66,34 @@ class TeacherNestedSerializer(serializers.ModelSerializer):
             "qualification", "specialization", "years_experience",
             "is_class_teacher", "subject_ids",
         ]
+        extra_kwargs = {
+            "qualification": {"required": False, "allow_blank": True},
+            "specialization": {"required": False, "allow_blank": True},
+            "years_experience": {"required": False, "allow_null": True},
+            "is_class_teacher": {"required": False},
+        }
+
+    def to_internal_value(self, data):
+        # Empty number inputs arrive as "" and must not fail integer validation.
+        if isinstance(data, dict):
+            data = {**data}
+            ye = data.get("years_experience")
+            if ye in ("", None) or (isinstance(ye, str) and not ye.strip()):
+                data["years_experience"] = 0
+            elif isinstance(ye, str):
+                try:
+                    data["years_experience"] = max(0, int(ye.strip()))
+                except ValueError:
+                    data["years_experience"] = 0
+            for text_key in ("qualification", "specialization"):
+                if data.get(text_key) is None:
+                    data[text_key] = ""
+        return super().to_internal_value(data)
+
+    def validate_years_experience(self, value):
+        if value is None:
+            return 0
+        return value
 
 
 class StaffListSerializer(serializers.ModelSerializer):
@@ -192,7 +240,24 @@ class StaffOnboardSerializer(serializers.Serializer):
         subject_ids = validated_data.pop("subject_ids", None)
         if subject_ids:
             teacher_payload["subject_ids"] = subject_ids
-        if teacher_payload:
+        # Drop empty nested teacher object so non-teaching roles are not blocked
+        if teacher_payload and any(
+            teacher_payload.get(k) not in (None, "", [], False, 0)
+            for k in ("qualification", "specialization", "years_experience", "is_class_teacher", "subject_ids")
+        ):
+            # years_experience 0 alone is empty — only keep if other teacher fields set
+            # or years_experience explicitly > 0
+            keep = bool(
+                (teacher_payload.get("qualification") or "").strip()
+                or (teacher_payload.get("specialization") or "").strip()
+                or teacher_payload.get("is_class_teacher")
+                or teacher_payload.get("subject_ids")
+                or (teacher_payload.get("years_experience") or 0) > 0
+            )
+            if keep:
+                validated_data["teacher"] = teacher_payload
+        elif teacher_payload and role_requires_teacher_for_data(validated_data):
+            # Teaching roles may still create a blank teacher profile later in onboard_staff
             validated_data["teacher"] = teacher_payload
 
         try:
@@ -243,9 +308,14 @@ class StaffUpdateSerializer(serializers.ModelSerializer):
         except StaffOnboardingError as exc:
             raise serializers.ValidationError(str(exc)) from exc
 
-        if teacher_data and hasattr(staff, "teacher_profile"):
+        if teacher_data is not None and hasattr(staff, "teacher_profile"):
             teacher = staff.teacher_profile
             subject_ids = teacher_data.pop("subject_ids", None)
+            if "years_experience" in teacher_data:
+                from apps.staff.services import _coerce_years_experience
+                teacher_data["years_experience"] = _coerce_years_experience(
+                    teacher_data.get("years_experience")
+                )
             for key, value in teacher_data.items():
                 setattr(teacher, key, value)
             teacher.save()

@@ -23,6 +23,13 @@ class AttendanceRecord(BaseModel):
     check_out = models.TimeField(null=True, blank=True)
     remarks = models.TextField(blank=True)
     marked_by = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, related_name="marked_attendance")
+    # Optional GPS capture (staff self check-in / geo-verified marking)
+    check_in_lat = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    check_in_lng = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    check_in_accuracy_m = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    check_out_lat = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    check_out_lng = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    check_out_accuracy_m = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
 
     class Meta:
         ordering = ["-date"]
@@ -36,6 +43,36 @@ class AttendanceRecord(BaseModel):
                 name="attendance_has_attendee",
             ),
         ]
+
+
+class SchoolGeofence(BaseModel):
+    """
+    Campus perimeter polygon for GPS-based staff attendance.
+
+    Vertices are WGS84 points [{lat, lng, accuracy_m?, label?}]. Minimum 4 corners.
+    """
+
+    name = models.CharField(max_length=100, default="Main campus")
+    vertices = models.JSONField(
+        default=list,
+        help_text="List of {lat, lng, accuracy_m} corner points (min 4).",
+    )
+    buffer_meters = models.PositiveIntegerField(
+        default=25,
+        help_text="Extra allowance outside the polygon edge (GPS drift).",
+    )
+    is_enabled = models.BooleanField(
+        default=False,
+        help_text="When true, staff check-in and class marking require being on campus.",
+    )
+
+    class Meta:
+        ordering = ["-updated_at"]
+        verbose_name = "school geofence"
+        verbose_name_plural = "school geofences"
+
+    def __str__(self) -> str:
+        return f"{self.name} ({len(self.vertices or [])} pts)"
 
 
 class LessonAttendanceSession(BaseModel):

@@ -45,6 +45,10 @@ export function CurrentRecordPanel({
       ? 'End current term'
       : 'End current year';
 
+  const statusLabel = record.status
+    ? String(record.status).replace(/_/g, ' ')
+    : (record.is_current ? 'current' : null);
+
   return (
     <div className="apex-glass border-0 p-3 p-md-4 p-lg-5 mb-4">
       <div className="d-flex align-items-start gap-3">
@@ -59,6 +63,9 @@ export function CurrentRecordPanel({
             <div className="d-flex flex-wrap align-items-center gap-2 min-w-0">
               <h3 className="fw-bold mb-0 text-break">{title}</h3>
               <span className="badge text-bg-primary-subtle border text-primary">Current</span>
+              {statusLabel && (
+                <span className="badge text-bg-secondary-subtle border text-capitalize">{statusLabel}</span>
+              )}
             </div>
             {canMutate && (
               <div className="d-flex flex-wrap gap-2 w-100 w-sm-auto">
@@ -96,9 +103,11 @@ export function CurrentRecordPanel({
           </div>
           <p className="text-muted small mb-3">
             {canMutate
-              ? 'You can edit details, end this period early, or delete it. Ending it unlocks creation of the next one.'
+              ? (type === 'examination_session'
+                ? 'Edit details or status, end this exam period, or delete it. Ending unlocks the next period and keeps entered marks.'
+                : 'You can edit details, end this period early, or delete it. Ending it unlocks creation of the next one.')
               : (creationLocked
-                ? 'This period is still active. A new one can be opened after it ends. Only a school admin can edit, end, or delete it.'
+                ? 'This period is still active. A new one can be opened after it ends. School admin (or DoS for exam periods) can edit, end, or delete it.'
                 : 'This is the active school record for your team.')}
           </p>
 

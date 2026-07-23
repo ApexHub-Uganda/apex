@@ -24,10 +24,45 @@ const normalizeRelationId = (value) => {
   return value;
 };
 
+const cleanTeacherPayload = (teacher) => {
+  if (!teacher || typeof teacher !== 'object') return undefined;
+
+  const yearsRaw = teacher.years_experience;
+  let years = null;
+  if (yearsRaw !== '' && yearsRaw != null && String(yearsRaw).trim() !== '') {
+    const n = Number(yearsRaw);
+    if (Number.isFinite(n)) years = Math.max(0, Math.trunc(n));
+  }
+
+  const cleaned = {
+    qualification: (teacher.qualification || '').trim(),
+    specialization: (teacher.specialization || '').trim(),
+    is_class_teacher: Boolean(teacher.is_class_teacher),
+  };
+  // Only include years when the admin typed a value; omit so backend defaults to 0
+  if (years != null) cleaned.years_experience = years;
+
+  const hasContent = Boolean(
+    cleaned.qualification
+    || cleaned.specialization
+    || cleaned.is_class_teacher
+    || years != null
+    || (Array.isArray(teacher.subject_ids) && teacher.subject_ids.length),
+  );
+
+  // Optional teaching details — profile can be completed later; never send empty/invalid ints
+  if (!hasContent) return undefined;
+  if (Array.isArray(teacher.subject_ids) && teacher.subject_ids.length) {
+    cleaned.subject_ids = teacher.subject_ids;
+  }
+  return cleaned;
+};
+
 const buildStaffPayload = (formData, { isEdit }) => {
   const payload = {};
   STAFF_WRITE_FIELDS.forEach((field) => {
     if (!(field in formData)) return;
+    if (field === 'teacher') return; // handled separately
     const value = formData[field];
     if (value === '' || value == null) {
       if (field === 'department' || field === 'supervisor') return;
@@ -42,15 +77,9 @@ const buildStaffPayload = (formData, { isEdit }) => {
   if (supervisor) payload.supervisor = supervisor;
 
   if (!payload.password) delete payload.password;
-  if (
-    payload.teacher
-    && !payload.teacher?.qualification
-    && !payload.teacher?.specialization
-    && payload.teacher?.years_experience == null
-    && !payload.teacher?.is_class_teacher
-  ) {
-    delete payload.teacher;
-  }
+
+  const teacher = cleanTeacherPayload(formData.teacher);
+  if (teacher) payload.teacher = teacher;
 
   return payload;
 };

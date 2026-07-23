@@ -95,6 +95,15 @@ export function StaffOnboardForm({
   const showTeachingFields = selectedRole?.requires_teacher_profile
     || staffCategory === 'teaching';
 
+  // Drop nested teacher values when role is not teaching so empty years_experience
+  // is never submitted for bursars, librarians, etc.
+  useEffect(() => {
+    if (mode === 'edit') return;
+    if (!showTeachingFields) {
+      setValue('teacher', undefined);
+    }
+  }, [showTeachingFields, setValue, mode]);
+
   return (
     <form onSubmit={handleSubmit(wrapSubmit)} className="staff-onboard-form">
       <Section title="Personal Information" icon={FiUser}>
@@ -180,15 +189,23 @@ export function StaffOnboardForm({
             </div>
           )}
         </Field>
-        <Field label="Staff Category" required error={errors.staff_category?.message}>
-          <select className="form-select" {...register('staff_category', { required: true })}>
+        <Field
+          label="Staff Category"
+          error={errors.staff_category?.message}
+          hint="Defaults from the selected dashboard role; can be changed later"
+        >
+          <select className="form-select" {...register('staff_category')}>
             {STAFF_CATEGORIES.map((c) => (
               <option key={c.value} value={c.value}>{c.label}</option>
             ))}
           </select>
         </Field>
-        <Field label="Designation / Job Title" required error={errors.designation?.message}>
-          <input className="form-control" {...register('designation', { required: 'Designation is required' })} />
+        <Field
+          label="Designation / Job Title"
+          error={errors.designation?.message}
+          hint="Optional — defaults from role; staff can complete this in My Profile"
+        >
+          <input className="form-control" {...register('designation')} />
         </Field>
         <Field label="Department" error={errors.department?.message}>
           <select className="form-select" {...register('department')}>
@@ -205,8 +222,12 @@ export function StaffOnboardForm({
             ))}
           </select>
         </Field>
-        <Field label="Date Joined" required error={errors.date_joined?.message}>
-          <input type="date" className="form-control" {...register('date_joined', { required: true })} />
+        <Field
+          label="Date Joined"
+          error={errors.date_joined?.message}
+          hint="Optional — defaults to today if left blank"
+        >
+          <input type="date" className="form-control" {...register('date_joined')} />
         </Field>
         <Field label="Status" error={errors.status?.message}>
           <select className="form-select" {...register('status')}>
@@ -225,13 +246,22 @@ export function StaffOnboardForm({
 
       {showTeachingFields && (
         <Section title="Teaching Profile" icon={FiUsers}>
+          <div className="col-12">
+            <p className="text-muted small mb-0">
+              Optional for now — teachers can finish these details later under My Profile.
+            </p>
+          </div>
           <Field label="Highest Qualification" error={errors['teacher.qualification']?.message}>
             <input className="form-control" {...register('teacher.qualification')} />
           </Field>
           <Field label="Specialization" error={errors['teacher.specialization']?.message}>
             <input className="form-control" {...register('teacher.specialization')} />
           </Field>
-          <Field label="Years of Experience" error={errors['teacher.years_experience']?.message}>
+          <Field
+            label="Years of Experience"
+            error={errors['teacher.years_experience']?.message}
+            hint="Leave blank if unknown"
+          >
             <input type="number" min={0} className="form-control" {...register('teacher.years_experience')} />
           </Field>
           <div className="col-md-6 d-flex align-items-end">

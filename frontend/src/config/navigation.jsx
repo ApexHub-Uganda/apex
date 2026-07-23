@@ -1,6 +1,7 @@
 import {
   FiHome, FiGrid, FiSettings, FiBell, FiLayers, FiCreditCard,
-  FiBarChart2, FiShield, FiRadio, FiInbox, FiTrendingUp, FiBookOpen, FiAward, FiFileText,
+  FiBarChart2, FiShield, FiRadio, FiInbox, FiTrendingUp, FiBookOpen, FiAward, FiFileText, FiUsers,
+  FiMapPin,
 } from 'react-icons/fi';
 import { resolveFeatureIcon } from '../utils/featureIcons';
 import { SCHOOL_MODULES } from './schoolModules';
@@ -131,6 +132,8 @@ export const buildSchoolAdminNav = (
       children: [
         { path: '/school-admin/settings', label: 'School Settings', icon: <FiSettings /> },
         { path: '/school-admin/settings/permissions', label: 'Permission Settings', icon: <FiShield /> },
+        { path: '/school-admin/settings/dual-roles', label: 'Dual Roles', icon: <FiUsers /> },
+        { path: '/school-admin/settings/school-boundary', label: 'School Boundary', icon: <FiMapPin /> },
         { path: '/school-admin/settings/plans', label: 'Plans & Subscriptions', icon: <FiLayers /> },
       ],
     });

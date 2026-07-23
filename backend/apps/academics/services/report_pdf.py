@@ -42,7 +42,7 @@ def build_report_card_pdf(*, tenant, report_card, request=None) -> bytes:
             ])
         w = ctx.content_width
         table = Table(rows, colWidths=[w * 0.28, w * 0.12, w * 0.12, w * 0.12, w * 0.12, w * 0.24])
-        table.setStyle(branded_table_style(ctx, header=True))
+        table.setStyle(branded_table_style(ctx, header=True, header_fill="white"))
         header_bits.append(table)
         header_bits.append(Spacer(1, 10))
         header_bits.append(p(
@@ -122,7 +122,7 @@ def build_class_broadsheet_pdf(*, tenant, term, school_class, report_cards, stre
         n = max(len(header), 1)
         col_w = ctx.content_width / n
         table = Table(rows, colWidths=[col_w] * n)
-        table.setStyle(branded_table_style(ctx, header=True))
+        table.setStyle(branded_table_style(ctx, header=True, header_fill="white"))
         body.append(table)
         return body
 

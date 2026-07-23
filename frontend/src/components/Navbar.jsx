@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiBell, FiSun, FiMoon, FiUser, FiSettings, FiLogOut } from 'react-icons/fi';
+import { FiBell, FiSun, FiMoon, FiUser, FiSettings, FiLogOut, FiRefreshCw } from 'react-icons/fi';
 import GlobalSearch from './GlobalSearch';
 import UserAvatar from './UserAvatar';
 import NotificationBatchActions from './NotificationBatchActions';
@@ -79,13 +79,16 @@ export function Navbar({
   mobileMenuOpen = false,
   suspended = false,
 }) {
-  const { user, logout, isSchoolAdmin } = useAuth();
+  const {
+    user, logout, isSchoolAdmin, canSwitchRole, availableRoles, switchRole, effectiveRole,
+  } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { tenant } = useTenant();
   const queryClient = useQueryClient();
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
+  const [switchingRole, setSwitchingRole] = useState(false);
   const {
     selectedCount,
     selectionMode,
@@ -528,6 +531,47 @@ export function Navbar({
                       <FiLogOut size={14} /> Logout
                     </button>
                   </motion.div>
+                  {canSwitchRole && (availableRoles || []).length > 1 && (
+                    <>
+                      <motion.div variants={menuItemVariants}>
+                        <hr className="dropdown-divider" />
+                      </motion.div>
+                      <motion.div variants={menuItemVariants}>
+                        <div className="px-3 py-1 small text-muted text-uppercase fw-semibold" style={{ fontSize: '0.65rem' }}>
+                          Switch role
+                        </div>
+                      </motion.div>
+                      {(availableRoles || [])
+                        .filter((r) => r && r !== (effectiveRole || user?.role))
+                        .map((role) => (
+                          <motion.div key={role} variants={menuItemVariants}>
+                            <button
+                              type="button"
+                              className="dropdown-item d-flex align-items-center gap-2"
+                              role="menuitem"
+                              disabled={switchingRole}
+                              onClick={async () => {
+                                setSwitchingRole(true);
+                                try {
+                                  const label = user?.role_labels?.[role]
+                                    || role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+                                  await switchRole(role);
+                                  notify.success(`Switched to ${label}.`);
+                                  setShowDropdown(false);
+                                } catch (err) {
+                                  notify.error(extractApiError(err, 'Unable to switch role.'));
+                                  setSwitchingRole(false);
+                                }
+                              }}
+                            >
+                              <FiRefreshCw size={14} />
+                              {user?.role_labels?.[role]
+                                || role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                            </button>
+                          </motion.div>
+                        ))}
+                    </>
+                  )}
                 </motion.div>
               </motion.div>
             )}

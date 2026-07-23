@@ -1,6 +1,7 @@
 """Student promotion engine — bulk promote / hold / graduate with placement history."""
 from __future__ import annotations
 
+import re
 from datetime import date
 from typing import Any
 
@@ -18,12 +19,112 @@ from apps.academics.models import (
 from apps.audit.models import AuditLog
 from apps.students.models import Student
 
+# Common terminal class markers (Uganda / Kenya / generic)
+_TERMINAL_CODE_RE = re.compile(
+    r"(?:^|[^a-z0-9])(p7|p\.?7|primary\s*7|s4|s\.?4|s6|s\.?6|form\s*4|form\s*6|"
+    r"grade\s*12|g12|std\s*8|standard\s*8|year\s*13)(?:[^a-z0-9]|$)",
+    re.I,
+)
+_LEVEL_TOKEN_RE = re.compile(
+    r"(?:^|[^a-z0-9])(p|s|form|grade|g|std|standard|year|class)\s*\.?(\d{1,2})(?:[^a-z0-9]|$)",
+    re.I,
+)
+
 
 class PromotionError(Exception):
     def __init__(self, message: str, *, code: str = "promotion_error"):
         self.message = message
         self.code = code
         super().__init__(message)
+
+
+def _class_tokens(school_class: Class) -> tuple[str | None, int | None]:
+    """Extract (prefix, number) from class code/name e.g. ('P', 6), ('S', 3)."""
+    for text in (school_class.code or "", school_class.name or ""):
+        m = _LEVEL_TOKEN_RE.search(text.replace("_", " "))
+        if m:
+            prefix = m.group(1).lower()
+            if prefix in {"std", "standard"}:
+                prefix = "p"
+            if prefix in {"form", "year", "class", "g", "grade"}:
+                # map loosely: form/grade numbers often secondary
+                prefix = "s" if int(m.group(2)) <= 6 else "g"
+            return prefix, int(m.group(2))
+    return None, None
+
+
+def is_terminal_class(school_class: Class) -> bool:
+    """Heuristic: top/final class in a pathway (P7, S4, S6, Grade 12, etc.)."""
+    blob = f"{school_class.code or ''} {school_class.name or ''}"
+    if _TERMINAL_CODE_RE.search(blob):
+        return True
+    prefix, num = _class_tokens(school_class)
+    if prefix == "p" and num == 7:
+        return True
+    if prefix == "s" and num in {4, 6}:
+        return True
+    if prefix == "g" and num == 12:
+        return True
+    return False
+
+
+def suggest_next_class(
+    *,
+    tenant,
+    source_class: Class,
+    target_academic_year: AcademicYear | None = None,
+) -> Class | None:
+    """
+    Suggest the next class after *source_class* for promotion.
+
+    Prefers same level_type and curriculum within the target (or current) year,
+    matching incremented level tokens (P5→P6, S2→S3). Returns None for terminal classes.
+    """
+    if is_terminal_class(source_class):
+        return None
+
+    prefix, num = _class_tokens(source_class)
+    if prefix is None or num is None:
+        return None
+
+    year = target_academic_year or source_class.academic_year
+    candidates = Class.objects.filter(
+        tenant=tenant,
+        academic_year=year,
+        is_deleted=False,
+    )
+    if source_class.level_type:
+        same_level = candidates.filter(level_type=source_class.level_type)
+        if same_level.exists():
+            candidates = same_level
+    if source_class.curriculum:
+        same_curr = candidates.filter(curriculum=source_class.curriculum)
+        if same_curr.exists():
+            candidates = same_curr
+
+    next_num = num + 1
+    for c in candidates.order_by("name"):
+        if c.pk == source_class.pk:
+            continue
+        c_prefix, c_num = _class_tokens(c)
+        if c_prefix == prefix and c_num == next_num:
+            return c
+    return None
+
+
+def class_progression_meta(*, tenant, school_class: Class, target_year: AcademicYear | None = None) -> dict[str, Any]:
+    """Metadata for promotion UI: terminal flag + suggested next class."""
+    terminal = is_terminal_class(school_class)
+    nxt = None if terminal else suggest_next_class(
+        tenant=tenant, source_class=school_class, target_academic_year=target_year,
+    )
+    return {
+        "is_terminal": terminal,
+        "default_action": "graduate" if terminal else "promote",
+        "suggested_next_class_id": str(nxt.id) if nxt else None,
+        "suggested_next_class_name": nxt.name if nxt else None,
+        "suggested_next_class_code": nxt.code if nxt else None,
+    }
 
 
 def _log(*, tenant, user, action: str, resource_type: str, resource_id: str, description: str, changes=None, request=None):
@@ -128,20 +229,39 @@ def preview_promotion(
     if target_year is None and target_class is not None:
         target_year = target_class.academic_year
 
+    # Auto-map next class when not provided
+    if target_class is None:
+        target_class = suggest_next_class(
+            tenant=tenant,
+            source_class=source_class,
+            target_academic_year=target_year,
+        )
+        if target_class is not None and target_year is None:
+            target_year = target_class.academic_year
+
+    progression = class_progression_meta(
+        tenant=tenant, school_class=source_class, target_year=target_year,
+    )
+    default_action = (
+        PromotionAction.ACTION_GRADUATE
+        if progression["is_terminal"]
+        else PromotionAction.ACTION_PROMOTE
+    )
+
     students = _students_for_source(tenant=tenant, source_class=source_class, source_stream=source_stream)
     action_map = {str(a.get("student_id") or a.get("student")): a for a in (actions or []) if a}
 
     rows = []
     for st in students:
         override = action_map.get(str(st.id), {})
-        action = override.get("action") or PromotionAction.ACTION_PROMOTE
+        action = override.get("action") or default_action
         if action not in {
             PromotionAction.ACTION_PROMOTE,
             PromotionAction.ACTION_HOLD,
             PromotionAction.ACTION_GRADUATE,
             PromotionAction.ACTION_SKIP,
         }:
-            action = PromotionAction.ACTION_PROMOTE
+            action = default_action
 
         to_class_id = override.get("to_class") or (str(target_class.id) if target_class else None)
         to_stream_id = override.get("to_stream") or (str(target_stream.id) if target_stream else None)
@@ -153,7 +273,8 @@ def preview_promotion(
             to_stream_id = None
         if action == PromotionAction.ACTION_PROMOTE and not to_class_id:
             raise PromotionError(
-                f"Target class required to promote {st.admission_number}.",
+                f"Target class required to promote {st.admission_number}. "
+                "Select a target class, or mark terminal classes as Graduate.",
                 code="target_required",
             )
 
@@ -222,11 +343,19 @@ def preview_promotion(
         "source_class": {"id": str(source_class.id), "name": source_class.name},
         "target_class": {"id": str(target_class.id), "name": target_class.name} if target_class else None,
         "target_academic_year": {"id": str(target_year.id), "name": target_year.name} if target_year else None,
+        "progression": progression,
     }
 
 
 @transaction.atomic
-def commit_promotion(*, tenant, user, batch_id, request=None) -> dict[str, Any]:
+def commit_promotion(
+    *,
+    tenant,
+    user,
+    batch_id,
+    request=None,
+    issue_certificates: bool = False,
+) -> dict[str, Any]:
     batch = (
         PromotionBatch.objects.select_for_update()
         .filter(tenant=tenant, pk=batch_id, is_deleted=False)
@@ -348,16 +477,35 @@ def commit_promotion(*, tenant, user, batch_id, request=None) -> dict[str, Any]:
     batch.updated_by = user
     batch.save(update_fields=["status", "committed_at", "committed_by", "updated_by", "updated_at"])
 
+    graduated_student_ids: list[str] = []
+    for act in actions:
+        if act.action == PromotionAction.ACTION_GRADUATE and act.applied:
+            graduated_student_ids.append(str(act.student_id))
+
+    certificates: list[dict[str, Any]] = []
+    if issue_certificates and graduated_student_ids:
+        # Certificates are issued on demand via PDF endpoints; return IDs for the UI to download.
+        for sid in graduated_student_ids:
+            certificates.append({
+                "student_id": sid,
+                "types": ["completion", "leaving", "transcript"],
+            })
+
     _log(
         tenant=tenant, user=user, action="promotion_commit",
         resource_type="PromotionBatch", resource_id=str(batch.id),
         description=f"Committed promotion: {applied} student(s)",
-        changes={"applied": applied}, request=request,
+        changes={"applied": applied, "graduated": len(graduated_student_ids)},
+        request=request,
     )
     return {
         "batch_id": str(batch.id),
         "status": batch.status,
         "applied": applied,
+        "graduated": len(graduated_student_ids),
+        "graduated_student_ids": graduated_student_ids,
+        "certificates": certificates,
+        "issue_certificates": issue_certificates,
         "committed_at": batch.committed_at.isoformat(),
     }
 

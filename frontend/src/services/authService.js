@@ -81,6 +81,60 @@ export const authService = {
     const { data } = await api.delete('/auth/me/avatar/');
     return data?.data ?? data;
   },
+
+  /**
+   * Download blank school letterhead (staff only).
+   * @param {number} pages 1–50
+   */
+  async downloadHeadedPaper(pages = 1) {
+    const count = Math.max(1, Math.min(Number(pages) || 1, 50));
+    const response = await api.get('/auth/me/headed-paper.pdf', {
+      params: { pages: count },
+      responseType: 'blob',
+    });
+    const blob = response.data;
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `headed-paper-${count}p.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+    return true;
+  },
+
+  /**
+   * Switch active portal role (dual-role users). Re-issues JWT tokens.
+   * @param {string} role
+   */
+  async switchRole(role) {
+    const { data } = await api.post('/auth/switch-role/', { role });
+    const payload = data?.data ?? data;
+    if (payload?.access) {
+      const remember = !!localStorage.getItem('apex_refresh_token');
+      setStoredTokens(payload.access, payload.refresh, remember);
+    }
+    return payload;
+  },
+};
+
+const unwrap = (r) => {
+  const body = r?.data ?? r;
+  return body?.data ?? body;
+};
+
+export const dualRolesService = {
+  options: () => api.get('/auth/dual-roles/options/').then((r) => unwrap(r)),
+  candidates: (params = {}) => api.get('/auth/dual-roles/candidates/', { params }).then((r) => unwrap(r)),
+  grant: (payload) => api.post('/auth/dual-roles/grant/', payload).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
+  revoke: (payload) => api.post('/auth/dual-roles/revoke/', payload).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
 };
 
 export default authService;

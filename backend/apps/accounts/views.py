@@ -25,9 +25,11 @@ from apps.accounts.serializers import (
     UserSerializer,
     UserUpdateSerializer,
 )
-from apps.core.constants import UserRole
+from apps.core.constants import UserRole, normalize_role
+from apps.core.exports import pdf_attachment_response
 from apps.core.mixins import get_client_ip
 from apps.core.permissions import TenantActivePermission
+from apps.core.pdf_template import build_headed_paper_pdf
 
 
 class LoginThrottle(AnonRateThrottle):
@@ -197,6 +199,57 @@ class MeView(generics.RetrieveUpdateAPIView):
             "message": "Profile updated successfully.",
             "data": output.data,
         })
+
+
+class HeadedPaperPdfView(APIView):
+    """
+    Blank school letterhead sheets for staff (not parents).
+
+    Query: ?pages=N (1–50). Page 1 has the full header; all pages have the footer.
+    """
+
+    permission_classes = [IsAuthenticated, TenantActivePermission]
+
+    def get(self, request: Request) -> Response:
+        user = request.user
+        role = normalize_role(getattr(user, "role", "") or getattr(user, "effective_role", ""))
+        if role in {UserRole.PARENT, UserRole.STUDENT}:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Headed paper is available to school staff only.",
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if getattr(user, "is_super_admin", False) and not getattr(user, "tenant_id", None):
+            return Response(
+                {
+                    "success": False,
+                    "message": "Headed paper requires a school context.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        tenant = getattr(user, "tenant", None)
+        if tenant is None:
+            return Response(
+                {"success": False, "message": "No school linked to this account."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            pages = int(request.query_params.get("pages") or 1)
+        except (TypeError, ValueError):
+            pages = 1
+        pages = max(1, min(pages, 50))
+        pdf_bytes = build_headed_paper_pdf(
+            tenant=tenant,
+            page_count=pages,
+            request=request,
+        )
+        code = (getattr(tenant, "code", None) or "school").replace(" ", "-")
+        return pdf_attachment_response(
+            pdf_bytes=pdf_bytes,
+            filename=f"{code}-headed-paper-{pages}p.pdf",
+        )
 
 
 class ChangePasswordView(generics.GenericAPIView):

@@ -78,8 +78,8 @@ function computeContentColumnWidths(columns, rows) {
       const text = readColumnDisplayValue(col, rows[i]);
       if (text) maxPx = Math.max(maxPx, approxTextWidthPx(text));
     }
-    // Soft cap only for extreme free-text (emails, long notes) — still scrollable, no overlap
-    const softCap = col.render ? 220 : 360;
+    // Soft cap only for extreme free-text; table scrolls instead of clipping neighbours
+    const softCap = isNameColumn(col) ? 420 : (col.render ? 280 : 400);
     map[col.key] = Math.min(Math.max(maxPx, 36), softCap);
   });
   return map;
@@ -201,8 +201,6 @@ export function DataTable({
 
   const isAlwaysScrollable = scrollable;
   const isWideTable = displayColumns.length >= WIDE_TABLE_COLUMN_THRESHOLD;
-  // Content-based widths always; scroll when wide, explicit scrollable, or many columns.
-  const useExpandedLayout = true;
 
   // Size each column from the longest value in the current dataset (+ header).
   const contentWidths = useMemo(
@@ -270,7 +268,7 @@ export function DataTable({
     if (col.key === 'actions') return 'apex-table-cell--actions';
     if (isNameColumn(col)) return 'apex-table-cell--name';
     if (isShortColumn(col)) return 'apex-table-cell--short';
-    return undefined;
+    return 'apex-table-cell--fit';
   };
 
   const getCellValue = (col, row) => {

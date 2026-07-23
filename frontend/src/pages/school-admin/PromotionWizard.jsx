@@ -8,9 +8,13 @@ import DataTable from '../../components/DataTable';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { promotionService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
-import { extractApiError, notify } from '../../utils/notify';
+import { alert, extractApiError, notify } from '../../utils/notify';
 import { ApexLoader } from '../../components/ApexLoader';
 
+/**
+ * @deprecated Prefer Assessment & Progression hub at /examinations/assessments.
+ * Kept for direct links; mirrors the promote workflow with auto next-class hints.
+ */
 export function PromotionWizard() {
   const queryClient = useQueryClient();
   const { canWriteFeature, canReadFeature } = usePermissions();
@@ -89,10 +93,17 @@ export function PromotionWizard() {
 
   const runCommit = async () => {
     if (!batchId) return;
-    if (!window.confirm('Commit this promotion? Student class placements will change.')) return;
+    const confirmed = await alert.confirm({
+      title: 'Commit this promotion?',
+      text: 'Student class placements will change for this batch.',
+      confirmText: 'Yes, commit',
+      cancelText: 'Cancel',
+      icon: 'warning',
+    });
+    if (!confirmed.isConfirmed) return;
     setBusy(true);
     try {
-      const data = await promotionService.commit(batchId);
+      const data = await promotionService.commit(batchId, { issue_certificates: true });
       notify.success(`Promotion committed for ${data.applied} student(s).`);
       setPreview((p) => (p ? { ...p, status: data.status } : p));
       await queryClient.invalidateQueries({ queryKey: ['promotion-context'] });
@@ -106,7 +117,15 @@ export function PromotionWizard() {
 
   const runUndo = async () => {
     if (!batchId) return;
-    if (!window.confirm('Undo this promotion? Only allowed if no new marks exist in the target class.')) return;
+    const confirmed = await alert.confirm({
+      title: 'Undo this promotion?',
+      text: 'Only allowed if no new marks exist in the target class for these learners.',
+      confirmText: 'Yes, undo',
+      cancelText: 'Keep it',
+      icon: 'warning',
+      danger: true,
+    });
+    if (!confirmed.isConfirmed) return;
     setBusy(true);
     try {
       await promotionService.undo(batchId);
@@ -169,7 +188,12 @@ export function PromotionWizard() {
       </div>
       <PageHeader
         title="Student promotion"
-        subtitle="Promote, hold back, or graduate learners by class/stream with full audit history"
+        subtitle="Promote, hold back, or graduate learners by class/stream. Prefer Assessment & Progression for certificates."
+        actions={(
+          <Link to="/school-admin/examinations/assessments" className="btn btn-outline-primary btn-sm">
+            Open Assessment & Progression
+          </Link>
+        )}
       />
 
       {isLoading ? (
@@ -181,7 +205,39 @@ export function PromotionWizard() {
               <h6 className="fw-semibold mb-3">Source</h6>
               <div className="mb-3">
                 <label className="form-label small">Source class</label>
-                <SearchableSelect options={classOptions} value={sourceClass} onChange={(v) => { setSourceClass(v); setSourceStream(''); setPreview(null); }} placeholder="Search class…" />
+                <SearchableSelect
+                  options={classOptions}
+                  value={sourceClass}
+                  onChange={(v) => {
+                    setSourceClass(v);
+                    setSourceStream('');
+                    setPreview(null);
+                    const meta = classes.find((c) => c.id === v);
+                    if (meta?.suggested_next_class_id && !meta.is_terminal) {
+                      setTargetClass(meta.suggested_next_class_id);
+                    }
+                  }}
+                  placeholder="Search class…"
+                />
+                {(() => {
+                  const meta = classes.find((c) => c.id === sourceClass);
+                  if (!meta) return null;
+                  if (meta.is_terminal) {
+                    return (
+                      <div className="alert alert-warning small mt-2 mb-0 py-2">
+                        Final / top class — graduates by default.
+                      </div>
+                    );
+                  }
+                  if (meta.suggested_next_class_name) {
+                    return (
+                      <div className="form-text">
+                        Suggested next: {meta.suggested_next_class_name}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
               {sourceStreams.length > 0 && (
                 <div className="mb-3">

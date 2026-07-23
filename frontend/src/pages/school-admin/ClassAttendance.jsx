@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { FiArrowLeft, FiCheckSquare, FiSave, FiUsers } from 'react-icons/fi';
+import { FiArrowLeft, FiCheckSquare, FiMapPin, FiSave, FiUsers } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
 import { classAttendanceService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
 import { PageLoader } from '../../components/ApexLoader';
+import { formatAccuracy, getAttendancePosition } from '../../utils/geolocation';
 
 function nowDefaults() {
   const current = new Date();
@@ -102,6 +103,8 @@ export function ClassAttendance({ initialClassId = '' }) {
     setPresentMap(next);
   };
 
+  const geofenceEnforced = Boolean(scopeMeta?.geofence_enforced);
+
   const handleSave = async () => {
     if (!schoolClass || !date) {
       notify.warning('Select a class and date.');
@@ -113,20 +116,38 @@ export function ClassAttendance({ initialClassId = '' }) {
     }
     setSaving(true);
     try {
+      let geoPayload = {};
+      if (geofenceEnforced) {
+        notify.info('Getting a precise GPS fix for campus check…');
+        const fix = await getAttendancePosition();
+        geoPayload = {
+          lat: fix.lat,
+          lng: fix.lng,
+          accuracy_m: fix.accuracy_m,
+        };
+      }
       const result = await classAttendanceService.saveBulk({
         school_class: schoolClass,
         stream: stream || undefined,
         date,
         check_in: checkIn,
+        ...geoPayload,
         entries: students.map((student) => ({
           student: student.id,
           present: Boolean(presentMap[student.id]),
         })),
       });
-      notify.success(result?.message || 'Attendance saved.');
+      const accuracyNote = geoPayload.accuracy_m != null
+        ? ` (GPS accuracy ${formatAccuracy(geoPayload.accuracy_m)})`
+        : '';
+      notify.success((result?.message || 'Attendance saved.') + accuracyNote);
       await refetch();
     } catch (err) {
-      notify.error(extractApiError(err, 'Unable to save attendance.'));
+      // Geolocation failures raise Error; API failures use axios response
+      const msg = err?.response
+        ? extractApiError(err, 'Unable to save attendance.')
+        : (err?.message || extractApiError(err, 'Unable to save attendance.'));
+      notify.error(msg);
     } finally {
       setSaving(false);
     }
@@ -156,6 +177,20 @@ export function ClassAttendance({ initialClassId = '' }) {
           </button>
         )}
       />
+
+      {geofenceEnforced && (
+        <div className="alert alert-warning small mb-4 d-flex align-items-start gap-2">
+          <FiMapPin className="mt-1 flex-shrink-0" />
+          <div>
+            <strong>Campus location required.</strong>{' '}
+            Saving attendance will use your device GPS. You must be inside the school boundary
+            {scopeMeta?.geofence?.buffer_meters != null
+              ? ` (buffer ±${scopeMeta.geofence.buffer_meters} m)`
+              : ''}
+            .
+          </div>
+        </div>
+      )}
 
       {scopeMeta?.is_teacher_scoped && (
         <div className="alert alert-info small mb-4">

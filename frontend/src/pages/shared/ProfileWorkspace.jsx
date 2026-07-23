@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  FiCamera, FiLock, FiMail, FiPhone, FiSave, FiShield, FiTrash2, FiUser, FiBriefcase,
+  FiCamera, FiFileText, FiLock, FiMail, FiPhone, FiPrinter, FiSave, FiShield, FiTrash2, FiUser, FiBriefcase,
 } from 'react-icons/fi';
 import UserAvatar from '../../components/UserAvatar';
 import { useAuth } from '../../hooks/useAuth';
@@ -10,7 +10,7 @@ import { authService } from '../../services/authService';
 import WorkspaceShell, { WorkspaceSection, WorkspaceFieldGrid, ReadOnlyField } from '../../components/WorkspaceShell';
 import ProgressBar from '../../components/ProgressBar';
 import { extractApiError, notify } from '../../utils/notify';
-import { getRoleLabel } from '../../config/schoolRoles';
+import { getRoleLabel, normalizeRole } from '../../config/schoolRoles';
 import { emailValidationRules } from '../../utils/emailValidation';
 import { ApexLoader } from '../../components/ApexLoader';
 
@@ -31,6 +31,7 @@ export function ProfileWorkspace() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('personal');
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const [headedBusy, setHeadedBusy] = useState(false);
   const basePath = user?.role === 'super_admin' ? '/super-admin' : '/school-admin';
 
   const { data: profile, isLoading } = useQuery({
@@ -44,6 +45,17 @@ export function ProfileWorkspace() {
   const parentProfile = profile?.parent_profile;
   const editable = profile?.editable_fields || {};
   const adminOnly = profile?.admin_only_fields || {};
+
+  // API exposes `tenant` (UUID), not `tenant_id` — check both + profile payload
+  const schoolTenantId = user?.tenant || user?.tenant_id || profile?.tenant || profile?.tenant_id || null;
+  const role = normalizeRole(user?.effective_role || user?.role || profile?.effective_role || profile?.role);
+  // Any school-linked staff account except parent/student
+  const canGetHeadedPaper = Boolean(
+    schoolTenantId
+    && role
+    && role !== 'parent'
+    && role !== 'student'
+  );
 
   const { register, handleSubmit, reset, formState: { isDirty } } = useForm();
   const { register: registerPw, handleSubmit: handlePwSubmit, reset: resetPw, formState: { errors: pwErrors } } = useForm();
@@ -119,13 +131,85 @@ export function ProfileWorkspace() {
     onError: (err) => notify.error(extractApiError(err, 'Unable to change password.')),
   });
 
+  const handleGetHeadedPaper = async () => {
+    const Swal = (await import('sweetalert2')).default;
+    const result = await Swal.fire({
+      title: 'Get headed paper',
+      html: `
+        <p class="apex-headed-paper-hint">
+          Blank letterhead for notes and memos.
+          <strong>Page 1</strong> has the full school header; later pages keep the footer only.
+        </p>
+        <div class="apex-headed-paper-field">
+          <label class="apex-headed-paper-label" for="apex-headed-pages">Pages</label>
+          <div class="apex-headed-paper-input-row">
+            <input
+              id="apex-headed-pages"
+              class="apex-headed-paper-input"
+              type="number"
+              min="1"
+              max="50"
+              step="1"
+              value="5"
+              inputmode="numeric"
+            />
+            <span class="apex-headed-paper-suffix">of 50 max</span>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Print / download',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      focusConfirm: false,
+      width: 420,
+      customClass: {
+        popup: 'apex-swal-popup apex-swal-headed-paper',
+        title: 'apex-swal-title',
+        htmlContainer: 'apex-swal-text',
+        confirmButton: 'apex-swal-btn apex-swal-confirm',
+        cancelButton: 'apex-swal-btn apex-swal-cancel',
+      },
+      buttonsStyling: false,
+      didOpen: () => {
+        const input = document.getElementById('apex-headed-pages');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      },
+      preConfirm: () => {
+        const input = document.getElementById('apex-headed-pages');
+        const n = Number(input?.value);
+        if (!Number.isFinite(n) || n < 1 || n > 50) {
+          Swal.showValidationMessage('Enter a whole number between 1 and 50');
+          return false;
+        }
+        return Math.trunc(n);
+      },
+    });
+
+    if (!result.isConfirmed) return;
+    const pages = Math.max(1, Math.min(Number(result.value) || 1, 50));
+    setHeadedBusy(true);
+    try {
+      await authService.downloadHeadedPaper(pages);
+      notify.success(`Headed paper ready (${pages} page${pages === 1 ? '' : 's'}). Open the PDF to print.`);
+    } catch (err) {
+      notify.error(extractApiError(err, 'Unable to generate headed paper.'));
+    } finally {
+      setHeadedBusy(false);
+    }
+  };
+
   const tabs = useMemo(() => {
     const items = [{ id: 'personal', label: 'Personal', icon: FiUser }];
     if (staffProfile) items.push({ id: 'employment', label: 'Employment', icon: FiBriefcase });
     if (staffProfile || parentProfile) items.push({ id: 'contact', label: 'Contact & Emergency', icon: FiPhone });
+    if (canGetHeadedPaper) items.push({ id: 'stationery', label: 'Stationery', icon: FiFileText });
     items.push({ id: 'security', label: 'Security', icon: FiLock });
     return items;
-  }, [staffProfile, parentProfile]);
+  }, [staffProfile, parentProfile, canGetHeadedPaper]);
 
   const canEditName = !staffProfile && !parentProfile;
 
@@ -160,16 +244,31 @@ export function ProfileWorkspace() {
       backLabel="Dashboard"
       title="My Profile"
       subtitle="Update your personal details. Employment and role information is managed by your school admin."
-      actions={activeTab !== 'security' && (
-        <button
-          type="button"
-          className="btn btn-primary d-inline-flex align-items-center gap-2"
-          disabled={!isDirty || saveMutation.isPending}
-          onClick={handleSubmit(onSave)}
-        >
-          <FiSave size={15} />
-          {saveMutation.isPending ? 'Saving…' : 'Save changes'}
-        </button>
+      actions={(
+        <div className="d-flex flex-wrap gap-2">
+          {canGetHeadedPaper && (
+            <button
+              type="button"
+              className="btn btn-outline-primary d-inline-flex align-items-center gap-2"
+              disabled={headedBusy}
+              onClick={handleGetHeadedPaper}
+            >
+              <FiPrinter size={15} />
+              {headedBusy ? 'Preparing…' : 'Get headed paper'}
+            </button>
+          )}
+          {activeTab !== 'security' && (
+            <button
+              type="button"
+              className="btn btn-primary d-inline-flex align-items-center gap-2"
+              disabled={!isDirty || saveMutation.isPending}
+              onClick={handleSubmit(onSave)}
+            >
+              <FiSave size={15} />
+              {saveMutation.isPending ? 'Saving…' : 'Save changes'}
+            </button>
+          )}
+        </div>
       )}
     >
       {completion && !completion.is_complete && (
@@ -292,6 +391,72 @@ export function ProfileWorkspace() {
                 </div>
               )}
             </WorkspaceFieldGrid>
+
+            {canGetHeadedPaper && (
+              <div className="mt-4 p-3 p-md-4 rounded-3 border" style={{ background: 'rgba(37, 99, 235, 0.04)' }}>
+                <div className="d-flex flex-wrap align-items-start gap-3">
+                  <div
+                    className="d-none d-sm-inline-flex align-items-center justify-content-center rounded-3 flex-shrink-0"
+                    style={{ width: 48, height: 48, background: 'rgba(37, 99, 235, 0.12)', color: '#2563eb' }}
+                  >
+                    <FiPrinter size={20} />
+                  </div>
+                  <div className="flex-grow-1 min-w-0">
+                    <h6 className="fw-semibold mb-1">Get headed paper</h6>
+                    <p className="text-muted small mb-3">
+                      Print blank professional letterhead for notes and memos.
+                      Page 1 has the full school header; later pages keep the footer only.
+                    </p>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
+                      disabled={headedBusy}
+                      onClick={handleGetHeadedPaper}
+                    >
+                      <FiPrinter size={15} />
+                      {headedBusy ? 'Preparing…' : 'Get headed paper'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </WorkspaceSection>
+        )}
+
+        {activeTab === 'stationery' && canGetHeadedPaper && (
+          <WorkspaceSection
+            title="School stationery"
+            description="Print blank professional letterhead for notes, memos, and official handwritten correspondence."
+            icon={FiFileText}
+          >
+            <div className="apex-card border p-4">
+              <div className="d-flex flex-wrap align-items-start gap-3">
+                <div
+                  className="d-none d-sm-inline-flex align-items-center justify-content-center rounded-3 flex-shrink-0"
+                  style={{ width: 52, height: 52, background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb' }}
+                >
+                  <FiPrinter size={22} />
+                </div>
+                <div className="flex-grow-1 min-w-0">
+                  <h6 className="fw-semibold mb-1">Get headed paper</h6>
+                  <p className="text-muted small mb-3 mb-md-2">
+                    Download blank A4 sheets with your school&apos;s branding.
+                    The <strong>first page</strong> shows the full header (logo, name, contacts, QR);
+                    <strong> every page</strong> keeps the footer (motto, contacts, page numbers).
+                    Light writing guides help handwritten notes stay neat.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm d-inline-flex align-items-center gap-2"
+                    disabled={headedBusy}
+                    onClick={handleGetHeadedPaper}
+                  >
+                    <FiPrinter size={15} />
+                    {headedBusy ? 'Preparing…' : 'Get headed paper'}
+                  </button>
+                </div>
+              </div>
+            </div>
           </WorkspaceSection>
         )}
 

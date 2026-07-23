@@ -89,7 +89,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.save(update_fields=["is_email_verified", "email_verified_at", "updated_at"])
 
     def has_role(self, *roles: str) -> bool:
-        return self.role in roles
+        """True if the *active* role matches (or any granted dual role)."""
+        if self.role in roles:
+            return True
+        try:
+            granted = set(
+                self.role_assignments.filter(is_active=True).values_list("role", flat=True)
+            )
+        except Exception:
+            granted = set()
+        return bool(granted.intersection(roles))
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         if self.role == UserRole.SUPER_ADMIN:
@@ -98,6 +107,61 @@ class User(AbstractBaseUser, PermissionsMixin):
         elif self.role in UserRole.STAFF_ROLES:
             self.is_staff = True
         super().save(*args, **kwargs)
+
+
+class UserRoleAssignment(models.Model):
+    """
+    Extra portal roles granted to a user (dual-role support).
+
+    `User.role` is the *active* role used for permissions and dashboards.
+    Assignments list every role the user may switch into.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="role_assignments",
+        db_index=True,
+    )
+    tenant = models.ForeignKey(
+        "tenants.Tenant",
+        on_delete=models.CASCADE,
+        related_name="user_role_assignments",
+        db_index=True,
+    )
+    role = models.CharField(max_length=30, choices=UserRole.CHOICES, db_index=True)
+    is_primary = models.BooleanField(
+        default=False,
+        help_text="Default role restored at login when multiple roles exist.",
+    )
+    is_active = models.BooleanField(default=True)
+    source = models.CharField(
+        max_length=30,
+        blank=True,
+        default="admin",
+        help_text="How this role was granted: admin | staff_onboard | parent_link | system",
+    )
+    granted_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="roles_granted",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_primary", "role"]
+        unique_together = [("user", "tenant", "role")]
+        indexes = [
+            models.Index(fields=["tenant", "role"]),
+            models.Index(fields=["user", "is_active"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user_id}:{self.role}"
 
 
 class UserProfilePicture(models.Model):
