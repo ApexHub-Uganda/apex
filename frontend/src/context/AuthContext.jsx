@@ -89,9 +89,15 @@ export function AuthProvider({ children }) {
         logout,
         updateUser,
         effectiveRole,
-        isSuperAdmin: user?.role === 'super_admin',
-        isSchoolAdmin: isSchoolAdminRole(user?.role) || user?.is_school_admin,
+        isSuperAdmin: user?.role === 'super_admin' || effectiveRole === 'super_admin',
+        // Prefer effective_role so portal role switches still count as school admin
+        isSchoolAdmin: Boolean(
+          user?.is_school_admin
+          || isSchoolAdminRole(user?.role)
+          || isSchoolAdminRole(effectiveRole),
+        ),
         isSchoolPortalUser: user?.role === 'super_admin' || isSchoolPortalRole(user?.role)
+          || isSchoolPortalRole(effectiveRole)
           || user?.is_school_portal_user,
       }}
     >

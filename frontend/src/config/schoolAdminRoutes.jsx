@@ -16,6 +16,7 @@ const DEDICATED_SEGMENTS = new Set([
   'hostel', 'transport', 'inventory', 'hr', 'hr/staffs', 'hr/staffs/new', 'payroll', 'reports',
   'communication', 'settings', 'settings/plans', 'notifications',
   'examinations/marks', 'examinations/approval', 'examinations/assessments',
+  'examinations/results',
   'academics/teacher', 'academics/hod', 'academics/dos', 'academics/class-teacher',
   'academics/subject-assignments', 'academics/teacher-assignments', 'academics/grading',
   'academics/assignments', 'academics/assignments/marks', 'academics/assignments/grades',

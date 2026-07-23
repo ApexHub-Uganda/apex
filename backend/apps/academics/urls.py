@@ -35,6 +35,8 @@ from apps.academics.exam_timetable_views import (
 )
 from apps.academics.promotion_report_views import (
     ClassBroadsheetPdfView,
+    ClassResultsOverviewView,
+    ClassTeacherRemarksView,
     PromotionCommitView,
     PromotionContextView,
     PromotionPreviewView,
@@ -43,6 +45,7 @@ from apps.academics.promotion_report_views import (
     ReportCardListLatestView,
     ReportCardPdfView,
     ReportCardPublishView,
+    ResultsCapabilitiesView,
 )
 from apps.academics.dos_ops_views import (
     AcademicTranscriptPdfView,
@@ -106,6 +109,9 @@ urlpatterns = [
     path("report-cards/publish/", ReportCardPublishView.as_view(), name="report-cards-publish"),
     path("report-cards/latest/", ReportCardListLatestView.as_view(), name="report-cards-latest"),
     path("report-cards/<uuid:pk>/pdf/", ReportCardPdfView.as_view(), name="report-card-pdf"),
+    path("report-cards/class-teacher-remarks/", ClassTeacherRemarksView.as_view(), name="report-cards-class-teacher-remarks"),
+    path("results/capabilities/", ResultsCapabilitiesView.as_view(), name="results-capabilities"),
+    path("results/class-overview/", ClassResultsOverviewView.as_view(), name="results-class-overview"),
     path("report-cards/broadsheet.pdf", ClassBroadsheetPdfView.as_view(), name="report-cards-broadsheet"),
     path("dos/performance/", DosPerformanceView.as_view(), name="dos-performance"),
     path("dos/marks-completeness/", DosMarksCompletenessView.as_view(), name="dos-marks-completeness"),

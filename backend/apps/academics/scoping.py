@@ -63,47 +63,156 @@ def user_has_school_wide_academic_access(user) -> bool:
 
 
 def user_has_unrestricted_marks_access(user) -> bool:
-    """Only school admin and Director of Studies may enter marks/grades for any term, class, or subject."""
-    if not user or not getattr(user, "is_authenticated", False):
-        return False
-    if user_is_school_admin(user):
-        return True
-    return normalize_role(getattr(user, "role", "")) == UserRole.DIRECTOR_OF_STUDIES
+    """
+    Legacy name kept for import compatibility.
+
+    Marks entry is **never** unrestricted: only the subject teacher for a
+    (subject, class) teaching assignment may write scores. School admin and DoS
+    do not enter marks.
+    """
+    return False
 
 
 def user_can_write_exam_marks(user, exam) -> bool:
-    """Enforce marks/grade write integrity for teachers vs DoS/school admin."""
+    """Only the assigned subject teacher may enter/edit marks for that exam."""
     if exam.exam_type == "assignment":
         return user_can_write_assignment_marks(user, exam)
-
-    if user_has_unrestricted_marks_access(user):
-        return True
 
     ctx = get_academic_context(user)
     if ctx is None or ctx.teacher is None:
         return False
 
-    from apps.examinations.marks_scoping import resolve_current_term
-
-    active_term = resolve_current_term(ctx.tenant)
-    if active_term is None or exam.term_id != active_term.id:
+    if (exam.subject_id, exam.school_class_id) not in ctx.teaching_pairs:
         return False
 
-    return (exam.subject_id, exam.school_class_id) in ctx.teaching_pairs
+    from apps.examinations.marks_scoping import resolve_active_exam_period, resolve_current_term
+
+    # Linked to the open exam period → always writable for the assigned teacher
+    active_period = resolve_active_exam_period(ctx.tenant)
+    if active_period is not None and exam.examination_session_id == active_period.id:
+        return True
+
+    active_term = resolve_current_term(ctx.tenant)
+    # Prefer current term; allow term-less scheduled exams (common for session windows).
+    if exam.term_id is None:
+        return True
+    if active_term is None:
+        return False
+    return exam.term_id == active_term.id
 
 
 def user_can_write_assignment_marks(user, exam) -> bool:
     """Class assignments: teaching-assignment scope only — no term restriction."""
     if getattr(exam, "exam_type", None) != "assignment":
         return False
-    if user_has_unrestricted_marks_access(user):
-        return True
 
     ctx = get_academic_context(user)
     if ctx is None or ctx.teacher is None:
         return False
 
     return (exam.subject_id, exam.school_class_id) in ctx.teaching_pairs
+
+
+def user_is_subject_marks_teacher(user) -> bool:
+    """User has at least one teaching assignment suitable for marks entry."""
+    ctx = get_academic_context(user)
+    return bool(ctx and ctx.teacher and ctx.teaching_pairs)
+
+
+def user_can_print_report_cards(user, school_class_id=None) -> bool:
+    """
+    Class teacher: headed classes only.
+    DoS / head leadership / school admin: any class (print & generate).
+    Subject teachers: never.
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    role = normalize_role(getattr(user, "role", ""))
+    if user_is_school_admin(user) or role in {
+        UserRole.DIRECTOR_OF_STUDIES,
+        UserRole.HEAD_TEACHER,
+        UserRole.DEPUTY_HEAD_TEACHER,
+    }:
+        return True
+    ctx = get_academic_context(user)
+    if ctx is None or not ctx.class_teacher_class_ids:
+        return False
+    if school_class_id is None:
+        return True
+    try:
+        cid = UUID(str(school_class_id)) if not isinstance(school_class_id, UUID) else school_class_id
+    except (TypeError, ValueError):
+        return False
+    return cid in ctx.class_teacher_class_ids
+
+
+def user_can_edit_class_teacher_remarks(user, school_class_id) -> bool:
+    """Class teacher remarks only for classes they head (not DoS/admin)."""
+    ctx = get_academic_context(user)
+    if ctx is None or not ctx.class_teacher_class_ids:
+        return False
+    try:
+        cid = UUID(str(school_class_id)) if not isinstance(school_class_id, UUID) else school_class_id
+    except (TypeError, ValueError):
+        return False
+    return cid in ctx.class_teacher_class_ids
+
+
+def user_can_read_class_results(user, school_class_id=None) -> bool:
+    """
+    Subject teacher: classes they teach.
+    Class teacher: classes they head (all subjects).
+    DoS / leadership / school admin: all classes.
+    """
+    if not user or not getattr(user, "is_authenticated", False):
+        return False
+    if user_has_school_wide_academic_access(user):
+        return True
+    ctx = get_academic_context(user)
+    if ctx is None:
+        return False
+    if school_class_id is None:
+        return bool(ctx.assigned_class_ids or ctx.class_teacher_class_ids)
+    try:
+        cid = UUID(str(school_class_id)) if not isinstance(school_class_id, UUID) else school_class_id
+    except (TypeError, ValueError):
+        return False
+    return cid in ctx.assigned_class_ids or cid in ctx.class_teacher_class_ids
+
+
+def results_role_capabilities(user) -> dict[str, Any]:
+    """UI/API capability flags for examinations results workspaces."""
+    ctx = get_academic_context(user)
+    role = normalize_role(getattr(user, "role", "")) if user else ""
+    is_dos = role == UserRole.DIRECTOR_OF_STUDIES
+    is_admin = user_is_school_admin(user)
+    is_leadership = user_has_school_wide_academic_access(user)
+    headed = [str(x) for x in (ctx.class_teacher_class_ids if ctx else set())]
+    taught_classes = [str(x) for x in (ctx.assigned_class_ids if ctx else set())]
+    teaching_pairs = [
+        {"subject_id": str(s), "school_class_id": str(c)}
+        for s, c in (ctx.teaching_pairs if ctx else set())
+    ]
+    return {
+        "role": role,
+        "can_enter_marks": user_is_subject_marks_teacher(user),
+        "can_apply_grading": user_is_subject_marks_teacher(user),
+        "can_print_report_cards": user_can_print_report_cards(user),
+        "can_edit_class_teacher_remarks": bool(headed),
+        "can_read_all_classes": is_leadership,
+        "is_class_teacher": bool(headed),
+        "is_dos": is_dos,
+        "is_school_admin": is_admin,
+        "headed_class_ids": headed,
+        "taught_class_ids": taught_classes,
+        "teaching_pairs": teaching_pairs,
+        "notes": {
+            "marks_entry": "Only subject teachers enter/edit/delete marks for assigned subject–class pairs.",
+            "results_view": "Subject teachers see results for their subjects only (no report-card print).",
+            "class_teacher": "Class teachers view all subject marks for headed classes, add general remarks, and print report cards.",
+            "dos": "Director of Studies may read all results and print report cards for any class (no marks edits).",
+        },
+    }
 
 
 def should_scope_to_assignments(user, *, feature_key: str | None = None) -> bool:
@@ -243,11 +352,31 @@ def _subject_filter(ctx: AcademicContext) -> Q | None:
 
 
 def _exam_filter(ctx: AcademicContext) -> Q:
+    """
+    Read scope for exams/grades.
+
+    - Subject teachers: exams for (subject, class) teaching pairs.
+    - Class teachers: *all* subjects for headed classes (view results, not write).
+    - Leadership: school-wide (handled before this filter is used).
+    """
+    clauses = Q()
+    has_clause = False
+
     if ctx.teaching_pairs:
         pair_query = Q()
         for subject_id, class_id in ctx.teaching_pairs:
             pair_query |= Q(subject_id=subject_id, school_class_id=class_id)
-        return pair_query
+        clauses |= pair_query
+        has_clause = True
+
+    # Class teachers need full subject visibility for report/results review.
+    if ctx.class_teacher_class_ids:
+        clauses |= Q(school_class_id__in=ctx.class_teacher_class_ids)
+        has_clause = True
+
+    if has_clause:
+        return clauses
+
     if ctx.assigned_subject_ids and ctx.assigned_class_ids:
         return Q(
             subject_id__in=ctx.assigned_subject_ids,

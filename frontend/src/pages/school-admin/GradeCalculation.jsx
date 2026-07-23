@@ -48,7 +48,7 @@ function assignmentStepIndex(selection, requiresPaper) {
 
 export function GradeCalculation({ context = 'examinations' }) {
   const { canWriteFeature } = usePermissions();
-  const canApply = canWriteFeature('grade_calculation');
+  const featureWrite = canWriteFeature('grade_calculation');
   const isAssignments = context === 'assignments';
   const backPath = isAssignments ? '/school-admin/academics/assignments' : '/school-admin/examinations';
   const backLabel = isAssignments ? 'Assignments' : 'Examinations';
@@ -109,6 +109,10 @@ export function GradeCalculation({ context = 'examinations' }) {
   const marksCount = options?.marks_count ?? Object.keys(grades).length;
   const selectedScheme = options?.selected_scheme;
   const scopeMeta = options?.scope_meta;
+  // Backend enforces teaching pairs only — admin/DoS cannot apply schemes
+  const canApply = featureWrite && (scopeMeta?.can_apply_grading !== false) && (scopeMeta?.can_enter_marks !== false);
+  const blockedReason = scopeMeta?.message
+    || (!featureWrite ? 'Grade calculation is not available for your account.' : null);
 
   const visibleSteps = useMemo(
     () => (isAssignments ? ASSIGNMENT_STEPS : EXAM_STEPS).filter((step) => step.key !== 'paper' || requiresPaper),
@@ -196,7 +200,7 @@ export function GradeCalculation({ context = 'examinations' }) {
   };
 
   const renderSelect = (id, label, value, items, disabled, required, placeholder) => (
-    <div className="col-md-6 col-lg-4" key={id}>
+    <div className="col-12 col-sm-6 col-xl-4" key={id}>
       <label className="form-label small fw-semibold" htmlFor={id}>
         {label}
         {required && <span className="text-danger"> *</span>}
@@ -217,6 +221,32 @@ export function GradeCalculation({ context = 'examinations' }) {
   );
 
   const assessmentItems = isAssignments ? assessments : exams.filter((e) => e.has_marks !== false);
+  const optionsReady = !isLoading && Boolean(options);
+
+  if (optionsReady && scopeMeta?.can_apply_grading === false) {
+    return (
+      <div>
+        <div className="mb-3">
+          <Link to={backPath} className="small text-decoration-none text-muted">
+            <FiArrowLeft className="me-1" /> {backLabel}
+          </Link>
+        </div>
+        <PageHeader title="Grade calculation" subtitle="Apply schemes to marks you entered" />
+        <div className="apex-card p-5">
+          <ModuleEmptyState
+            icon={FiPercent}
+            title="No grade calculation available"
+            message={
+              blockedReason
+              || 'You do not have subject–class assignments for grade calculation. Use Results to review scores.'
+            }
+            actionLabel="View results"
+            actionHref="/school-admin/examinations/results"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -230,8 +260,8 @@ export function GradeCalculation({ context = 'examinations' }) {
         title="Grade calculation"
         subtitle={
           isAssignments
-            ? 'Choose a grading scheme and assignment with entered marks, then apply letter grades.'
-            : 'Choose a grading scheme, your subject and class, then apply it to marks already entered'
+            ? 'Choose a grading scheme and apply letter grades to assignment marks you entered.'
+            : 'Choose a grading scheme for your subject and class, then apply letter grades to entered marks.'
         }
         actions={activeAssessmentId && canApply && marksCount > 0 && (
           <button
@@ -245,25 +275,27 @@ export function GradeCalculation({ context = 'examinations' }) {
         )}
       />
 
-      <div className="apex-card p-4 mb-4">
+      <div className="apex-card apex-card--responsive p-3 p-md-4 mb-4">
         <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
-          {visibleSteps.map((step, idx) => (
-            <div
-              key={step.key}
-              className={`marks-entry-step ${idx <= activeStep ? 'marks-entry-step--active' : ''} ${idx === activeStep ? 'marks-entry-step--current' : ''}`}
-            >
-              <span className="marks-entry-step-num">{idx + 1}</span>
-              <span className="small fw-medium">{step.label}</span>
-            </div>
-          ))}
+          <div className="marks-entry-steps flex-grow-1">
+            {visibleSteps.map((step, idx) => (
+              <div
+                key={step.key}
+                className={`marks-entry-step ${idx <= activeStep ? 'marks-entry-step--active' : ''} ${idx === activeStep ? 'marks-entry-step--current' : ''}`}
+              >
+                <span className="marks-entry-step-num">{idx + 1}</span>
+                <span className="small fw-medium marks-entry-step-label">{step.label}</span>
+              </div>
+            ))}
+          </div>
           {selection.scheme && (
-            <button type="button" className="btn btn-link btn-sm text-muted ms-auto p-0" onClick={resetAll}>
+            <button type="button" className="btn btn-link btn-sm text-muted p-0 flex-shrink-0" onClick={resetAll}>
               <FiRefreshCw size={14} className="me-1" /> Start over
             </button>
           )}
         </div>
 
-        <div className="row g-3">
+        <div className="row g-3 apex-form-grid">
           {renderSelect('scheme', 'Grading scheme', selection.scheme, schemes, isLoading && !options, true)}
           {selection.scheme && renderSelect('subject', 'Subject', selection.subject, subjects, false, true)}
           {selection.scheme && selection.subject && requiresPaper && renderSelect(
@@ -354,30 +386,30 @@ export function GradeCalculation({ context = 'examinations' }) {
 
       {activeAssessmentId && marksCount > 0 && (
         <div className="apex-card p-0 overflow-hidden">
-          <div className="p-4 border-bottom bg-light-subtle">
-            <h5 className="fw-bold mb-1">{examDetail?.name || 'Mark sheet'}</h5>
-            <p className="text-muted small mb-0">
+          <div className="p-3 p-md-4 border-bottom bg-light-subtle">
+            <h5 className="fw-bold mb-1 text-break">{examDetail?.name || 'Mark sheet'}</h5>
+            <p className="text-muted small mb-0 text-break">
               {marksCount} student(s) with scores
               {examDetail?.max_score ? ` · Max ${examDetail.max_score}` : ''}
               {resultRows.length ? ' · Grades applied' : ' · Apply scheme to generate letter grades'}
             </p>
           </div>
-          <div className="table-responsive">
-            <table className="table table-hover mb-0 align-middle">
+          <div className="apex-sheet-scroll">
+            <table className="table table-hover apex-sheet-table align-middle">
               <thead className="table-light">
                 <tr>
-                  <th>Admission No.</th>
-                  <th>Student</th>
+                  <th>Adm #</th>
+                  <th className="apex-sheet-col-student">Student</th>
                   <th className="text-end">Score</th>
                   <th>Grade</th>
-                  <th>Remarks</th>
+                  <th className="apex-sheet-col-remarks">Remarks</th>
                 </tr>
               </thead>
               <tbody>
                 {displayRows.map((row) => (
                   <tr key={row.student_id}>
                     <td className="text-muted small">{row.admission_number || '—'}</td>
-                    <td className="fw-medium">{row.student_name}</td>
+                    <td className="fw-medium apex-sheet-col-student">{row.student_name}</td>
                     <td className="text-end font-monospace">
                       {row.score}{row.max_score ? ` / ${row.max_score}` : ''}
                     </td>
@@ -388,7 +420,7 @@ export function GradeCalculation({ context = 'examinations' }) {
                         <span className="text-muted">—</span>
                       )}
                     </td>
-                    <td className="small text-muted">{row.remarks || '—'}</td>
+                    <td className="small text-muted apex-sheet-col-remarks">{row.remarks || '—'}</td>
                   </tr>
                 ))}
               </tbody>

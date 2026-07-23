@@ -4,8 +4,86 @@ import { FiSearch, FiChevronLeft, FiChevronRight, FiChevronRight as FiRowOpen, F
 import { PageLoader } from './ApexLoader';
 import { isNameColumn, isShortColumn, ROW_NUMBER_COLUMN } from '../utils/tableDisplay';
 
-/** Horizontal scroll only when the table has many columns. */
+/**
+ * Prefer horizontal scroll only when content is wider than the viewport.
+ * Column widths are derived from the longest value in each column.
+ */
 const WIDE_TABLE_COLUMN_THRESHOLD = 8;
+
+/** Approximate rendered text width (compact table font) + cell padding. */
+function approxTextWidthPx(text, { header = false } = {}) {
+  const s = String(text ?? '').replace(/\s+/g, ' ').trim();
+  if (!s) return header ? 48 : 32;
+  // ~0.8125rem body / ~0.6875rem header uppercase tracking
+  const perChar = header ? 6.4 : 7.1;
+  return Math.ceil(s.length * perChar) + (header ? 20 : 16);
+}
+
+function readColumnDisplayValue(col, row) {
+  if (!row) return '';
+  if (typeof col.searchValue === 'function') {
+    const v = col.searchValue(row);
+    if (v != null && v !== '') return String(v);
+  }
+  if (typeof col.accessor === 'function') {
+    const v = col.accessor(row);
+    if (v != null && typeof v !== 'object') return String(v);
+  } else if (col.accessor) {
+    const v = row[col.accessor];
+    if (v != null && typeof v !== 'object') return String(v);
+  }
+  const direct = row[col.key];
+  if (direct != null && typeof direct !== 'object') return String(direct);
+  return '';
+}
+
+/**
+ * Min-width per column from header label + longest data value (or explicit col.minWidth).
+ * Caps only absurd free-text so layout stays usable; no clipping that causes overlaps.
+ */
+function computeContentColumnWidths(columns, rows) {
+  const map = {};
+  columns.forEach((col) => {
+    if (col.key === '_rowNum') {
+      map[col.key] = 28;
+      return;
+    }
+    if (col.key === '_open') {
+      map[col.key] = 30;
+      return;
+    }
+    if (col.key === 'actions') {
+      map[col.key] = 76;
+      return;
+    }
+    if (col.minWidth && String(col.minWidth).endsWith('rem')) {
+      const parsed = parseFloat(String(col.minWidth));
+      if (Number.isFinite(parsed)) {
+        map[col.key] = Math.ceil(parsed * 16);
+        return;
+      }
+    }
+    if (col.width && String(col.width).endsWith('rem') && !col.render) {
+      const parsed = parseFloat(String(col.width));
+      if (Number.isFinite(parsed)) {
+        map[col.key] = Math.ceil(parsed * 16);
+        return;
+      }
+    }
+
+    let maxPx = approxTextWidthPx(col.label || '', { header: true }) + (col.sortable ? 12 : 0);
+    // Custom-rendered columns: still size from label + any plain accessor text
+    const sampleLimit = Math.min(rows.length, 200);
+    for (let i = 0; i < sampleLimit; i += 1) {
+      const text = readColumnDisplayValue(col, rows[i]);
+      if (text) maxPx = Math.max(maxPx, approxTextWidthPx(text));
+    }
+    // Soft cap only for extreme free-text (emails, long notes) — still scrollable, no overlap
+    const softCap = col.render ? 220 : 360;
+    map[col.key] = Math.min(Math.max(maxPx, 36), softCap);
+  });
+  return map;
+}
 
 /** Flatten row values used for multi-token client search. */
 function rowSearchBlob(row, columns, searchKeys) {
@@ -123,47 +201,43 @@ export function DataTable({
 
   const isAlwaysScrollable = scrollable;
   const isWideTable = displayColumns.length >= WIDE_TABLE_COLUMN_THRESHOLD;
-  const useExpandedLayout = isAlwaysScrollable || isWideTable;
+  // Content-based widths always; scroll when wide, explicit scrollable, or many columns.
+  const useExpandedLayout = true;
+
+  // Size each column from the longest value in the current dataset (+ header).
+  const contentWidths = useMemo(
+    () => computeContentColumnWidths(displayColumns, filtered),
+    [displayColumns, filtered],
+  );
 
   const tableMinWidth = useMemo(() => {
-    if (!useExpandedLayout) return undefined;
-    const total = displayColumns.reduce((sum, col) => {
-      if (col.key === '_rowNum') return sum + 22;
-      if (col.key === '_open') return sum + 32;
-      if (col.key === 'actions') return sum + 44;
-      if (isNameColumn(col)) return sum + 112;
-      if (col.width && String(col.width).endsWith('rem')) {
-        const parsed = parseFloat(String(col.width));
-        return sum + (Number.isFinite(parsed) ? parsed * 16 : 72);
-      }
-      if (col.minWidth && String(col.minWidth).endsWith('rem')) {
-        const parsed = parseFloat(String(col.minWidth));
-        return sum + (Number.isFinite(parsed) ? parsed * 16 : 72);
-      }
-      return sum + 72;
-    }, 0);
-    return Math.max(total, 640);
-  }, [displayColumns, useExpandedLayout]);
+    const total = displayColumns.reduce(
+      (sum, col) => sum + (contentWidths[col.key] || 48),
+      0,
+    );
+    return Math.max(total, 240);
+  }, [displayColumns, contentWidths]);
 
   const wrapperClassName = [
     'apex-table-wrapper',
-    useExpandedLayout ? 'apex-table-wrapper--scrollable' : 'apex-table-wrapper--fit',
-    isWideTable ? 'apex-table-wrapper--wide' : '',
+    'apex-table-wrapper--scrollable',
+    'apex-table-wrapper--content-sized',
+    isWideTable || isAlwaysScrollable ? 'apex-table-wrapper--wide' : '',
+    'apex-table-wrapper--mobile-scroll',
   ].filter(Boolean).join(' ');
 
   const tableClassName = [
     'table',
     'apex-table',
+    'apex-table--content-sized',
     'mb-0',
     compact ? 'apex-table--compact' : '',
-    useExpandedLayout ? 'apex-table--scrollable' : '',
+    'apex-table--scrollable',
     isWideTable ? 'apex-table--wide' : '',
     hasNameColumns ? 'apex-table--has-names' : '',
   ].filter(Boolean).join(' ');
 
-  const wrapperStyle = isWideTable && !isAlwaysScrollable && tableMinWidth
-    ? { '--apex-table-min-width': `${tableMinWidth}px` }
-    : undefined;
+  const wrapperStyle = { '--apex-table-min-width': `${tableMinWidth}px` };
 
   const getCellClass = (col) => {
     if (col.key === '_rowNum') return 'apex-table-cell--rownum';
@@ -172,25 +246,22 @@ export function DataTable({
     if (isNameColumn(col)) return 'apex-table-cell--name';
     if (isShortColumn(col)) return 'apex-table-cell--short';
     if (col.truncate === false || col.render) return 'apex-table-cell--fit';
-    return 'apex-table-cell--truncate';
+    // Content-sized: no truncate wrapper that fights natural width
+    return 'apex-table-cell--fit';
   };
 
   const wrapCellContent = (col, content, title) => {
-    if (
-      col.key === '_rowNum'
-      || col.key === '_open'
-      || col.key === 'actions'
-      || isNameColumn(col)
-      || col.render
-      || col.truncate === false
-    ) {
-      return content;
+    // Show full value; title still helps for custom/long content
+    if (title && typeof content === 'string') {
+      return <span title={title}>{content}</span>;
     }
-    return (
-      <span className="apex-cell-truncate" title={title}>
-        {content}
-      </span>
-    );
+    return content;
+  };
+
+  const colMinStyle = (col) => {
+    const px = contentWidths[col.key];
+    if (!px) return undefined;
+    return { minWidth: px, width: 'auto' };
   };
 
   const getHeaderClass = (col) => {
@@ -270,23 +341,16 @@ export function DataTable({
       <div className={wrapperClassName} style={wrapperStyle}>
         <table
           className={tableClassName}
-          style={useExpandedLayout && tableMinWidth ? { minWidth: tableMinWidth } : undefined}
+          style={{ minWidth: tableMinWidth }}
         >
           <colgroup>
             {displayColumns.map((col) => (
               <col
                 key={col.key}
-                style={
-                  isNameColumn(col)
-                    ? {
-                        width: '1%',
-                        minWidth: col.minWidth || '7rem',
-                        maxWidth: col.maxWidth || '14rem',
-                      }
-                    : col.key === '_rowNum'
-                      ? { width: '1.35rem' }
-                      : { width: col.width || col.minWidth || undefined }
-                }
+                style={{
+                  minWidth: contentWidths[col.key] || undefined,
+                  width: 'auto',
+                }}
               />
             ))}
           </colgroup>
@@ -299,12 +363,10 @@ export function DataTable({
                   onClick={col.sortable ? () => handleSort(col.key) : undefined}
                   style={{
                     cursor: col.sortable ? 'pointer' : 'default',
-                    ...(isAlwaysScrollable
-                      ? { minWidth: col.minWidth || (col.key === '_rowNum' ? '2.75rem' : col.key === 'actions' ? '7rem' : undefined) }
-                      : col.width ? { width: col.width } : {}),
+                    ...colMinStyle(col),
                   }}
                 >
-                  <span className="d-flex align-items-center gap-1">
+                  <span className="d-flex align-items-center gap-1 text-nowrap">
                     {col.label}
                     {col.sortable && sortKey === col.key && (
                       <FiFilter size={12} style={{ transform: sortDir === 'desc' ? 'rotate(180deg)' : 'none' }} />
@@ -337,22 +399,20 @@ export function DataTable({
                   {displayColumns.map((col) => {
                     if (col.key === '_rowNum') {
                       return (
-                        <td key={col.key} className={getCellClass(col)}>
+                        <td key={col.key} className={getCellClass(col)} style={colMinStyle(col)}>
                           {serial}
                         </td>
                       );
                     }
                     if (col.key === '_open') {
                       return (
-                        <td key={col.key} className={getCellClass(col)}>
+                        <td key={col.key} className={getCellClass(col)} style={colMinStyle(col)}>
                           <FiRowOpen size={14} className="apex-table-row-open-icon text-muted" aria-hidden />
                         </td>
                       );
                     }
                     const rawVal = getCellValue(col, row);
-                    const title = col.truncate !== false && col.key !== 'actions' && rawVal != null && rawVal !== ''
-                      ? String(rawVal)
-                      : undefined;
+                    const title = rawVal != null && rawVal !== '' ? String(rawVal) : undefined;
                     const rendered = col.render
                       ? col.render(row, { serial, rowIndex: i })
                       : (rawVal ?? '—');
@@ -360,7 +420,7 @@ export function DataTable({
                       <td
                         key={col.key}
                         className={getCellClass(col)}
-                        style={isAlwaysScrollable && col.minWidth ? { minWidth: col.minWidth } : undefined}
+                        style={colMinStyle(col)}
                       >
                         {wrapCellContent(col, rendered, title)}
                       </td>

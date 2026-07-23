@@ -227,7 +227,10 @@ class TestAcademicScoping:
         assert len(terms) == 1
         assert terms[0]["value"] == str(academic_setup["term"].id)
 
-    def test_marks_entry_rejects_past_term_for_teacher(self, api_client, academic_setup, scoping_tenant):
+    def test_marks_entry_ignores_client_past_term_and_uses_current(
+        self, api_client, academic_setup, scoping_tenant,
+    ):
+        """Teachers cannot pick a past term — server always uses the current term."""
         past_term = Term.objects.create(
             tenant=scoping_tenant,
             academic_year=academic_setup["year"],
@@ -246,7 +249,13 @@ class TestAcademicScoping:
                 "term": past_term.id,
             },
         )
-        assert response.status_code == 403
+        assert response.status_code == 200
+        data = response.data["data"]
+        assert data["scope_meta"]["current_term_id"] == str(academic_setup["term"].id)
+        assert data["auto_select"]["term"] == str(academic_setup["term"].id)
+        # Assigned exam in the current term is still listed
+        exam_ids = {e["value"] for e in data["exams"]}
+        assert str(academic_setup["assigned_exam"].id) in exam_ids
 
     def test_marks_entry_bulk_denied_for_unassigned_exam(self, api_client, academic_setup):
         api_client.force_authenticate(user=academic_setup["teacher_user"])

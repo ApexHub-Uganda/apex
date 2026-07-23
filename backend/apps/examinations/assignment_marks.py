@@ -13,8 +13,9 @@ from apps.academics.models import Class, Subject
 from apps.academics.scoping import (
     filter_queryset_for_user,
     get_academic_context,
+    results_role_capabilities,
     user_can_write_assignment_marks,
-    user_has_unrestricted_marks_access,
+    user_is_subject_marks_teacher,
 )
 from apps.examinations.constants import EXAM_LIFECYCLE_PUBLISHED, MARKS_STATUS_DRAFT
 from apps.examinations.marks_scoping import marks_class_options, marks_subject_options
@@ -30,12 +31,21 @@ class AssignmentMarksError(Exception):
 
 
 def assignment_scope_meta(tenant, user) -> dict:
-    unrestricted = user_has_unrestricted_marks_access(user)
+    can_enter = user_is_subject_marks_teacher(user)
+    caps = results_role_capabilities(user)
     return {
-        "is_unrestricted": unrestricted,
+        "is_unrestricted": False,
         "term_locked": False,
-        "uses_teaching_assignments": not unrestricted,
+        "uses_teaching_assignments": True,
         "is_assignment_flow": True,
+        "can_enter_marks": can_enter,
+        "can_apply_grading": can_enter,
+        "can_print_report_cards": caps["can_print_report_cards"],
+        "capabilities": caps,
+        "message": (
+            None if can_enter
+            else "Assignment marks entry is only available for classes and subjects assigned to you."
+        ),
     }
 
 
@@ -93,8 +103,7 @@ def assignment_assessment_options(
 
 
 def user_can_create_assignment(user, *, subject_id, school_class_id) -> bool:
-    if user_has_unrestricted_marks_access(user):
-        return True
+    """Only the subject teacher for the pair may create assignment assessments."""
     ctx = get_academic_context(user)
     if ctx is None or ctx.teacher is None:
         return False

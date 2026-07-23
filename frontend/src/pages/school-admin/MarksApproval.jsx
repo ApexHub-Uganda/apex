@@ -117,8 +117,8 @@ export function MarksApproval() {
         </div>
       ) : (
         <div className="apex-card p-0 overflow-hidden">
-          <div className="table-responsive">
-            <table className="table table-hover mb-0 align-middle">
+          <div className="apex-sheet-scroll">
+            <table className="table table-hover apex-sheet-table align-middle">
               <thead className="table-light">
                 <tr>
                   {canApprove && (

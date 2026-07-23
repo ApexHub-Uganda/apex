@@ -25,7 +25,12 @@ function groupResults(results = []) {
   return [...groups.entries()];
 }
 
-export function GlobalSearch({ disabled = false, placeholder = 'Search modules, people, actions…' }) {
+export function GlobalSearch({
+  disabled = false,
+  placeholder,
+  compactPlaceholder = 'Search…',
+  fullPlaceholder = 'Search modules, people, actions…',
+}) {
   const navigate = useNavigate();
   const containerRef = useRef(null);
   const inputRef = useRef(null);
@@ -33,6 +38,18 @@ export function GlobalSearch({ disabled = false, placeholder = 'Search modules, 
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [isCompact, setIsCompact] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 768,
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsCompact(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const resolvedPlaceholder = placeholder
+    || (isCompact ? compactPlaceholder : fullPlaceholder);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 250);
@@ -108,7 +125,7 @@ export function GlobalSearch({ disabled = false, placeholder = 'Search modules, 
         ref={inputRef}
         type="search"
         className="form-control form-control-sm apex-global-search-input"
-        placeholder={disabled ? 'Search unavailable while suspended' : placeholder}
+        placeholder={disabled ? 'Search unavailable' : resolvedPlaceholder}
         value={query}
         disabled={disabled}
         onChange={(event) => {

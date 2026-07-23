@@ -33,12 +33,13 @@ def exam_marks_are_editable(exam: Exam) -> bool:
 
 
 def exam_allows_mark_entry(exam: Exam) -> bool:
+    """Teachers may enter marks once an exam is scheduled (draft or published)."""
     if exam.exam_type == "assignment":
         return exam_marks_are_editable(exam)
-    return (
-        exam.lifecycle_status == EXAM_LIFECYCLE_PUBLISHED
-        and exam_marks_are_editable(exam)
-    )
+    if exam.lifecycle_status == EXAM_LIFECYCLE_ARCHIVED:
+        return False
+    # Draft (just scheduled) and published both allow mark entry; archived does not.
+    return exam_marks_are_editable(exam)
 
 
 @transaction.atomic
@@ -65,6 +66,13 @@ def archive_exam(*, exam: Exam, user) -> Exam:
 
 @transaction.atomic
 def submit_exam_marks(*, exam: Exam, user) -> Exam:
+    if exam.lifecycle_status == EXAM_LIFECYCLE_ARCHIVED:
+        raise MarksWorkflowError("Archived assessments cannot be submitted.", code="archived")
+    # Auto-publish draft schedules so submit can proceed after teachers enter marks.
+    if exam.lifecycle_status == EXAM_LIFECYCLE_DRAFT:
+        exam.lifecycle_status = EXAM_LIFECYCLE_PUBLISHED
+        exam.published_at = timezone.now()
+        exam.published_by = user
     if exam.lifecycle_status != EXAM_LIFECYCLE_PUBLISHED:
         raise MarksWorkflowError("Only published assessments can be submitted for approval.", code="not_published")
     if exam.marks_status != MARKS_STATUS_DRAFT:
@@ -78,6 +86,7 @@ def submit_exam_marks(*, exam: Exam, user) -> Exam:
     exam.marks_submitted_by = user
     exam.updated_by = user
     exam.save(update_fields=[
+        "lifecycle_status", "published_at", "published_by",
         "marks_status", "marks_submitted_at", "marks_submitted_by", "updated_by", "updated_at",
     ])
     exam.grades.filter(is_deleted=False).update(

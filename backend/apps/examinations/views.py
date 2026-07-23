@@ -7,7 +7,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.academics.mixins import AcademicScopeMixin, ExaminationSessionSingletonMixin
-from apps.academics.scoping import filter_queryset_for_user, user_can_access_exam, user_can_write_exam_marks, user_has_unrestricted_marks_access
+from apps.academics.scoping import (
+    filter_queryset_for_user,
+    user_can_access_exam,
+    user_can_write_exam_marks,
+)
 from apps.core.permissions import IsStaffMember, RequiresAnyFeature, RequiresFeature, TenantActivePermission
 from apps.core.views import BaseModelViewSet
 from apps.examinations.models import Exam, ExaminationSession, Grade, GradingScale, GradingScheme, ReportCard
@@ -34,10 +38,14 @@ from apps.examinations.serializers import (
 )
 from apps.examinations.grading import GradingSchemeError, apply_grading_scheme, sync_scheme_bands
 from apps.examinations.marks_scoping import (
+    ensure_marks_sheet_for_pair,
+    exam_option_row,
     marks_class_options,
+    marks_exam_queryset,
     marks_scope_meta,
     marks_subject_options,
     marks_term_options,
+    resolve_current_term,
 )
 from apps.examinations.services import bulk_upsert_grades
 from apps.examinations.constants import MARKS_STATUS_SUBMITTED
@@ -282,6 +290,11 @@ class ExamViewSet(AcademicScopeMixin, BaseModelViewSet):
 
 
 class GradeViewSet(AcademicScopeMixin, BaseModelViewSet):
+    """
+    List/read: scoped (teaching pairs + class-teacher headed classes + leadership).
+    Write/delete: subject teacher for that exam only — never admin/DoS by role alone.
+    """
+
     required_feature_key = "marks_entry"
     queryset = Grade.objects.select_related(
         "exam", "exam__subject", "exam__paper", "student", "graded_by",
@@ -291,13 +304,41 @@ class GradeViewSet(AcademicScopeMixin, BaseModelViewSet):
     filterset_fields = ["exam", "student", "exam__subject", "exam__school_class", "exam__term", "exam__paper"]
     search_fields = ["student__first_name", "student__last_name", "student__admission_number"]
 
+    def _assert_can_write_grade(self, exam: Exam) -> None:
+        if not user_can_write_exam_marks(self.request.user, exam):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied(
+                "Only the subject teacher assigned to this class and subject may enter, edit, or delete marks."
+            )
+
+    def perform_create(self, serializer):
+        exam = serializer.validated_data.get("exam")
+        if exam is None and serializer.instance is not None:
+            exam = serializer.instance.exam
+        if exam is not None:
+            self._assert_can_write_grade(exam)
+        super().perform_create(serializer)
+
+    def perform_update(self, serializer):
+        exam = serializer.instance.exam if serializer.instance else serializer.validated_data.get("exam")
+        if exam is not None:
+            self._assert_can_write_grade(exam)
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        self._assert_can_write_grade(instance.exam)
+        super().perform_destroy(instance)
+
 
 class ReportCardViewSet(AcademicScopeMixin, BaseModelViewSet):
+    """Report card CRUD is read-oriented; generation/print use dedicated endpoints."""
+
     required_feature_key = "report_cards"
     queryset = ReportCard.objects.select_related("student", "term", "school_class")
     serializer_class = ReportCardSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["student", "term", "school_class", "is_published"]
+    http_method_names = ["get", "head", "options"]
 
 
 class MarksApprovalQueueView(APIView):
@@ -440,7 +481,12 @@ class ExaminationReferenceView(APIView):
 
 
 class MarksEntryOptionsView(APIView):
-    """Cascading subject → paper → class → term → exam → students."""
+    """
+    Subject → (optional paper) → class → exam → students.
+
+    Term and academic year are fixed to the current school calendar (not chosen
+    by the teacher). Only taught subject–class pairs are returned.
+    """
 
     permission_classes = [IsAuthenticated, IsStaffMember, TenantActivePermission]
 
@@ -457,32 +503,51 @@ class MarksEntryOptionsView(APIView):
         subject_id = request.query_params.get("subject")
         paper_id = request.query_params.get("paper")
         class_id = request.query_params.get("school_class")
-        term_id = request.query_params.get("term")
         exam_id = request.query_params.get("exam")
+        # Ignore client-provided term; always use current term
         academic_year_id = request.query_params.get("academic_year")
 
         user = request.user
         year = current_academic_year(tenant)
+        active_term = resolve_current_term(tenant)
         scope_meta = marks_scope_meta(tenant, user)
-        if not user_has_unrestricted_marks_access(user) and term_id and scope_meta.get("current_term_id"):
-            if str(term_id) != scope_meta["current_term_id"]:
-                return Response(
-                    {"success": False, "message": "You may only work with marks for the current academic term."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        current_term_id = scope_meta.get("current_term_id")
+        year_id = academic_year_id or scope_meta.get("current_academic_year_id") or (
+            str(year.id) if year else None
+        )
+
+        subjects = marks_subject_options(tenant, user)
         data: dict = {
             "scope_meta": scope_meta,
-            "subjects": marks_subject_options(tenant, user),
+            "subjects": subjects,
             "academic_years": academic_year_options(tenant),
-            "current_academic_year": str(year.id) if year else None,
+            "current_academic_year": year_id,
+            "current_term": (
+                {
+                    "value": str(active_term.id),
+                    "label": f"{active_term.name} — {active_term.academic_year.name}",
+                    "id": str(active_term.id),
+                    "name": active_term.name,
+                }
+                if active_term
+                else None
+            ),
             "papers": [],
             "requires_paper": False,
             "classes": [],
-            "terms": [],
+            # Terms list kept for compatibility; wizard no longer asks teachers to pick
+            "terms": marks_term_options(tenant, user=user),
             "exams": [],
             "students": [],
             "grades": {},
             "exam_detail": None,
+            "auto_select": {
+                "subject": subjects[0]["value"] if len(subjects) == 1 else None,
+                "school_class": None,
+                "paper": None,
+                "exam": None,
+                "term": current_term_id,
+            },
         }
 
         if not subject_id:
@@ -491,65 +556,75 @@ class MarksEntryOptionsView(APIView):
         papers = paper_options(tenant, subject_id)
         data["papers"] = papers
         data["requires_paper"] = len(papers) > 0
+        if len(papers) == 1:
+            data["auto_select"]["paper"] = papers[0]["value"]
+
+        classes = marks_class_options(
+            tenant,
+            subject_id=subject_id,
+            academic_year_id=year_id,
+            user=user,
+        )
+        data["classes"] = classes
+        if len(classes) == 1:
+            data["auto_select"]["school_class"] = classes[0]["value"]
 
         if not class_id:
-            data["classes"] = marks_class_options(
-                tenant,
-                subject_id=subject_id,
-                academic_year_id=academic_year_id or (str(year.id) if year else None),
-                user=user,
-            )
             return Response({"success": True, "data": data})
 
-        if not term_id:
-            data["terms"] = marks_term_options(
-                tenant,
-                school_class_id=class_id,
-                academic_year_id=academic_year_id,
-                user=user,
-            )
-            return Response({"success": True, "data": data})
-
-        exam_qs = filter_queryset_for_user(
-            Exam.objects.filter(
-                tenant=tenant,
-                subject_id=subject_id,
-                school_class_id=class_id,
-                term_id=term_id,
-            ).select_related("subject", "paper", "school_class", "term"),
+        # Active exam period → ensure a mark sheet exists for this taught pair
+        # (Exam Sessions are windows; mark sheets are per subject/class).
+        ensured = ensure_marks_sheet_for_pair(
+            tenant,
             user,
+            subject_id=subject_id,
+            school_class_id=class_id,
+            paper_id=paper_id,
         )
 
-        if paper_id:
-            exam_qs = exam_qs.filter(paper_id=paper_id)
-        else:
-            exam_qs = exam_qs.filter(paper__isnull=True)
-
-        exams = exam_qs.order_by("-exam_date")
-        data["exams"] = [
-            _option(
-                e.id,
-                f"{e.name} — {e.exam_date} ({e.get_exam_type_display()})",
-                max_score=str(e.max_score),
-                paper_code=e.paper.code if e.paper_id else "",
-            )
-            for e in exams
-        ]
+        exam_qs = marks_exam_queryset(
+            tenant,
+            user,
+            subject_id=subject_id,
+            school_class_id=class_id,
+            term_id=current_term_id,
+            paper_id=paper_id,
+        )
+        exam_list = list(exam_qs)
+        # If ensure created a sheet but queryset edge-case missed it, include it
+        if ensured is not None and not any(str(e.id) == str(ensured.id) for e in exam_list):
+            exam_list = [ensured, *exam_list]
+        data["exams"] = [exam_option_row(e) for e in exam_list]
+        data["marks_sheet_provisioned"] = bool(ensured)
+        if len(exam_list) == 1:
+            data["auto_select"]["exam"] = str(exam_list[0].id)
+        elif ensured is not None:
+            data["auto_select"]["exam"] = str(ensured.id)
 
         if not exam_id:
             return Response({"success": True, "data": data})
 
-        try:
-            exam = exams.get(pk=exam_id)
-        except Exam.DoesNotExist:
+        exam = next((e for e in exam_list if str(e.id) == str(exam_id)), None)
+        if exam is None and ensured is not None and str(ensured.id) == str(exam_id):
+            exam = ensured
+        if exam is None:
             return Response(
-                {"success": False, "message": "Exam not found for the selected filters."},
+                {
+                    "success": False,
+                    "message": (
+                        "No mark sheet found. Open an Exam Session under Examinations → Exam Sessions, "
+                        "then return here — a sheet is created automatically for subjects you teach."
+                    ),
+                },
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         if not user_can_write_exam_marks(user, exam):
             return Response(
-                {"success": False, "message": "You may only enter marks for your assigned classes and subjects in the current term."},
+                {
+                    "success": False,
+                    "message": "You may only enter marks for subjects and classes assigned to you in the current term.",
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -557,9 +632,12 @@ class MarksEntryOptionsView(APIView):
             tenant=tenant,
             school_class_id=exam.school_class_id,
             status="active",
+            is_deleted=False,
         ).order_by("last_name", "first_name")
 
-        grades = Grade.objects.filter(tenant=tenant, exam=exam).select_related("student")
+        grades = Grade.objects.filter(
+            tenant=tenant, exam=exam, is_deleted=False,
+        ).select_related("student")
         grade_map = {
             str(g.student_id): {
                 "id": str(g.id),
@@ -668,12 +746,8 @@ class GradeCalculationOptionsView(APIView):
         user = request.user
         year = current_academic_year(tenant)
         scope_meta = marks_scope_meta(tenant, user)
-        if not user_has_unrestricted_marks_access(user) and term_id and scope_meta.get("current_term_id"):
-            if str(term_id) != scope_meta["current_term_id"]:
-                return Response(
-                    {"success": False, "message": "You may only calculate grades for the current academic term."},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        # Term is always the current calendar term (client term param ignored for scope)
+        del term_id  # noqa: F841 — kept for query-param parity
         schemes = GradingScheme.objects.filter(tenant=tenant, is_deleted=False).prefetch_related("bands").order_by("name")
         data: dict = {
             "scope_meta": scope_meta,
@@ -714,70 +788,85 @@ class GradeCalculationOptionsView(APIView):
             if scheme is not None:
                 data["selected_scheme"] = GradingSchemeSerializer(scheme).data
 
+        current_term_id = scope_meta.get("current_term_id")
+        year_id = academic_year_id or scope_meta.get("current_academic_year_id") or (
+            str(year.id) if year else None
+        )
+        data["auto_select"] = {
+            "subject": data["subjects"][0]["value"] if len(data["subjects"]) == 1 else None,
+            "school_class": None,
+            "paper": None,
+            "exam": None,
+            "term": current_term_id,
+            "scheme": None,
+        }
+        default_scheme = next((s for s in data["schemes"] if s.get("is_default")), None)
+        if default_scheme:
+            data["auto_select"]["scheme"] = default_scheme["value"]
+        elif len(data["schemes"]) == 1:
+            data["auto_select"]["scheme"] = data["schemes"][0]["value"]
+
         if not subject_id:
             return Response({"success": True, "data": data})
 
         papers = paper_options(tenant, subject_id)
         data["papers"] = papers
         data["requires_paper"] = len(papers) > 0
+        if len(papers) == 1:
+            data["auto_select"]["paper"] = papers[0]["value"]
+
+        classes = marks_class_options(
+            tenant,
+            subject_id=subject_id,
+            academic_year_id=year_id,
+            user=user,
+        )
+        data["classes"] = classes
+        if len(classes) == 1:
+            data["auto_select"]["school_class"] = classes[0]["value"]
+
+        data["terms"] = marks_term_options(tenant, school_class_id=class_id, user=user)
 
         if not class_id:
-            data["classes"] = marks_class_options(
-                tenant,
-                subject_id=subject_id,
-                academic_year_id=academic_year_id or (str(year.id) if year else None),
-                user=user,
-            )
             return Response({"success": True, "data": data})
 
-        if not term_id:
-            data["terms"] = marks_term_options(
-                tenant,
-                school_class_id=class_id,
-                academic_year_id=academic_year_id,
-                user=user,
-            )
-            return Response({"success": True, "data": data})
-
-        exam_qs = filter_queryset_for_user(
-            Exam.objects.filter(
-                tenant=tenant,
-                subject_id=subject_id,
-                school_class_id=class_id,
-                term_id=term_id,
-            ).select_related("subject", "paper", "school_class", "term"),
+        ensure_marks_sheet_for_pair(
+            tenant,
             user,
+            subject_id=subject_id,
+            school_class_id=class_id,
+            paper_id=paper_id,
         )
-        if paper_id:
-            exam_qs = exam_qs.filter(paper_id=paper_id)
-        else:
-            exam_qs = exam_qs.filter(paper__isnull=True)
-
-        data["exams"] = [
-            _option(
-                e.id,
-                f"{e.name} — {e.exam_date} ({e.get_exam_type_display()})",
-                max_score=str(e.max_score),
-                marks_status=e.marks_status,
-                has_marks=e.grades.filter(is_deleted=False).exists(),
-            )
-            for e in exam_qs.order_by("-exam_date")
-        ]
+        exam_qs = marks_exam_queryset(
+            tenant,
+            user,
+            subject_id=subject_id,
+            school_class_id=class_id,
+            term_id=current_term_id,
+            paper_id=paper_id,
+        )
+        # Prefer exams that already have marks for grade calculation
+        exam_list = list(exam_qs)
+        data["exams"] = [exam_option_row(e) for e in exam_list]
+        with_marks = [e for e in exam_list if e.grades.filter(is_deleted=False).exists()]
+        if len(with_marks) == 1:
+            data["auto_select"]["exam"] = str(with_marks[0].id)
+        elif len(exam_list) == 1:
+            data["auto_select"]["exam"] = str(exam_list[0].id)
 
         if not exam_id:
             return Response({"success": True, "data": data})
 
-        try:
-            exam = exam_qs.get(pk=exam_id)
-        except Exam.DoesNotExist:
+        exam = next((e for e in exam_list if str(e.id) == str(exam_id)), None)
+        if exam is None:
             return Response(
-                {"success": False, "message": "Exam not found for the selected filters."},
+                {"success": False, "message": "Exam not found for your teaching assignment and the current term."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         if not user_can_write_exam_marks(user, exam):
             return Response(
-                {"success": False, "message": "You may only calculate grades for your assigned classes and subjects in the current term."},
+                {"success": False, "message": "You may only calculate grades for subjects and classes assigned to you."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 

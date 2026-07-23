@@ -7,7 +7,7 @@ from decimal import Decimal
 import pytest
 from rest_framework.test import APIClient
 
-from apps.academics.models import AcademicYear, Class, Subject, Term
+from apps.academics.models import AcademicYear, Class, Subject, Term, Timetable
 from apps.examinations.models import Exam, Grade, GradingScheme, GradingSchemeBand
 from apps.staff.services import onboard_staff
 from apps.core.constants import UserRole
@@ -63,7 +63,23 @@ def dos_user(db, grading_tenant):
 
 
 @pytest.fixture
-def grading_setup(db, grading_tenant, dos_user):
+def subject_teacher_user(db, grading_tenant):
+    staff = onboard_staff(
+        grading_tenant,
+        data={
+            "first_name": "Math",
+            "last_name": "Teacher",
+            "email": "math.teacher@grading.test",
+            "phone": "+254700000602",
+            "portal_role": UserRole.TEACHER,
+            "date_joined": "2026-01-01",
+        },
+    )
+    return staff.user
+
+
+@pytest.fixture
+def grading_setup(db, grading_tenant, dos_user, subject_teacher_user):
     year = AcademicYear.objects.create(
         tenant=grading_tenant,
         name="2026",
@@ -84,6 +100,16 @@ def grading_setup(db, grading_tenant, dos_user):
         tenant=grading_tenant, name="Grade 7", code="G7", academic_year=year,
     )
     math = Subject.objects.create(tenant=grading_tenant, name="Mathematics", code="MTC")
+    teacher = subject_teacher_user.staff_profile.teacher_profile
+    Timetable.objects.create(
+        tenant=grading_tenant,
+        school_class=school_class,
+        subject=math,
+        teacher=teacher,
+        day_of_week=0,
+        start_time="08:00",
+        end_time="09:00",
+    )
     exam = Exam.objects.create(
         tenant=grading_tenant,
         name="Midterm Maths",
@@ -119,6 +145,7 @@ def grading_setup(db, grading_tenant, dos_user):
         "subject": math,
         "exam": exam,
         "student": student,
+        "teacher_user": subject_teacher_user,
     }
 
 
@@ -143,7 +170,8 @@ class TestGradingSchemes:
         assert response.data["data"]["name"] == "O-Level"
         assert GradingSchemeBand.objects.filter(scheme__name="O-Level").count() == 2
 
-    def test_apply_scheme_to_entered_marks(self, api_client, dos_user, grading_setup, grading_tenant):
+    def test_apply_scheme_to_entered_marks(self, api_client, grading_setup, grading_tenant):
+        """Only the subject teacher may apply a grading scheme to their marks."""
         scheme = GradingScheme.objects.create(
             tenant=grading_tenant, name="Test Scale", is_default=True,
         )
@@ -156,7 +184,7 @@ class TestGradingSchemes:
             min_score=Decimal("70"), max_score=Decimal("79"), grade="B",
         )
 
-        api_client.force_authenticate(user=dos_user)
+        api_client.force_authenticate(user=grading_setup["teacher_user"])
         response = api_client.post(
             "/api/v1/examinations/grade-calculation/apply/",
             {"scheme": str(scheme.id), "exam": str(grading_setup["exam"].id)},
@@ -168,6 +196,22 @@ class TestGradingSchemes:
 
         grade = Grade.objects.get(exam=grading_setup["exam"], student=grading_setup["student"])
         assert grade.grade == "A"
+
+    def test_dos_cannot_apply_scheme(self, api_client, dos_user, grading_setup, grading_tenant):
+        scheme = GradingScheme.objects.create(
+            tenant=grading_tenant, name="Blocked Scale", is_default=True,
+        )
+        GradingSchemeBand.objects.create(
+            tenant=grading_tenant, scheme=scheme,
+            min_score=Decimal("80"), max_score=Decimal("100"), grade="A",
+        )
+        api_client.force_authenticate(user=dos_user)
+        response = api_client.post(
+            "/api/v1/examinations/grade-calculation/apply/",
+            {"scheme": str(scheme.id), "exam": str(grading_setup["exam"].id)},
+            format="json",
+        )
+        assert response.status_code == 403
 
     def test_grade_calculation_options_lists_schemes(self, api_client, dos_user, grading_tenant):
         GradingScheme.objects.create(tenant=grading_tenant, name="CBC", is_default=True)

@@ -543,6 +543,8 @@ export const academicReportCardsService = {
   latest: (params = {}) => api.get('/academics/report-cards/latest/', { params }).then((r) => unwrapData(r)),
   generate: (payload) => api.post('/academics/report-cards/generate/', payload).then((r) => unwrapData(r)),
   publish: (payload) => api.post('/academics/report-cards/publish/', payload).then((r) => unwrapData(r)),
+  saveClassTeacherRemarks: (payload) => api.post('/academics/report-cards/class-teacher-remarks/', payload).then((r) => unwrapData(r)),
+  capabilities: () => api.get('/academics/results/capabilities/').then((r) => unwrapData(r)),
   pdf: (id) => api.get(`/academics/report-cards/${id}/pdf/`, { responseType: 'blob' }).then(async (r) => {
     const blob = r.data;
     const url = window.URL.createObjectURL(blob);
@@ -565,6 +567,13 @@ export const academicReportCardsService = {
     a.remove();
     window.URL.revokeObjectURL(url);
   }),
+};
+export const resultsCapabilitiesService = {
+  get: () => api.get('/examinations/results/capabilities/').then((r) => unwrapData(r)),
+};
+export const classResultsService = {
+  overview: (params = {}) => api.get('/academics/results/class-overview/', { params }).then((r) => unwrapData(r)),
+  capabilities: () => api.get('/academics/results/capabilities/').then((r) => unwrapData(r)),
 };
 export const reportCardsService = createCrudService('/examinations/report-cards/');
 

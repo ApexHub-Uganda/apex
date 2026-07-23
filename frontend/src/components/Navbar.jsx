@@ -312,8 +312,6 @@ export function Navbar({
         transition: 'left 0.25s',
         display: 'flex',
         alignItems: 'center',
-        padding: '0 1.5rem',
-        gap: '1rem',
         overflow: 'visible',
       }}
     >
@@ -333,17 +331,17 @@ export function Navbar({
         </span>
       </motion.button>
 
-      <div className={`d-none d-md-flex align-items-center flex-grow-1 ${suspended ? 'is-disabled-control' : ''}`} style={{ maxWidth: 480 }}>
+      <div className={`apex-navbar-search flex-grow-1 ${suspended ? 'is-disabled-control' : ''}`}>
         <GlobalSearch disabled={suspended} />
       </div>
 
-      <div className="ms-auto d-flex align-items-center gap-2">
+      <div className="ms-auto d-flex align-items-center gap-1 gap-md-2 apex-navbar-actions">
         {tenant && (
           <SchoolNameWithBadge
             name={tenant.name}
             planSlug={tenant.subscription?.plan_slug || user?.tenant_plan_slug}
             size="sm"
-            className="d-none d-md-inline-flex text-muted small fw-medium"
+            className="d-none d-lg-inline-flex text-muted small fw-medium"
           />
         )}
 

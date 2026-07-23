@@ -324,7 +324,7 @@ export function ClassAttendance({ initialClassId = '' }) {
             )}
           </div>
 
-          <div className="table-responsive">
+          <div className="apex-sheet-scroll">
             <table className="table table-hover mb-0 align-middle">
               <thead className="table-light">
                 <tr>

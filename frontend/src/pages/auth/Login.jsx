@@ -9,7 +9,7 @@ import { useTheme } from '../../hooks/useTheme';
 import { getLoginErrorMessage } from '../../utils/authErrors';
 import { notify } from '../../utils/notify';
 import { emailFormatRules } from '../../utils/emailValidation';
-import { InlineLoader } from '../../components/ApexLoader';
+
 
 export function Login() {
   const { login } = useAuth();
@@ -120,7 +120,7 @@ export function Login() {
         <button type="submit" className="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2" disabled={loading}>
           {loading ? (
             <>
-              <InlineLoader />
+              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
               <span>Signing in</span>
             </>
           ) : (

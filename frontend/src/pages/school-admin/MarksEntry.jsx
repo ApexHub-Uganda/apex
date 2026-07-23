@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiArrowLeft, FiCheck, FiRefreshCw, FiSave } from 'react-icons/fi';
@@ -8,11 +8,12 @@ import { assignmentMarksService, examsService, marksEntryService } from '../../s
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
 
+// Examination marks: subject → paper (if needed) → class → exam → marks.
+// Term / academic year are fixed to the current calendar (never asked).
 const EXAM_STEPS = [
   { key: 'subject', label: 'Subject' },
   { key: 'paper', label: 'Paper' },
   { key: 'class', label: 'Class' },
-  { key: 'term', label: 'Term' },
   { key: 'exam', label: 'Exam' },
   { key: 'marks', label: 'Enter Marks' },
 ];
@@ -27,11 +28,13 @@ const ASSIGNMENT_STEPS = [
 
 function examStepIndex(selection, requiresPaper) {
   if (!selection.subject) return 0;
-  if (requiresPaper && !selection.paper && selection.paper !== 'none') return 1;
-  if (!selection.school_class) return requiresPaper ? 2 : 1;
-  if (!selection.term) return requiresPaper ? 3 : 2;
-  if (!selection.exam) return requiresPaper ? 4 : 3;
-  return requiresPaper ? 5 : 4;
+  // Paper is optional filter (shown when subject has papers); class follows subject.
+  if (!selection.school_class) return 1;
+  if (requiresPaper && !selection.paper && !selection.exam) {
+    // Stay on paper step only if multi-paper and no exam chosen yet
+  }
+  if (!selection.exam) return requiresPaper ? 2 : 2;
+  return 3;
 }
 
 function assignmentStepIndex(selection, requiresPaper) {
@@ -42,10 +45,15 @@ function assignmentStepIndex(selection, requiresPaper) {
   return requiresPaper ? 4 : 3;
 }
 
+function singleValue(items) {
+  if (!items || items.length !== 1) return null;
+  return String(items[0].value);
+}
+
 export function MarksEntry({ context = 'examinations' }) {
   const queryClient = useQueryClient();
   const { canWriteFeature } = usePermissions();
-  const canManage = canWriteFeature('marks_entry');
+  const featureWrite = canWriteFeature('marks_entry');
   const isAssignments = context === 'assignments';
   const backPath = isAssignments ? '/school-admin/academics/assignments' : '/school-admin/examinations';
   const backLabel = isAssignments ? 'Assignments' : 'Examinations';
@@ -64,6 +72,7 @@ export function MarksEntry({ context = 'examinations' }) {
   const [remarks, setRemarks] = useState({});
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const autoApplied = useRef({ subject: false, paper: false, class: false, exam: false, term: false });
 
   const optionsParams = useMemo(() => {
     if (isAssignments) {
@@ -78,7 +87,7 @@ export function MarksEntry({ context = 'examinations' }) {
       subject: selection.subject || undefined,
       paper: selection.paper || undefined,
       school_class: selection.school_class || undefined,
-      term: selection.term || undefined,
+      // term always server-side current; do not send client term
       exam: selection.exam || undefined,
     };
   }, [isAssignments, selection]);
@@ -90,7 +99,7 @@ export function MarksEntry({ context = 'examinations' }) {
         ? assignmentMarksService.getOptions(optionsParams)
         : marksEntryService.getOptions(optionsParams)
     ),
-    staleTime: 30_000,
+    staleTime: 15_000,
     enabled: !isAssignments || !openingAssessment,
   });
 
@@ -98,13 +107,102 @@ export function MarksEntry({ context = 'examinations' }) {
   const papers = options?.papers || [];
   const requiresPaper = options?.requires_paper || false;
   const classes = options?.classes || [];
-  const terms = options?.terms || [];
   const exams = options?.exams || [];
   const assessments = options?.assessments || [];
   const students = options?.students || [];
   const grades = options?.grades || {};
   const examDetail = options?.exam_detail;
   const scopeMeta = options?.scope_meta;
+  const currentTerm = options?.current_term;
+  const autoSelect = options?.auto_select || {};
+  const canManage = featureWrite && (scopeMeta?.can_enter_marks !== false);
+  const blockedReason = scopeMeta?.message
+    || (!featureWrite ? 'Marks entry is not available for your account.' : null);
+
+  // Auto-pick fixed / single options to shorten the wizard
+  useEffect(() => {
+    if (!options || isAssignments) return;
+
+    setSelection((prev) => {
+      let next = prev;
+      let changed = false;
+      const ensure = (key, value) => {
+        if (!value || next[key]) return;
+        if (next === prev) next = { ...prev };
+        next[key] = String(value);
+        changed = true;
+      };
+
+      // Current term (always)
+      const termId = autoSelect.term || scopeMeta?.current_term_id || currentTerm?.value;
+      if (termId && !next.term) {
+        if (next === prev) next = { ...prev };
+        next.term = String(termId);
+        changed = true;
+      }
+
+      // Single subject
+      const onlySubject = autoSelect.subject || singleValue(subjects);
+      ensure('subject', onlySubject);
+
+      // Single paper when subject uses papers
+      if (next.subject && requiresPaper) {
+        const onlyPaper = autoSelect.paper || singleValue(papers);
+        ensure('paper', onlyPaper);
+      }
+
+      // Single class for this subject
+      if (next.subject) {
+        const onlyClass = autoSelect.school_class || singleValue(classes);
+        ensure('school_class', onlyClass);
+      }
+
+      // Single exam for subject/class/term
+      if (next.school_class) {
+        const onlyExam = autoSelect.exam || singleValue(exams);
+        ensure('exam', onlyExam);
+      }
+
+      return changed ? next : prev;
+    });
+  }, [
+    isAssignments,
+    options,
+    subjects,
+    papers,
+    classes,
+    exams,
+    requiresPaper,
+    autoSelect.subject,
+    autoSelect.paper,
+    autoSelect.school_class,
+    autoSelect.exam,
+    autoSelect.term,
+    scopeMeta?.current_term_id,
+    currentTerm?.value,
+  ]);
+
+  // Assignments: auto subject/class only
+  useEffect(() => {
+    if (!options || !isAssignments) return;
+    setSelection((prev) => {
+      let next = prev;
+      let changed = false;
+      if (!next.subject && subjects.length === 1) {
+        next = { ...next, subject: String(subjects[0].value) };
+        changed = true;
+      }
+      if (next.subject && requiresPaper && !next.paper && papers.length === 1) {
+        next = { ...next, paper: String(papers[0].value) };
+        changed = true;
+      }
+      if (next.subject && !next.school_class && classes.length === 1) {
+        next = { ...next, school_class: String(classes[0].value) };
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [isAssignments, options, subjects, papers, classes, requiresPaper]);
 
   const visibleSteps = useMemo(
     () => (isAssignments ? ASSIGNMENT_STEPS : EXAM_STEPS).filter((step) => step.key !== 'paper' || requiresPaper),
@@ -137,23 +235,18 @@ export function MarksEntry({ context = 'examinations' }) {
     if (key === 'subject') {
       next.paper = '';
       next.school_class = '';
-      next.term = '';
       next.exam = '';
       next.assessment = '';
       setAssignmentName('');
     } else if (key === 'paper') {
-      next.school_class = '';
-      next.term = '';
+      next.school_class = selection.school_class; // keep class when only changing paper
       next.exam = '';
       next.assessment = '';
       setAssignmentName('');
     } else if (key === 'school_class') {
-      next.term = '';
       next.exam = '';
       next.assessment = '';
       setAssignmentName('');
-    } else if (key === 'term') {
-      next.exam = '';
     } else if (key === 'assessment') {
       const picked = assessments.find((item) => item.value === value);
       setAssignmentName(picked?.label || '');
@@ -168,6 +261,7 @@ export function MarksEntry({ context = 'examinations' }) {
     setAssignmentName('');
     setScores({});
     setRemarks({});
+    autoApplied.current = { subject: false, paper: false, class: false, exam: false, term: false };
     queryClient.removeQueries({ queryKey: [isAssignments ? 'assignment-marks-options' : 'marks-entry-options'] });
   };
 
@@ -258,7 +352,7 @@ export function MarksEntry({ context = 'examinations' }) {
   };
 
   const renderSelect = (id, label, value, items, disabled, required, placeholder) => (
-    <div className="col-md-6 col-lg-3" key={id}>
+    <div className="col-12 col-sm-6 col-xl-3" key={id}>
       <label className="form-label small fw-semibold" htmlFor={id}>
         {label}
         {required && <span className="text-danger"> *</span>}
@@ -267,10 +361,12 @@ export function MarksEntry({ context = 'examinations' }) {
         id={id}
         className="form-select"
         value={value}
-        disabled={disabled || (id !== 'subject' && isLoading)}
+        disabled={disabled || (id !== 'subject' && isLoading) || items.length <= 1}
         onChange={(e) => updateSelection(id, e.target.value)}
       >
-        <option value="">{placeholder || `Select ${label.toLowerCase()}…`}</option>
+        {items.length !== 1 && (
+          <option value="">{placeholder || `Select ${label.toLowerCase()}…`}</option>
+        )}
         {items.map((item) => (
           <option key={item.value} value={item.value}>{item.label}</option>
         ))}
@@ -279,6 +375,35 @@ export function MarksEntry({ context = 'examinations' }) {
   );
 
   const subjectsLoading = isLoading && !options;
+
+  if (!subjectsLoading && options && scopeMeta?.can_enter_marks === false) {
+    return (
+      <div>
+        <div className="mb-3">
+          <Link to={backPath} className="small text-decoration-none text-muted">
+            <FiArrowLeft className="me-1" /> {backLabel}
+          </Link>
+        </div>
+        <PageHeader title="Marks Entry" subtitle="Enter scores for your teaching assignments" />
+        <div className="apex-card p-5">
+          <ModuleEmptyState
+            title="No marks entry available"
+            message={
+              blockedReason
+              || 'You do not have subject–class assignments for marks entry. Use Results to review scores.'
+            }
+            actionLabel="View results"
+            actionHref="/school-admin/examinations/results"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const termLabel = currentTerm?.label
+    || (scopeMeta?.current_term_name
+      ? `${scopeMeta.current_term_name}${scopeMeta.current_academic_year_name ? ` · ${scopeMeta.current_academic_year_name}` : ''}`
+      : null);
 
   return (
     <div>
@@ -292,8 +417,8 @@ export function MarksEntry({ context = 'examinations' }) {
         title={isAssignments ? 'Marks entry' : 'Marks Entry'}
         subtitle={
           isAssignments
-            ? 'Choose your subject and class, name the assignment, then enter student scores. No term selection is required.'
-            : 'Choose subject first, then class and school-defined term before entering scores'
+            ? 'Enter scores for classes and subjects you teach, then apply a grading scheme under Grade Calculation.'
+            : 'Enter scores for subjects and classes you teach. The current term is applied automatically.'
         }
         actions={activeAssessmentId && (canEditMarks || canSubmit) && (
           <div className="d-flex gap-2">
@@ -321,21 +446,23 @@ export function MarksEntry({ context = 'examinations' }) {
         )}
       />
 
-      <div className="apex-card p-4 mb-4">
+      <div className="apex-card apex-card--responsive p-3 p-md-4 mb-4">
         <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
-          {visibleSteps.map((step, idx) => (
-            <div
-              key={step.key}
-              className={`marks-entry-step ${idx <= activeStep ? 'marks-entry-step--active' : ''} ${idx === activeStep ? 'marks-entry-step--current' : ''}`}
-            >
-              <span className="marks-entry-step-num">{idx + 1}</span>
-              <span className="small fw-medium">{step.label}</span>
-            </div>
-          ))}
+          <div className="marks-entry-steps flex-grow-1">
+            {visibleSteps.map((step, idx) => (
+              <div
+                key={step.key}
+                className={`marks-entry-step ${idx <= activeStep ? 'marks-entry-step--active' : ''} ${idx === activeStep ? 'marks-entry-step--current' : ''}`}
+              >
+                <span className="marks-entry-step-num">{idx + 1}</span>
+                <span className="small fw-medium marks-entry-step-label">{step.label}</span>
+              </div>
+            ))}
+          </div>
           {selection.subject && (
             <button
               type="button"
-              className="btn btn-link btn-sm text-muted ms-auto p-0"
+              className="btn btn-link btn-sm text-muted p-0 flex-shrink-0"
               onClick={resetAll}
             >
               <FiRefreshCw size={14} className="me-1" /> Start over
@@ -343,7 +470,26 @@ export function MarksEntry({ context = 'examinations' }) {
           )}
         </div>
 
-        <div className="row g-3">
+        {!isAssignments && (termLabel || scopeMeta?.active_exam_period) && (
+          <div className="alert alert-light border small mb-3 py-2">
+            {termLabel && (
+              <div className="text-break">
+                <strong>Current term:</strong> {termLabel}
+                <span className="text-muted d-none d-sm-inline ms-2">— applied automatically</span>
+              </div>
+            )}
+            {scopeMeta?.active_exam_period && (
+              <div className={`text-break ${termLabel ? 'mt-1' : ''}`}>
+                <strong>Exam period:</strong> {scopeMeta.active_exam_period.name}
+                {scopeMeta.active_exam_period.end_date
+                  ? ` (until ${scopeMeta.active_exam_period.end_date})`
+                  : ''}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="row g-3 apex-form-grid">
           {renderSelect(
             'subject',
             'Subject',
@@ -358,8 +504,8 @@ export function MarksEntry({ context = 'examinations' }) {
             selection.paper,
             papers,
             false,
-            false,
-            'Whole subject (no paper)',
+            true,
+            'Select paper…',
           )}
           {selection.subject && renderSelect(
             'school_class',
@@ -372,7 +518,7 @@ export function MarksEntry({ context = 'examinations' }) {
 
           {isAssignments && selection.school_class && (
             <>
-              <div className="col-md-6 col-lg-4">
+              <div className="col-12 col-sm-6 col-xl-4">
                 <label className="form-label small fw-semibold" htmlFor="assignment-name">
                   Assignment name <span className="text-danger">*</span>
                 </label>
@@ -391,7 +537,7 @@ export function MarksEntry({ context = 'examinations' }) {
                 />
               </div>
               {assessments.length > 0 && (
-                <div className="col-md-6 col-lg-4">
+                <div className="col-12 col-sm-6 col-xl-4">
                   <label className="form-label small fw-semibold" htmlFor="assessment">
                     Or pick existing
                   </label>
@@ -408,7 +554,7 @@ export function MarksEntry({ context = 'examinations' }) {
                   </select>
                 </div>
               )}
-              <div className="col-md-6 col-lg-4 d-flex align-items-end">
+              <div className="col-12 col-sm-6 col-xl-4 d-flex align-items-end">
                 <button
                   type="button"
                   className="btn btn-outline-primary w-100"
@@ -422,44 +568,42 @@ export function MarksEntry({ context = 'examinations' }) {
           )}
 
           {!isAssignments && selection.school_class && renderSelect(
-            'term',
-            'Term',
-            selection.term,
-            terms,
-            !selection.school_class,
-            true,
-          )}
-          {!isAssignments && selection.term && renderSelect(
             'exam',
             'Exam',
             selection.exam,
             exams,
-            !selection.term,
+            !selection.school_class,
             true,
           )}
         </div>
 
-        {scopeMeta?.uses_teaching_assignments && (
-          <div className="alert alert-info mt-3 mb-0 small">
-            Showing only subjects and classes from your teaching assignments.
-          </div>
-        )}
         {selection.subject && !isLoading && classes.length === 0 && !selection.school_class && (
           <div className="alert alert-warning mt-3 mb-0 small">
-            {isAssignments
-              ? 'No classes are linked to this subject in your teaching assignments.'
-              : 'No classes are linked to this subject yet. Assign the subject in timetables, homework, or schedule an exam first.'}
+            No classes are linked to this subject in your teaching assignments.
+            Ask the DoS or school admin to assign you this subject for a class.
           </div>
         )}
-        {!isAssignments && selection.school_class && !isLoading && terms.length === 0 && !selection.term && (
+        {!isAssignments && selection.school_class && !isLoading && exams.length === 0 && !selection.exam && (
           <div className="alert alert-warning mt-3 mb-0 small">
-            No terms are defined for this class&apos;s academic year. Add terms under Academics → Terms.
+            {scopeMeta?.has_active_exam_period
+              ? 'No mark sheet could be opened for this subject and class. Confirm you are assigned to teach this pair, then try Start over.'
+              : (
+                <>
+                  No open exam period. A school admin or DoS must create and activate an{' '}
+                  <Link to="/school-admin/examinations/sessions">Exam Session</Link>
+                  {' '}(exam period). Mark sheets are then created automatically when you select a subject and class you teach.
+                </>
+              )}
           </div>
         )}
-        {!isAssignments && selection.term && !isLoading && exams.length === 0 && !selection.exam && (
+        {!isAssignments && !scopeMeta?.current_term_id && !isLoading && (
           <div className="alert alert-warning mt-3 mb-0 small">
-            No exams match this selection.{' '}
-            <Link to="/school-admin/examinations">Schedule an exam</Link> for this subject, class, and term.
+            No current academic term is set. A school admin must set the current term under Academics → Terms.
+          </div>
+        )}
+        {!isAssignments && scopeMeta?.setup_hint && !scopeMeta?.has_active_exam_period && !selection.school_class && (
+          <div className="alert alert-info mt-3 mb-0 small">
+            {scopeMeta.setup_hint}
           </div>
         )}
       </div>
@@ -470,10 +614,10 @@ export function MarksEntry({ context = 'examinations' }) {
 
       {activeAssessmentId && (
         <div className="apex-card p-0 overflow-hidden">
-          <div className="p-4 border-bottom bg-light-subtle">
-            <h5 className="fw-bold mb-1">{examDetail?.name || 'Enter marks'}</h5>
+          <div className="p-3 p-md-4 border-bottom bg-light-subtle">
+            <h5 className="fw-bold mb-1 text-break">{examDetail?.name || 'Enter marks'}</h5>
             <div className="d-flex flex-wrap align-items-center gap-2">
-              <p className="text-muted small mb-0">
+              <p className="text-muted small mb-0 text-break">
                 {examDetail?.subject_name}
                 {examDetail?.paper_code ? ` · ${examDetail.paper_code}` : ''}
                 {' · '}{examDetail?.school_class_name}
@@ -498,16 +642,16 @@ export function MarksEntry({ context = 'examinations' }) {
               actionHref="/school-admin/students"
             />
           ) : (
-            <div className="table-responsive">
-              <table className="table table-hover mb-0 align-middle">
+            <div className="apex-sheet-scroll">
+              <table className="table table-hover apex-sheet-table align-middle">
                 <thead className="table-light">
                   <tr>
-                    <th style={{ width: 48 }}>#</th>
-                    <th>Student</th>
-                    <th>Admission No.</th>
-                    <th style={{ width: 120 }}>Score</th>
-                    <th style={{ width: 80 }}>Grade</th>
-                    <th>Remarks</th>
+                    <th style={{ width: 40 }}>#</th>
+                    <th className="apex-sheet-col-student">Student</th>
+                    <th>Adm #</th>
+                    <th className="apex-sheet-col-score">Score</th>
+                    <th style={{ width: 72 }}>Grade</th>
+                    <th className="apex-sheet-col-remarks">Remarks</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -518,9 +662,9 @@ export function MarksEntry({ context = 'examinations' }) {
                     return (
                       <tr key={student.id}>
                         <td className="text-muted">{idx + 1}</td>
-                        <td className="fw-medium">{student.full_name}</td>
+                        <td className="fw-medium apex-sheet-col-student">{student.full_name}</td>
                         <td className="text-muted small">{student.admission_number}</td>
-                        <td>
+                        <td className="apex-sheet-col-score">
                           <input
                             type="number"
                             className="form-control form-control-sm"
@@ -531,6 +675,7 @@ export function MarksEntry({ context = 'examinations' }) {
                             value={scoreVal}
                             onChange={(e) => setScores((prev) => ({ ...prev, [student.id]: e.target.value }))}
                             placeholder="—"
+                            inputMode="decimal"
                           />
                         </td>
                         <td>
@@ -538,7 +683,7 @@ export function MarksEntry({ context = 'examinations' }) {
                             <span className="badge text-bg-primary-subtle border text-primary">{existing.grade}</span>
                           ) : '—'}
                         </td>
-                        <td>
+                        <td className="apex-sheet-col-remarks">
                           <input
                             type="text"
                             className="form-control form-control-sm"
@@ -557,10 +702,10 @@ export function MarksEntry({ context = 'examinations' }) {
           )}
 
           {students.length > 0 && canEditMarks && (
-            <div className="p-3 border-top d-flex justify-content-end gap-2">
+            <div className="p-3 border-top d-flex flex-wrap justify-content-stretch justify-content-md-end gap-2">
               <button
                 type="button"
-                className="btn btn-primary d-inline-flex align-items-center gap-1"
+                className="btn btn-primary d-inline-flex align-items-center justify-content-center gap-1 flex-grow-1 flex-md-grow-0"
                 onClick={handleSave}
                 disabled={saving}
               >
@@ -568,23 +713,6 @@ export function MarksEntry({ context = 'examinations' }) {
               </button>
             </div>
           )}
-        </div>
-      )}
-
-      {!selection.subject && !subjectsLoading && (
-        <div className="apex-card p-5">
-          <ModuleEmptyState
-            title={subjects.length === 0 ? 'No subjects found' : 'Choose a subject to begin'}
-            message={
-              subjects.length === 0
-                ? 'Add subjects under Academics → Subjects. They will appear here automatically for marks entry.'
-                : isAssignments
-                  ? 'Select your subject and class, name the assignment, then enter scores.'
-                  : 'Marks entry starts with the subject. Select one, then pick class, term, and exam.'
-            }
-            actionLabel={subjects.length === 0 ? 'Add subjects' : undefined}
-            actionHref={subjects.length === 0 ? '/school-admin/academics/subjects' : undefined}
-          />
         </div>
       )}
     </div>

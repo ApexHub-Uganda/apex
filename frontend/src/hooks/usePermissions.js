@@ -54,6 +54,8 @@ export function usePermissions() {
   const hasAllPermissions = (...perms) => perms.every(hasPermission);
 
   return {
+    user,
+    isSchoolAdmin: Boolean(isSchoolAdmin),
     permissions: permissionList,
     modulePermissions,
     featurePermissions,

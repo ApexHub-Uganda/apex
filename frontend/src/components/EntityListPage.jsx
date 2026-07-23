@@ -135,6 +135,7 @@ export function EntityListPage({
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [endingCurrent, setEndingCurrent] = useState(false);
 
   const listParams = config.listParams || {};
 
@@ -153,16 +154,26 @@ export function EntityListPage({
   const records = listPayload?.records ?? [];
   const listMeta = listPayload?.meta ?? null;
   const creationLocked = Boolean(listMeta?.creation_locked);
-  // Create stays locked while a period is active (all roles). School admins keep full edit/delete.
-  const canCreate = canManage && config.creatable !== false && !creationLocked;
-  const canEditRecords = canManage || isSchoolAdmin;
-  const isReadOnlyViewer = !canEditRecords;
-  const hideSingletonTable = Boolean(
+  // Academic years, terms, exam periods: non-admins may create (when unlocked) then only read.
+  // School admin alone may edit, delete, or change status after creation.
+  const isPeriodSingleton = Boolean(
     config.singleton
+    && (featureKey === 'academic_years' || featureKey === 'terms' || featureKey === 'examination_sessions'),
+  );
+  // Prefer API meta when present; always allow school admin
+  const canMutatePeriods = Boolean(isSchoolAdmin || listMeta?.can_mutate);
+  const canCreate = canManage && config.creatable !== false && !creationLocked;
+  const canEditRecords = isPeriodSingleton
+    ? canMutatePeriods
+    : (canManage || isSchoolAdmin);
+  const isReadOnlyViewer = !canEditRecords;
+  // Non-admins hide the full table while a period is active (panel is enough).
+  // School admins always see the table + panel actions.
+  const hideSingletonTable = Boolean(
+    isPeriodSingleton
     && creationLocked
     && listMeta?.active_record
-    && !isSchoolAdmin
-    && (featureKey === 'academic_years' || featureKey === 'terms' || featureKey === 'examination_sessions'),
+    && !canMutatePeriods,
   );
   const scopedEmptyTitle = `No ${title.toLowerCase()} assigned to you`;
   const scopedEmptyMessage = 'You only see records linked to your teaching assignments. Contact the Director of Studies if something is missing.';
@@ -252,7 +263,7 @@ export function EntityListPage({
 
   const handleDelete = async (row) => {
     if (!config.service?.delete) return;
-    const label = row.title || row.subject || row.recipient_email || row.recipient_phone || 'this record';
+    const label = row.title || row.subject || row.name || row.recipient_email || row.recipient_phone || 'this record';
     const result = await alert.delete(`"${label}"`);
     if (!result.isConfirmed) return;
 
@@ -266,6 +277,58 @@ export function EntityListPage({
     } finally {
       setDeletingId(null);
     }
+  };
+
+  const resolveActiveRow = () => {
+    const active = listMeta?.active_record;
+    if (!active?.id) return null;
+    return records.find((r) => String(r.id) === String(active.id)) || active;
+  };
+
+  const openEditCurrent = () => {
+    const row = resolveActiveRow();
+    if (row) openEdit(row);
+  };
+
+  const handleEndCurrent = async () => {
+    const row = resolveActiveRow();
+    if (!row?.id || !config.service?.update) return;
+    const singletonType = listMeta?.singleton_type
+      || (typeof config.singleton === 'object' ? config.singleton.type : config.singleton);
+    const today = new Date().toISOString().slice(0, 10);
+    const confirm = await alert.confirm({
+      title: singletonType === 'examination_session' ? 'End exam period?' : 'End current period?',
+      text: singletonType === 'examination_session'
+        ? `Close “${row.name}” so a new exam period can be created. Marks already entered are kept.`
+        : `Mark “${row.name}” as ended so a new ${title.toLowerCase().replace(/s$/i, '')} can be created.`,
+      confirmText: 'Yes, end it',
+      cancelText: 'Cancel',
+      icon: 'warning',
+    });
+    if (!confirm.isConfirmed) return;
+
+    setEndingCurrent(true);
+    try {
+      const payload = singletonType === 'examination_session'
+        ? { status: 'closed', end_date: today }
+        : { is_current: false, end_date: today };
+      await config.service.update(row.id, payload);
+      notify.success(
+        singletonType === 'examination_session'
+          ? 'Exam period closed.'
+          : `${title.replace(/s$/i, '')} ended.`,
+      );
+      await queryClient.invalidateQueries({ queryKey: config.queryKey });
+    } catch (err) {
+      notify.error(extractApiError(err, 'Unable to end this period.'));
+    } finally {
+      setEndingCurrent(false);
+    }
+  };
+
+  const handleDeleteCurrent = async () => {
+    const row = resolveActiveRow();
+    if (row) await handleDelete(row);
   };
 
   const handleDeleteAll = async () => {
@@ -519,15 +582,21 @@ export function EntityListPage({
           lockReason={listMeta.lock_reason}
           creationLocked={creationLocked}
           type={listMeta.singleton_type || (typeof config.singleton === 'object' ? config.singleton.type : config.singleton)}
+          canMutate={canEditRecords && isPeriodSingleton}
+          onEdit={canEditRecords && isPeriodSingleton ? openEditCurrent : undefined}
+          onEnd={canEditRecords && isPeriodSingleton ? handleEndCurrent : undefined}
+          onDelete={canEditRecords && isPeriodSingleton && config.deletable !== false ? handleDeleteCurrent : undefined}
+          ending={endingCurrent}
+          deleting={deletingId === listMeta.active_record.id}
         />
       )}
 
       <PageHeader
         title={title}
         subtitle={config.subtitle}
-        actions={canCreate && (
+        actions={(canCreate || (canEditRecords && config.allowBulkDelete)) && (
           <div className="d-flex gap-2">
-            {config.allowBulkDelete && config.service?.deleteAll && records.length > 0 && (
+            {canEditRecords && config.allowBulkDelete && config.service?.deleteAll && records.length > 0 && (
               <button
                 type="button"
                 className="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1"
@@ -537,9 +606,11 @@ export function EntityListPage({
                 <FiTrash2 size={14} /> {bulkDeleting ? 'Deleting…' : (config.bulkDeleteLabel || 'Delete All')}
               </button>
             )}
-            <button type="button" className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1" onClick={openCreate}>
-              <FiPlus size={16} /> {config.createLabel || 'Add'}
-            </button>
+            {canCreate && (
+              <button type="button" className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1" onClick={openCreate}>
+                <FiPlus size={16} /> {config.createLabel || 'Add'}
+              </button>
+            )}
           </div>
         )}
       />
@@ -553,6 +624,7 @@ export function EntityListPage({
             loading={isLoading}
             compact
             searchable
+            scrollable={isPeriodSingleton || columns.length >= 8}
             searchPlaceholder={`Search ${title.toLowerCase()} by name, code, student, reference…`}
             searchKeys={config.searchKeys || null}
             onRowClick={canEditRecords ? openEdit : undefined}
@@ -588,7 +660,7 @@ export function EntityListPage({
           </button>
         )}
       >
-        <div className="row g-3">
+        <div className="row g-3 apex-form-grid">
           {editing?.id && (
             <div className="col-12">
               <label className="form-label small text-muted mb-1">Record ID</label>
@@ -598,7 +670,10 @@ export function EntityListPage({
           )}
           {(config.formFields || []).map((field) => (
             field.type === 'hidden' || !fieldIsVisible(field) ? null : (
-              <div key={field.name} className="col-md-6">
+              <div
+                key={field.name}
+                className={field.type === 'textarea' || field.fullWidth ? 'col-12' : 'col-12 col-md-6'}
+              >
                 {field.type !== 'checkbox' && (
                   <label className="form-label small fw-medium">
                     {field.label}

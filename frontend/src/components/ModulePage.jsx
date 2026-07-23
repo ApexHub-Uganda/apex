@@ -167,6 +167,7 @@ export function ModulePage({
           data={records}
           loading={isLoading}
           filters={filters}
+          scrollable
         />
       )}
 

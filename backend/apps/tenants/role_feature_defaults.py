@@ -52,10 +52,10 @@ _TEACHER_ACADEMICS: dict[str, _PERM] = {
 _TEACHER_EXAMINATIONS: dict[str, _PERM] = {
     "examination_management": _r(),
     "assessment_management": _rw(),
-    "marks_entry": _rw(),
-    "result_processing": _deny(),
-    "report_cards": _r(),
-    "grade_calculation": _rw(),
+    "marks_entry": _rw(),  # subject-scoped write enforced in API
+    "result_processing": _r(),  # view own subject results only
+    "report_cards": _deny(),  # subject teachers do not print report cards
+    "grade_calculation": _rw(),  # apply scheme to own subject marks
     "marks_approval": _deny(),
     "examination_sessions": _deny(),
     "class_report_cards": _deny(),
@@ -144,11 +144,12 @@ _DOS_ACADEMICS: dict[str, _PERM] = {
 
 _DOS_EXAMINATIONS: dict[str, _PERM] = {
     "examination_management": _rw(),
-    "assessment_management": _rw(),
-    "marks_entry": _rw(),
-    "result_processing": _rw(),
-    "report_cards": _rw(),
-    "grade_calculation": _rw(),
+    "assessment_management": _r(),
+    # DoS reads all marks/results and prints report cards — never enters/edits scores
+    "marks_entry": _r(),
+    "result_processing": _r(),
+    "report_cards": _rw(),  # generate/print only; mark edits blocked in API
+    "grade_calculation": _r(),
     "marks_approval": _rw(),
     "examination_sessions": _rw(),
     "class_report_cards": _rw(),
@@ -172,6 +173,19 @@ _CLASS_TEACHER_ROLE_ACADEMICS: dict[str, _PERM] = {
     "teacher_workspace": _r(),
     "hod_workspace": _deny(),
     "dos_workspace": _deny(),
+}
+
+_CLASS_TEACHER_EXAMINATIONS: dict[str, _PERM] = {
+    "examination_management": _r(),
+    "assessment_management": _r(),
+    # Marks write only for subjects they teach (as subject teacher); not for whole class
+    "marks_entry": _rw(),
+    "result_processing": _r(),
+    "report_cards": _rw(),  # generate/print headed classes + class-teacher remarks (API enforces)
+    "grade_calculation": _rw(),  # only for taught subjects
+    "marks_approval": _deny(),
+    "examination_sessions": _r(),
+    "class_report_cards": _rw(),
 }
 
 _ASSISTANT_BURSAR_FINANCE: dict[str, _PERM] = {
@@ -232,7 +246,7 @@ DEFAULT_ROLE_FEATURE_PERMISSIONS: dict[str, dict[str, _PERM]] = {
     },
     UserRole.CLASS_TEACHER: {
         **_CLASS_TEACHER_ROLE_ACADEMICS,
-        **_TEACHER_EXAMINATIONS,
+        **_CLASS_TEACHER_EXAMINATIONS,
         **_TEACHER_ATTENDANCE,
     },
     UserRole.HEAD_OF_DEPARTMENT: {

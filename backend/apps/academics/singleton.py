@@ -107,7 +107,7 @@ def assert_can_create_academic_year(tenant) -> None:
             f"Academic year “{active.name}” is still active "
             f"(until {active.end_date:%d %b %Y}). "
             "Close or end the current year before creating a new one. "
-            "School admins can edit the current year to close it early.",
+            "Only a school admin can edit or close the current year early.",
         ],
         "active_record_id": str(active.id),
     })
@@ -123,7 +123,7 @@ def assert_can_create_term(tenant) -> None:
             f"Term “{active.name}” ({year_label}) is still active "
             f"(until {active.end_date:%d %b %Y}). "
             "Close the current term before creating a new one. "
-            "School admins can edit the current term to close it early.",
+            "Only a school admin can edit or close the current term early.",
         ],
         "active_record_id": str(active.id),
     })
@@ -138,7 +138,7 @@ def assert_can_create_examination_session(tenant) -> None:
             f"Exam period “{active.name}” is still active "
             f"(until {active.end_date:%d %b %Y}, status: {active.status}). "
             "Close or end the current exam period before creating a new one. "
-            "School admins can edit the current exam period to close it early.",
+            "Only a school admin can edit, close, or change exam period status.",
         ],
         "active_record_id": str(active.id),
     })
@@ -178,7 +178,11 @@ def build_singleton_list_meta(*, tenant, kind: str) -> dict:
             "creation_locked": False,
             "lock_reason": "",
             "singleton_type": kind,
-            "school_admin_can_manage": True,
+            # Filled by list mixin for the requesting user
+            "school_admin_can_manage": False,
+            "can_mutate": False,
+            "can_edit": False,
+            "can_delete": False,
         }
 
     if kind == "term":
@@ -218,8 +222,8 @@ def build_singleton_list_meta(*, tenant, kind: str) -> dict:
     if blocked:
         lock_reason = (
             f"The current {label} “{active.name}” is still in progress. "
-            f"A new {label} can be created after {active.end_date:%d %b %Y}, "
-            "or a school admin can edit/close the current record."
+            f"A new {label} can be created after {active.end_date:%d %b %Y}. "
+            "Only a school admin can edit, close, or change the status of this record."
         )
 
     return {
@@ -227,5 +231,9 @@ def build_singleton_list_meta(*, tenant, kind: str) -> dict:
         "creation_locked": blocked,
         "lock_reason": lock_reason,
         "singleton_type": kind,
-        "school_admin_can_manage": True,
+        # Filled by list mixin for the requesting user
+        "school_admin_can_manage": False,
+        "can_mutate": False,
+        "can_edit": False,
+        "can_delete": False,
     }

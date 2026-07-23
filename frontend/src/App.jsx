@@ -47,6 +47,7 @@ import ClassDetail from './pages/school-admin/ClassDetail';
 import Attendance from './pages/school-admin/Attendance';
 import MarksEntry from './pages/school-admin/MarksEntry';
 import MarksApproval from './pages/school-admin/MarksApproval';
+import ExaminationResults from './pages/school-admin/ExaminationResults';
 import Assessments from './pages/school-admin/Assessments';
 import LessonAttendance from './pages/school-admin/LessonAttendance';
 import TeacherWorkspace from './pages/school-admin/TeacherWorkspace';
@@ -201,6 +202,7 @@ function AppRoutes() {
         <Route path="academics/assignments/grades" element={<Gated featureKey="grade_calculation"><GradeCalculation context="assignments" /></Gated>} />
         <Route path="examinations/marks" element={<Gated featureKey="marks_entry"><MarksEntry /></Gated>} />
         <Route path="examinations/grades" element={<Gated featureKey="grade_calculation"><GradeCalculation /></Gated>} />
+        <Route path="examinations/results" element={<Gated featureKeys={['result_processing', 'report_cards', 'marks_entry']}><ExaminationResults /></Gated>} />
         <Route path="examinations/approval" element={<Gated featureKey="marks_approval"><MarksApproval /></Gated>} />
         <Route path="examinations/assessments" element={<Gated featureKey="assessment_management"><Assessments /></Gated>} />
         <Route path="attendance/lessons" element={<Gated featureKey="lesson_attendance"><LessonAttendance /></Gated>} />
@@ -259,7 +261,6 @@ function AppRoutes() {
         <Route path="academics/dos-ops" element={<Gated featureKey="dos_workspace"><DoSOps /></Gated>} />
         <Route path="examinations/report-cards" element={<Navigate to="/school-admin/academics/report-cards" replace />} />
         <Route path="examinations/class-report-cards" element={<Navigate to="/school-admin/academics/report-cards" replace />} />
-        <Route path="examinations/results" element={<Navigate to="/school-admin/academics/report-cards" replace />} />
         {renderChildSubRoutes()}
         <Route path="profile" element={<Profile />} />
         <Route path="notifications" element={<Notifications />} />

@@ -108,6 +108,24 @@ class TestRoleFeatureDefaults:
         assert get_default_feature_permission(UserRole.DIRECTOR_OF_STUDIES, "teacher_workspace") == {
             "can_read": False, "can_write": False,
         }
+        # DoS reads marks/results; may generate/print report cards; never writes marks
+        assert get_default_feature_permission(UserRole.DIRECTOR_OF_STUDIES, "marks_entry") == {
+            "can_read": True, "can_write": False,
+        }
+        assert get_default_feature_permission(UserRole.DIRECTOR_OF_STUDIES, "grade_calculation") == {
+            "can_read": True, "can_write": False,
+        }
+        assert get_default_feature_permission(UserRole.DIRECTOR_OF_STUDIES, "report_cards") == {
+            "can_read": True, "can_write": True,
+        }
+
+    def test_teacher_cannot_print_report_cards_by_default(self):
+        assert get_default_feature_permission(UserRole.TEACHER, "report_cards") == {
+            "can_read": False, "can_write": False,
+        }
+        assert get_default_feature_permission(UserRole.TEACHER, "marks_entry") == {
+            "can_read": True, "can_write": True,
+        }
 
     def test_class_teacher_role_default_permissions(self):
         assert get_default_feature_permission(UserRole.CLASS_TEACHER, "class_teacher_tools") == {

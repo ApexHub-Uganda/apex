@@ -13,6 +13,9 @@ from apps.academics.singleton import (
 )
 from apps.tenants.role_permissions import user_is_school_admin
 
+# Academic years, terms, and exam periods: non-admins create then read-only.
+PERIOD_SINGLETON_KINDS = frozenset({"academic_year", "term", "examination_session"})
+
 
 class AcademicScopeMixin:
     """Restrict querysets to assignments for read-only / non-school-wide users."""
@@ -44,6 +47,15 @@ class AcademicSingletonListMixin:
             return response
         tenant = getattr(request.user, "tenant", None)
         meta = build_singleton_list_meta(tenant=tenant, kind=self.singleton_kind)
+        can_mutate = bool(
+            getattr(request.user, "is_super_admin", False)
+            or user_is_school_admin(request.user)
+        )
+        meta["school_admin_can_manage"] = can_mutate
+        # Non-admins with create permission may create; only school admin may edit/delete/status.
+        meta["can_mutate"] = can_mutate
+        meta["can_edit"] = can_mutate
+        meta["can_delete"] = can_mutate
         if isinstance(response.data, dict):
             response.data["meta"] = meta
         return response
@@ -51,9 +63,11 @@ class AcademicSingletonListMixin:
 
 class SchoolAdminManageSingletonMixin:
     """
-    Singleton periods: create remains locked while one is active (all roles).
-    Once a year/term is in use (current, or has published timetable / dependent data),
-    only school admins may edit, delete, or end it.
+    Academic year / term / exam period lifecycle.
+
+    - Any role with feature write may **create** (when creation is not locked).
+    - After creation, only the **school admin** may update, delete, or change status
+      (is_current, status, dates, names, etc.). Other users remain read-only.
     """
 
     def _user_is_school_admin(self) -> bool:
@@ -62,49 +76,20 @@ class SchoolAdminManageSingletonMixin:
             return False
         return bool(getattr(user, "is_super_admin", False) or user_is_school_admin(user))
 
-    def _record_is_in_use(self, instance) -> bool:
-        """True when non-admins must not mutate this year/term."""
-        model_name = instance.__class__.__name__
-        if model_name == "AcademicYear":
-            if getattr(instance, "is_current", False):
-                return True
-            # Any terms, classes, or published timetables under this year
-            if instance.terms.filter(is_deleted=False).exists():
-                return True
-            from apps.academics.models import TimetableSchedule
-            if TimetableSchedule.objects.filter(
-                tenant=instance.tenant_id, academic_year=instance, is_deleted=False,
-            ).exclude(status="archived").exists():
-                return True
-            return False
-        if model_name == "Term":
-            if getattr(instance, "is_current", False):
-                return True
-            from apps.academics.models import Timetable, TimetableSchedule
-            if TimetableSchedule.objects.filter(
-                tenant=instance.tenant_id, term=instance, is_deleted=False,
-            ).exclude(status="archived").exists():
-                return True
-            if Timetable.objects.filter(
-                tenant=instance.tenant_id, term=instance, is_deleted=False,
-            ).exists():
-                return True
-            return False
-        return False
+    def _assert_school_admin_mutate(self, *, action: str = "change") -> None:
+        if self._user_is_school_admin():
+            return
+        raise PermissionDenied(
+            f"Only a school admin can {action} academic years, terms, or exam periods "
+            "after they are created. You may create a new one when the current period ends."
+        )
 
     def perform_update(self, serializer):
-        instance = serializer.instance
-        if instance is not None and self._record_is_in_use(instance) and not self._user_is_school_admin():
-            raise PermissionDenied(
-                "This record is already in use. Only a school admin can edit or end it."
-            )
+        self._assert_school_admin_mutate(action="edit or change the status of")
         super().perform_update(serializer)
 
     def perform_destroy(self, instance):
-        if self._record_is_in_use(instance) and not self._user_is_school_admin():
-            raise PermissionDenied(
-                "This record is already in use. Only a school admin can delete or end it."
-            )
+        self._assert_school_admin_mutate(action="delete")
         super().perform_destroy(instance)
 
 

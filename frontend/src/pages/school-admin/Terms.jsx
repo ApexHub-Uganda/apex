@@ -18,13 +18,15 @@ const EMPTY_FORM = {
 
 export function Terms() {
   const queryClient = useQueryClient();
-  const { canWriteModule, isSchoolAdmin } = usePermissions();
-  const canManage = isSchoolAdmin || canWriteModule('terms') || canWriteModule('academics');
+  const { canWriteFeature, isSchoolAdmin } = usePermissions();
+  // Create: feature write; edit/delete/status: school admin only
+  const canCreateFeature = isSchoolAdmin || canWriteFeature('terms');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [endingCurrent, setEndingCurrent] = useState(false);
 
   const { data: listPayload, isLoading, isError } = useQuery({
     queryKey: ['terms', 'meta'],
@@ -34,8 +36,10 @@ export function Terms() {
   const terms = listPayload?.records ?? [];
   const listMeta = listPayload?.meta ?? null;
   const creationLocked = Boolean(listMeta?.creation_locked);
-  const canCreate = canManage && !creationLocked;
-  const hideTermTable = Boolean(creationLocked && listMeta?.active_record && !isSchoolAdmin);
+  // School admin only may edit/end/delete after create (API meta is source of truth too)
+  const canMutate = Boolean(isSchoolAdmin || listMeta?.can_mutate);
+  const canCreate = canCreateFeature && !creationLocked;
+  const hideTermTable = Boolean(creationLocked && listMeta?.active_record && !canMutate);
 
   const { data: years = [] } = useQuery({
     queryKey: ['academic-years'],
@@ -102,6 +106,46 @@ export function Terms() {
     }
   };
 
+  const resolveActiveTerm = () => {
+    const active = listMeta?.active_record;
+    if (!active?.id) return null;
+    return terms.find((t) => String(t.id) === String(active.id)) || active;
+  };
+
+  const openEditCurrent = () => {
+    const row = resolveActiveTerm();
+    if (row) openEdit(row);
+  };
+
+  const handleEndCurrent = async () => {
+    const row = resolveActiveTerm();
+    if (!row?.id) return;
+    const confirm = await alert.confirm({
+      title: 'End current term?',
+      text: `Mark “${row.name}” as ended so a new term can be created.`,
+      confirmText: 'Yes, end term',
+      cancelText: 'Cancel',
+      icon: 'warning',
+    });
+    if (!confirm.isConfirmed) return;
+    setEndingCurrent(true);
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      await termsService.update(row.id, { is_current: false, end_date: today });
+      notify.success('Term ended.');
+      await queryClient.invalidateQueries({ queryKey: ['terms'] });
+    } catch (err) {
+      notify.error(extractApiError(err, 'Unable to end term.'));
+    } finally {
+      setEndingCurrent(false);
+    }
+  };
+
+  const handleDeleteCurrent = async () => {
+    const row = resolveActiveTerm();
+    if (row) await handleDelete(row);
+  };
+
   const columns = [
     { key: 'name', label: 'Term', accessor: 'name', sortable: true },
     { key: 'term_number', label: 'No.', accessor: 'term_number' },
@@ -117,7 +161,7 @@ export function Terms() {
         ? <span className="badge text-bg-primary-subtle border text-primary">Current</span>
         : '—'),
     },
-    ...(canManage ? [{
+    ...(canMutate ? [{
       key: 'actions',
       label: '',
       render: (row) => (
@@ -159,6 +203,12 @@ export function Terms() {
           lockReason={listMeta.lock_reason}
           creationLocked={creationLocked}
           type="term"
+          canMutate={canMutate}
+          onEdit={canMutate ? openEditCurrent : undefined}
+          onEnd={canMutate ? handleEndCurrent : undefined}
+          onDelete={canMutate ? handleDeleteCurrent : undefined}
+          ending={endingCurrent}
+          deleting={deletingId === listMeta.active_record.id}
         />
       )}
 
@@ -175,18 +225,19 @@ export function Terms() {
       {isError ? (
         <div className="alert alert-danger">Unable to load terms.</div>
       ) : hideTermTable ? null : (
-        <div className="apex-card p-3 p-md-4">
+        <div className="apex-card p-2 p-md-3">
           <DataTable
             columns={columns}
             data={terms}
             loading={isLoading}
-            onRowClick={canManage ? openEdit : undefined}
+            scrollable
+            onRowClick={canMutate ? openEdit : undefined}
             emptyState={(
               <ModuleEmptyState
                 title={creationLocked ? 'Active term in progress' : 'No terms configured'}
                 message={
                   creationLocked
-                    ? (listMeta?.lock_reason || 'The current term must end before a new term can be created.')
+                    ? (listMeta?.lock_reason || 'The current term must end before a new term can be created. Only a school admin can edit or close it early.')
                     : 'Set up Term 1, 2, and 3 for the academic year before fee structures.'
                 }
                 actionLabel={canCreate ? 'Add Term' : undefined}
@@ -208,12 +259,12 @@ export function Terms() {
           </button>
         )}
       >
-        <div className="row g-3">
-          <div className="col-md-6">
+        <div className="row g-3 apex-form-grid">
+          <div className="col-12 col-md-6">
             <label className="form-label small fw-medium">Term Name *</label>
             <input className="form-control" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Term 1" />
           </div>
-          <div className="col-md-6">
+          <div className="col-12 col-md-6">
             <label className="form-label small fw-medium">Term Number</label>
             <select className="form-select" value={form.term_number} onChange={(e) => setForm({ ...form, term_number: e.target.value })}>
               <option value="">Select</option>
@@ -222,33 +273,33 @@ export function Terms() {
               <option value="3">3</option>
             </select>
           </div>
-          <div className="col-md-6">
+          <div className="col-12 col-md-6">
             <label className="form-label small fw-medium">Academic Year *</label>
             <select className="form-select" value={form.academic_year} onChange={(e) => setForm({ ...form, academic_year: e.target.value })}>
               <option value="">Select year</option>
               {years.map((y) => <option key={y.id} value={y.id}>{y.name}</option>)}
             </select>
           </div>
-          <div className="col-md-6">
+          <div className="col-12 col-md-6">
             <label className="form-label small fw-medium d-block">Current Term</label>
             <div className="form-check form-switch mt-2">
               <input type="checkbox" className="form-check-input" checked={form.is_current} onChange={(e) => setForm({ ...form, is_current: e.target.checked })} />
               <label className="form-check-label small">Mark as current term</label>
             </div>
           </div>
-          <div className="col-md-6">
+          <div className="col-12 col-md-6">
             <label className="form-label small fw-medium">Start Date *</label>
             <input type="date" className="form-control" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
           </div>
-          <div className="col-md-6">
+          <div className="col-12 col-md-6">
             <label className="form-label small fw-medium">End Date *</label>
             <input type="date" className="form-control" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
           </div>
-          <div className="col-md-6">
+          <div className="col-12 col-md-6">
             <label className="form-label small fw-medium">Reporting Date</label>
             <input type="date" className="form-control" value={form.reporting_date} onChange={(e) => setForm({ ...form, reporting_date: e.target.value })} />
           </div>
-          <div className="col-md-6">
+          <div className="col-12 col-md-6">
             <label className="form-label small fw-medium">Closing Date</label>
             <input type="date" className="form-control" value={form.closing_date} onChange={(e) => setForm({ ...form, closing_date: e.target.value })} />
           </div>

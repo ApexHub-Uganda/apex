@@ -1,6 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from apps.academics.promotion_report_views import ResultsCapabilitiesView
 from apps.examinations.views import (
     ExamViewSet,
     ExaminationReferenceView,
@@ -29,6 +30,7 @@ urlpatterns = [
     path("reference/", ExaminationReferenceView.as_view(), name="examination-reference"),
     path("marks-entry/options/", MarksEntryOptionsView.as_view(), name="marks-entry-options"),
     path("marks-entry/bulk/", MarksEntryBulkView.as_view(), name="marks-entry-bulk"),
+    path("results/capabilities/", ResultsCapabilitiesView.as_view(), name="exam-results-capabilities"),
     path("grade-calculation/options/", GradeCalculationOptionsView.as_view(), name="grade-calculation-options"),
     path("grade-calculation/apply/", GradeCalculationApplyView.as_view(), name="grade-calculation-apply"),
     path("marks-approval/queue/", MarksApprovalQueueView.as_view(), name="marks-approval-queue"),

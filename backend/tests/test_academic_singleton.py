@@ -268,6 +268,89 @@ class TestAcademicSingleton:
         term.refresh_from_db()
         assert term.name == "Term 1 Updated"
 
+    def test_dos_cannot_update_or_delete_after_create(
+        self, api_client, dos_user, active_year_and_term,
+    ):
+        """Creators with feature write remain read-only after creation; admin mutates."""
+        year = active_year_and_term["year"]
+        term = active_year_and_term["term"]
+        api_client.force_authenticate(user=dos_user)
+
+        patch_year = api_client.patch(
+            f"/api/v1/academics/years/{year.id}/",
+            {"name": "Hijacked Year", "is_current": False},
+            format="json",
+        )
+        assert patch_year.status_code == 403
+
+        patch_term = api_client.patch(
+            f"/api/v1/academics/terms/{term.id}/",
+            {"name": "Hijacked Term", "is_current": False},
+            format="json",
+        )
+        assert patch_term.status_code == 403
+
+        delete_term = api_client.delete(f"/api/v1/academics/terms/{term.id}/")
+        assert delete_term.status_code == 403
+
+        list_resp = api_client.get("/api/v1/academics/terms/")
+        assert list_resp.status_code == 200
+        meta = list_resp.data.get("meta") or {}
+        assert meta.get("can_mutate") is False
+        assert meta.get("can_edit") is False
+
+    def test_school_admin_list_meta_allows_mutate(
+        self, api_client, school_admin_user, active_year_and_term,
+    ):
+        api_client.force_authenticate(user=school_admin_user)
+        response = api_client.get("/api/v1/academics/years/")
+        assert response.status_code == 200
+        meta = response.data.get("meta") or {}
+        assert meta.get("can_mutate") is True
+        assert meta.get("can_edit") is True
+        assert meta.get("school_admin_can_manage") is True
+
+    def test_dos_cannot_change_exam_session_status(
+        self, api_client, dos_user, school_admin_user, active_year_and_term, singleton_plan,
+    ):
+        from apps.examinations.models import ExaminationSession
+        from apps.subscriptions.services import assign_plan_features
+
+        assign_plan_features(singleton_plan, [
+            "academic_years", "terms", "timetables", "classes", "subjects",
+            "examination_sessions",
+        ])
+        year = active_year_and_term["year"]
+        term = active_year_and_term["term"]
+        session = ExaminationSession.objects.create(
+            tenant=school_admin_user.tenant,
+            name="Mid-term Exams",
+            academic_year=year,
+            term=term,
+            start_date=date(2026, 3, 1),
+            end_date=date(2026, 3, 20),
+            status="active",
+        )
+        api_client.force_authenticate(user=dos_user)
+        response = api_client.patch(
+            f"/api/v1/examinations/sessions/{session.id}/",
+            {"status": "closed"},
+            format="json",
+        )
+        assert response.status_code == 403
+        session.refresh_from_db()
+        assert session.status == "active"
+
+        api_client.force_authenticate(user=school_admin_user)
+        ok = api_client.patch(
+            f"/api/v1/examinations/sessions/{session.id}/",
+            {"status": "closed"},
+            format="json",
+        )
+        assert ok.status_code == 200
+        session.refresh_from_db()
+        assert session.status == "closed"
+
     def test_school_admin_still_cannot_create_second_term_while_active(
         self, api_client, school_admin_user, active_year_and_term,
     ):

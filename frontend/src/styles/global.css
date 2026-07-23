@@ -118,7 +118,15 @@ a:hover {
   box-shadow: 0 0 0 0.2rem rgba(15, 118, 110, 0.15);
 }
 
-/* Apex utilities */
+/* Apex utilities — wizard steps (marks entry, grade calculation, etc.) */
+.marks-entry-steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
 .marks-entry-step {
   display: inline-flex;
   align-items: center;
@@ -128,6 +136,8 @@ a:hover {
   border: 1px solid var(--apex-border);
   color: var(--apex-text-muted);
   background: var(--apex-surface);
+  max-width: 100%;
+  flex: 0 1 auto;
 }
 
 .marks-entry-step--active {
@@ -152,11 +162,171 @@ a:hover {
   font-weight: 700;
   background: var(--apex-border);
   color: var(--apex-text-muted);
+  flex-shrink: 0;
 }
 
 .marks-entry-step--active .marks-entry-step-num {
   background: var(--apex-primary);
   color: #fff;
+}
+
+.marks-entry-step-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Form grids used across academics wizards */
+.apex-form-grid {
+  min-width: 0;
+}
+
+.apex-form-grid > [class*='col-'] {
+  min-width: 0;
+}
+
+.apex-form-grid .form-select,
+.apex-form-grid .form-control,
+.apex-form-grid .apex-searchable-select {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Mark sheets / results matrices — compact columns + scroll only if needed */
+.apex-sheet-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.apex-sheet-scroll > table,
+.apex-sheet-table {
+  /* Column width = longest cell in that column (auto + nowrap) */
+  width: max-content;
+  max-width: none;
+  min-width: 0;
+  margin-bottom: 0;
+  table-layout: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.apex-sheet-table th,
+.apex-sheet-table td {
+  vertical-align: middle;
+  padding: 0.3rem 0.45rem;
+  white-space: nowrap;
+  overflow: visible;
+  max-width: none;
+}
+
+/* Student names may wrap only if extremely long; otherwise size to content */
+.apex-sheet-table .apex-sheet-col-student {
+  white-space: nowrap;
+  max-width: none;
+}
+
+.apex-sheet-table .apex-sheet-col-score {
+  width: 1%;
+}
+
+.apex-sheet-table .apex-sheet-col-score .form-control {
+  width: 4.5rem;
+  min-width: 4.5rem;
+  max-width: 5.5rem;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+  display: inline-block;
+}
+
+.apex-sheet-table .apex-sheet-col-remarks {
+  width: 1%;
+}
+
+.apex-sheet-table .apex-sheet-col-remarks .form-control {
+  width: 7.5rem;
+  min-width: 6rem;
+  max-width: 12rem;
+  display: inline-block;
+}
+
+@media (max-width: 575.98px) {
+  .marks-entry-step {
+    padding: 0.28rem 0.55rem;
+    gap: 0.3rem;
+  }
+
+  .marks-entry-step-num {
+    width: 1.2rem;
+    height: 1.2rem;
+    font-size: 0.68rem;
+  }
+
+  .marks-entry-step-label {
+    font-size: 0.75rem;
+  }
+
+  .apex-sheet-table {
+    font-size: 0.8125rem;
+  }
+
+  .apex-sheet-table th,
+  .apex-sheet-table td {
+    padding: 0.25rem 0.3rem;
+  }
+
+  .apex-card.apex-card--responsive {
+    padding: 1rem !important;
+  }
+
+  .apex-page-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .apex-page-header > .d-flex {
+    width: 100%;
+  }
+
+  .apex-page-header .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .apex-table-toolbar {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .apex-table-search {
+    max-width: none;
+    flex: 1 1 auto;
+  }
+
+  .apex-table-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch !important;
+  }
+
+  .apex-table-row-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  /* Bootstrap has no w-sm-auto utility in all builds — keep admin action rows usable */
+  .w-sm-auto {
+    width: 100% !important;
+  }
+}
+
+@media (min-width: 576px) {
+  .w-sm-auto {
+    width: auto !important;
+  }
 }
 
 .apex-card {
@@ -176,6 +346,32 @@ a:hover {
   -webkit-backdrop-filter: blur(6px);
   /* Override Bootstrap .modal-backdrop.show { opacity: 0.5 } stacking */
   opacity: 1 !important;
+}
+
+.apex-modal .modal-dialog {
+  margin: 0.75rem;
+  max-width: calc(100% - 1.5rem);
+}
+
+@media (min-width: 576px) {
+  .apex-modal .modal-dialog {
+    margin: 1.75rem auto;
+    max-width: 500px;
+  }
+
+  .apex-modal .modal-dialog.modal-lg {
+    max-width: min(800px, calc(100% - 2rem));
+  }
+
+  .apex-modal .modal-dialog.modal-xl {
+    max-width: min(1140px, calc(100% - 2rem));
+  }
+}
+
+.apex-modal .modal-body {
+  max-height: min(70vh, 640px);
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .apex-modal-content {
@@ -899,6 +1095,79 @@ a:hover {
 
 .apex-navbar {
   overflow: visible;
+  padding: 0 1.25rem;
+  gap: 0.75rem;
+}
+
+/* Dashboard search — always visible; scales for phones */
+.apex-navbar-search {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: 480px;
+}
+
+.apex-navbar-actions {
+  flex-shrink: 0;
+}
+
+.apex-global-search {
+  min-width: 0;
+}
+
+@media (max-width: 991.98px) {
+  .apex-navbar {
+    padding: 0 0.65rem 0 0.5rem;
+    gap: 0.4rem;
+    left: 0 !important; /* full width when sidebar is off-canvas */
+  }
+
+  .apex-navbar-search {
+    max-width: none;
+    margin-right: 0.15rem;
+  }
+
+  .apex-global-search-input {
+    font-size: 0.8125rem;
+    padding-top: 0.4rem;
+    padding-bottom: 0.4rem;
+    padding-left: 2rem;
+    height: 36px;
+    border-radius: 9px;
+  }
+
+  .apex-global-search-icon {
+    left: 10px;
+    width: 14px;
+    height: 14px;
+  }
+
+  .apex-global-search-panel {
+    position: fixed;
+    top: calc(var(--apex-navbar-height, 64px) + 4px);
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    max-height: min(70vh, 420px);
+    border-radius: 14px;
+    box-shadow: var(--apex-shadow-lg);
+  }
+
+  .apex-global-search-item {
+    padding: 0.6rem 0.85rem;
+  }
+
+  .apex-global-search-item-type {
+    display: none; /* tighter rows on phones */
+  }
+}
+
+@media (min-width: 992px) {
+  .apex-navbar {
+    padding: 0 1.5rem;
+    gap: 1rem;
+  }
 }
 
 .apex-notifications-panel {
@@ -1723,29 +1992,53 @@ a:hover {
   white-space: nowrap;
 }
 
-.apex-table-wrapper--fit .apex-table--has-names {
+.apex-table-wrapper--fit .apex-table--has-names,
+.apex-table--has-names {
   table-layout: auto;
-  width: 100%;
+  width: max-content;
 }
 
-.apex-table--has-names {
-  width: 100%;
+/* Content-sized tables: each column grows to its longest value; no clipping/overlap */
+.apex-table-wrapper--content-sized .apex-table--content-sized,
+.apex-table--content-sized {
+  table-layout: auto;
+  width: max-content;
+  max-width: none;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.apex-table--content-sized thead th,
+.apex-table--content-sized tbody td {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  max-width: none;
+  vertical-align: middle;
 }
 
 .apex-table tbody td.apex-table-cell--name,
 .apex-table thead th.apex-table-cell--name {
-  width: 1%;
-  min-width: 7rem;
-  max-width: 14rem;
-  overflow: hidden;
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  overflow: visible;
   white-space: nowrap;
   line-height: 1.25;
-  padding-right: 0.5rem;
+  padding-right: 0.45rem;
 }
 
 .apex-table tbody td.apex-table-cell--name .apex-list-person-cell {
   min-width: 0;
-  max-width: 100%;
+  max-width: none;
+  overflow: visible;
+}
+
+.apex-table tbody td.apex-table-cell--name .apex-list-person-name {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+  max-width: none;
 }
 
 .apex-table tbody td.apex-table-cell--name .apex-list-person-name {
@@ -2689,11 +2982,11 @@ h6 .verified-name-inline {
   50% { transform: translateY(-30px) scale(1.05); }
 }
 
-/* Table enhancements */
+/* Table enhancements — professional fit + horizontal scroll on small screens */
 .apex-table-panel {
   min-width: 0;
   max-width: 100%;
-  overflow-x: clip;
+  overflow: hidden;
 }
 
 .apex-table-panel--embedded {
@@ -2708,46 +3001,79 @@ h6 .verified-name-inline {
   width: 100%;
   max-width: 100%;
   border-radius: var(--apex-radius);
-  overflow-x: hidden;
-}
-
-.apex-table-wrapper--fit {
-  overflow-x: hidden;
-}
-
-@media (min-width: 992px) {
-  .apex-table-wrapper--fit {
-    overflow-x: hidden;
-  }
-
-  .apex-table-wrapper--wide {
-    overflow-x: auto;
-  }
-}
-
-@media (max-width: 991.98px) {
-  .apex-table-wrapper--wide,
-  .apex-table-wrapper--scrollable {
-    overflow-x: auto;
-  }
-}
-
-.apex-table-wrapper--scrollable {
   overflow-x: auto;
-  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(15, 118, 110, 0.35) transparent;
 }
 
-.apex-table-wrapper--scrollable::-webkit-scrollbar {
+.apex-table-wrapper--fit {
+  /* Fit on large screens; still scroll if content overflows */
+  overflow-x: auto;
+}
+
+.apex-table-wrapper--wide,
+.apex-table-wrapper--scrollable,
+.apex-table-wrapper--mobile-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* Pack columns to longest cell content; scroll wrapper if wider than viewport */
+.apex-table-wrapper--scrollable .apex-table--scrollable,
+.apex-table-wrapper--wide .apex-table--wide,
+.apex-table-wrapper--content-sized .apex-table {
+  width: max-content;
+  max-width: none;
+  min-width: var(--apex-table-min-width, max-content);
+}
+
+.apex-table-wrapper--fit .apex-table {
+  width: max-content;
+  min-width: var(--apex-table-min-width, max-content);
+  table-layout: auto;
+}
+
+.apex-table-wrapper--mobile-scroll .apex-table {
+  width: max-content;
+  min-width: var(--apex-table-min-width, max-content);
+}
+
+.apex-table-wrapper::-webkit-scrollbar,
+.apex-table-wrapper--scrollable::-webkit-scrollbar,
+.apex-sheet-scroll::-webkit-scrollbar {
   height: 6px;
 }
 
-.apex-table-wrapper--scrollable::-webkit-scrollbar-thumb {
+.apex-table-wrapper::-webkit-scrollbar-thumb,
+.apex-table-wrapper--scrollable::-webkit-scrollbar-thumb,
+.apex-sheet-scroll::-webkit-scrollbar-thumb {
   background: rgba(15, 118, 110, 0.35);
   border-radius: 999px;
+}
+
+@media (max-width: 991.98px) {
+  /* Only force a modest floor when the table would otherwise crush */
+  .apex-table-wrapper--fit .apex-table {
+    min-width: 0;
+  }
+
+  .apex-table-wrapper--fit {
+    overflow-x: auto;
+  }
+
+  .apex-table tbody td.apex-table-cell--name,
+  .apex-table thead th.apex-table-cell--name {
+    min-width: 6.5rem;
+    max-width: 10rem;
+  }
+
+  .apex-table-cell--actions .apex-table-row-actions {
+    flex-wrap: nowrap;
+  }
 }
 
 .apex-table-search {
@@ -2881,17 +3207,19 @@ h6 .verified-name-inline {
 .apex-table {
   width: 100%;
   margin: 0;
-  table-layout: fixed;
+  /* auto packs columns to content; fixed was spreading empty space */
+  table-layout: auto;
 }
 
 .apex-table--compact {
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .apex-table--scrollable {
   table-layout: auto;
   width: max-content;
-  min-width: 100%;
+  /* Do not force min-width: 100% — that stretches columns and creates empty gaps */
+  min-width: 0;
 }
 
 .apex-table--scrollable thead th,
@@ -2912,25 +3240,27 @@ h6 .verified-name-inline {
 
 .apex-table--compact thead th,
 .apex-table--compact tbody td {
-  padding: 0.25rem 0.35rem;
+  padding: 0.22rem 0.4rem;
   font-size: 0.8125rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Visible + nowrap: width follows longest value; no ellipsis overlap */
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
   vertical-align: middle;
 }
 
 .apex-table--compact thead th {
   font-size: 0.6875rem;
-  padding: 0.25rem 0.35rem;
+  padding: 0.22rem 0.28rem;
 }
 
 .apex-table .apex-cell-truncate {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* Prefer full value; truncation was causing adjacent-cell overlap when widths were wrong */
+  display: inline;
+  overflow: visible;
+  text-overflow: clip;
   white-space: nowrap;
-  max-width: 100%;
+  max-width: none;
 }
 
 .apex-table--compact .apex-cell-wrap {
@@ -2951,23 +3281,44 @@ h6 .verified-name-inline {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--apex-text-muted);
-  padding: 0.3rem 0.35rem;
+  padding: 0.28rem 0.4rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .apex-table tbody td {
-  padding: 0.3rem 0.35rem;
+  padding: 0.28rem 0.4rem;
   font-size: 0.8125rem;
   vertical-align: middle;
   border-bottom: 1px solid color-mix(in srgb, var(--apex-border) 72%, transparent);
-  overflow: hidden;
+  overflow: visible;
+  white-space: nowrap;
 }
 
 .apex-table.apex-table--compact thead th,
 .apex-table.apex-table--compact tbody td {
-  padding: 0.25rem 0.35rem;
+  padding: 0.22rem 0.4rem;
+}
+
+/* Short / row-number cells: still hug content, never clip neighbours */
+.apex-table tbody td.apex-table-cell--short,
+.apex-table thead th.apex-table-cell--short,
+.apex-table tbody td.apex-table-cell--rownum,
+.apex-table thead th.apex-table-cell--rownum,
+.apex-table tbody td.apex-table-cell--fit,
+.apex-table thead th.apex-table-cell--fit {
+  width: auto;
+  white-space: nowrap;
+  overflow: visible;
+  max-width: none;
+}
+
+.apex-table tbody td.apex-table-cell--actions,
+.apex-table thead th.apex-table-cell--actions {
+  width: auto;
+  white-space: nowrap;
+  overflow: visible;
 }
 
 .apex-table tbody tr.apex-table-row--clickable:hover {
