@@ -14,7 +14,6 @@ from apps.academics.models import (
     Class,
     DisciplineRemark,
     Stream,
-    StudentSubjectRegistration,
     Term,
 )
 from apps.attendance.models import AttendanceRecord
@@ -108,7 +107,14 @@ def _conduct_summary(*, tenant, student, term: Term) -> dict[str, Any]:
 
 
 def _subject_scores_for_student(*, tenant, student, term, school_class, scheme: GradingScheme | None):
-    """Aggregate approved/locked exam grades by subject for one student in term."""
+    """
+    Aggregate entered marks by subject for one student in a term/class.
+
+    A report card is a full learner performance record — every subject where the
+    learner has an entered score appears (not single-subject mark sheets).
+    Approved/locked marks are preferred when present; otherwise any entered score
+    on a non-deleted assessment is included so drafts still generate complete results.
+    """
     grades = (
         Grade.objects.filter(
             tenant=tenant,
@@ -117,25 +123,15 @@ def _subject_scores_for_student(*, tenant, student, term, school_class, scheme: 
             exam__term=term,
             exam__school_class=school_class,
             exam__is_deleted=False,
-            exam__marks_status__in=[MARKS_STATUS_APPROVED, MARKS_STATUS_LOCKED],
             exam__exam_type__in=["midterm", "final", "continuous", "assignment"],
+            score__isnull=False,
         )
         .select_related("exam", "exam__subject", "exam__paper")
-    )
-    # If student has active subject registrations for the year, only include those subjects.
-    reg_ids = set(
-        StudentSubjectRegistration.objects.filter(
-            tenant=tenant,
-            student=student,
-            academic_year=term.academic_year,
-            is_active=True,
-            is_deleted=False,
-        ).filter(Q(term__isnull=True) | Q(term=term)).values_list("subject_id", flat=True)
     )
 
     by_subject: dict[str, dict[str, Any]] = {}
     for g in grades:
-        if reg_ids and g.exam.subject_id not in reg_ids:
+        if g.exam.subject_id is None:
             continue
         sid = str(g.exam.subject_id)
         bucket = by_subject.setdefault(sid, {
@@ -144,12 +140,15 @@ def _subject_scores_for_student(*, tenant, student, term, school_class, scheme: 
             "scores": [],
             "ca": [],
             "exam": [],
+            "has_approved": False,
         })
         score = _d(g.score)
         max_s = _d(g.exam.max_score) or Decimal("100")
         # normalize to /100
         norm = (score / max_s * Decimal("100")).quantize(Decimal("0.01")) if max_s else score
         bucket["scores"].append(norm)
+        if g.exam.marks_status in (MARKS_STATUS_APPROVED, MARKS_STATUS_LOCKED):
+            bucket["has_approved"] = True
         et = g.exam.exam_type
         if et in ("continuous", "assignment", "midterm"):
             bucket["ca"].append(norm)
@@ -165,8 +164,11 @@ def _subject_scores_for_student(*, tenant, student, term, school_class, scheme: 
             })
 
     assess = _assessment_scheme(tenant)
+    scheme_bands = list(scheme.bands.filter(is_deleted=False)) if scheme is not None else []
     lines = []
     for sid, data in by_subject.items():
+        if not data["scores"]:
+            continue
         subj = data["subject"]
         ca_vals = data["ca"]
         ex_vals = data["exam"]
@@ -176,7 +178,6 @@ def _subject_scores_for_student(*, tenant, student, term, school_class, scheme: 
         # Default 30/70 if assessment scheme present with 2 components, else average all
         total = Decimal("0")
         if assess and assess.components and (ca_avg is not None or ex_avg is not None):
-            # Simple: weight continuous vs final if weights sum ~100
             ca_w = Decimal("30")
             ex_w = Decimal("70")
             for comp in assess.components:
@@ -194,7 +195,6 @@ def _subject_scores_for_student(*, tenant, student, term, school_class, scheme: 
                 part += ca_avg * ca_w / total_w
             if ex_avg is not None:
                 part += ex_avg * ex_w / total_w
-            # If only one side present, use that side fully
             if ca_avg is None and ex_avg is not None:
                 part = ex_avg
             if ex_avg is None and ca_avg is not None:
@@ -204,10 +204,7 @@ def _subject_scores_for_student(*, tenant, student, term, school_class, scheme: 
             all_scores = data["scores"]
             total = (sum(all_scores) / len(all_scores)).quantize(Decimal("0.01")) if all_scores else Decimal("0")
 
-        band = None
-        if scheme is not None:
-            bands = list(scheme.bands.filter(is_deleted=False))
-            band = resolve_band(bands, score=total) if bands else None
+        band = resolve_band(scheme_bands, score=total) if scheme_bands else None
 
         lines.append({
             "subject": subj,
@@ -220,10 +217,30 @@ def _subject_scores_for_student(*, tenant, student, term, school_class, scheme: 
             "max_score": Decimal("100"),
             "grade": band.grade if band else "",
             "grade_point": band.grade_point if band else None,
-            "remarks": band.remarks if band else "",
+            # Per-subject remarks from grading band — not overall teacher/DoS remarks
+            "remarks": (band.remarks if band else "") or "",
         })
-    lines.sort(key=lambda x: x["subject_name"])
+    lines.sort(key=lambda x: (x["subject_code"] or x["subject_name"] or "").lower())
     return lines
+
+
+def resolve_overall_grade(*, scheme: GradingScheme | None, average_score) -> dict[str, Any]:
+    """Map average mark to overall grade + remarks using the school grading scheme."""
+    if scheme is None or average_score is None:
+        return {"grade": "", "grade_point": None, "remarks": ""}
+    try:
+        avg = Decimal(str(average_score))
+    except Exception:
+        return {"grade": "", "grade_point": None, "remarks": ""}
+    bands = list(scheme.bands.filter(is_deleted=False))
+    band = resolve_band(bands, score=avg) if bands else None
+    if not band:
+        return {"grade": "", "grade_point": None, "remarks": ""}
+    return {
+        "grade": band.grade or "",
+        "grade_point": band.grade_point,
+        "remarks": band.remarks or "",
+    }
 
 
 @transaction.atomic
@@ -271,6 +288,7 @@ def generate_class_report_cards(
         totals = [l["total_score"] for l in lines]
         total = sum(totals) if totals else Decimal("0")
         avg = (total / len(totals)).quantize(Decimal("0.01")) if totals else Decimal("0")
+        overall = resolve_overall_grade(scheme=scheme, average_score=avg)
         att = _attendance_summary(tenant=tenant, student=st, term=term)
         conduct = _conduct_summary(tenant=tenant, student=st, term=term)
         built.append({
@@ -278,6 +296,9 @@ def generate_class_report_cards(
             "lines": lines,
             "total": total,
             "average": avg,
+            "overall_grade": overall.get("grade") or "",
+            "overall_grade_point": overall.get("grade_point"),
+            "overall_grade_remarks": overall.get("remarks") or "",
             "attendance": att,
             "conduct": conduct,
         })
@@ -346,10 +367,21 @@ def generate_class_report_cards(
                 "generated_by": str(getattr(user, "id", "")),
                 "scheme_id": str(scheme.id) if scheme else None,
                 "conduct": row.get("conduct") or {},
+                "overall_grade": row.get("overall_grade") or "",
+                "overall_grade_point": (
+                    str(row["overall_grade_point"])
+                    if row.get("overall_grade_point") is not None
+                    else None
+                ),
+                "overall_grade_remarks": row.get("overall_grade_remarks") or "",
             },
             created_by=user,
             updated_by=user,
         )
+        # Persist overall grade on division field when free (human-readable letter)
+        if row.get("overall_grade") and not rc.division:
+            rc.division = str(row["overall_grade"])[:20]
+            rc.save(update_fields=["division", "updated_at"])
         # Append conduct grade into remarks if empty of formal remarks
         if row.get("conduct") and not rc.remarks:
             c = row["conduct"]
@@ -397,7 +429,12 @@ def generate_class_report_cards(
 
 @transaction.atomic
 def publish_report_cards(*, tenant, user, report_card_ids: list | None = None, term_id=None, school_class_id=None, stream_id=None):
-    qs = ReportCard.objects.filter(tenant=tenant, is_deleted=False, is_latest=True)
+    """Mark latest report cards as published so they appear on report-card surfaces.
+
+    Unpublished cards are internal results only. Parent portal and other
+    report-card lists filter is_published=True.
+    """
+    qs = ReportCard.objects.filter(tenant=tenant, is_deleted=False, is_latest=True, is_published=False)
     if report_card_ids:
         qs = qs.filter(pk__in=report_card_ids)
     else:

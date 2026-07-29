@@ -318,7 +318,9 @@ def get_user_feature_permissions(tenant, user) -> dict[str, dict[str, bool]]:
 
     perms = get_effective_feature_permissions(tenant, user.role)
     ctx = get_academic_context(user)
-    if ctx and ctx.is_class_teacher and normalize_role(user.role) == UserRole.TEACHER:
+    # Dual-role access by default: any staff who heads a class/stream gets class-teacher
+    # tools while remaining on their primary role (subject teacher, HoD, etc.).
+    if ctx and ctx.is_class_teacher:
         perms = merge_class_teacher_feature_permissions(perms, is_class_teacher=True)
     return perms
 

@@ -4,6 +4,7 @@ Django settings for Apex Hub.
 from __future__ import annotations
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -34,6 +35,19 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 NGROK_DOMAIN = env("NGROK_DOMAIN", default="").strip()
 PUBLIC_APP_URL = env("PUBLIC_APP_URL", default="").strip().rstrip("/")
 TRUST_PROXY_HEADERS = env.bool("TRUST_PROXY_HEADERS", default=bool(NGROK_DOMAIN or PUBLIC_APP_URL))
+
+# WebAuthn / passkeys (staff attendance biometrics)
+# RP ID must match the host users open in the browser (no port, no scheme).
+WEBAUTHN_RP_ID = env("WEBAUTHN_RP_ID", default="").strip()
+WEBAUTHN_RP_NAME = env("WEBAUTHN_RP_NAME", default="Apex Hub")
+# Optional fixed origin e.g. https://school.example.com — otherwise Origin header is used
+WEBAUTHN_ORIGIN = env("WEBAUTHN_ORIGIN", default=PUBLIC_APP_URL or "").strip().rstrip("/")
+WEBAUTHN_CHALLENGE_MINUTES = env.int("WEBAUTHN_CHALLENGE_MINUTES", default=5)
+# Enforce fingerprint at staff GPS check-in (disabled automatically under pytest)
+WEBAUTHN_REQUIRED_FOR_STAFF_CHECKIN = env.bool(
+    "WEBAUTHN_REQUIRED_FOR_STAFF_CHECKIN",
+    default=("pytest" not in sys.modules),
+)
 
 if NGROK_DOMAIN and NGROK_DOMAIN not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(NGROK_DOMAIN)

@@ -20,15 +20,30 @@ class StaffAttendanceError(Exception):
 
 
 def staff_for_user(user) -> Staff | None:
+    """
+    Resolve the single Staff directory row for this portal user.
+
+    Dual roles share one Staff record — signing in as teacher is the same
+    attendance as bursar/DoS/HR on the same login.
+    """
     if not user:
         return None
     try:
         staff = user.staff_profile
-        if staff and not staff.is_deleted:
+        if staff and not getattr(staff, "is_deleted", False):
             return staff
     except Exception:
         pass
-    return Staff.objects.filter(user=user, is_deleted=False).first()
+    staff = Staff.objects.filter(user=user, is_deleted=False).first()
+    if staff:
+        return staff
+    # Email fallback (legacy link gaps)
+    email = (getattr(user, "email", None) or "").strip()
+    if email and getattr(user, "tenant_id", None):
+        return Staff.objects.filter(
+            tenant_id=user.tenant_id, email__iexact=email, is_deleted=False,
+        ).first()
+    return None
 
 
 def today_record(*, tenant, staff: Staff):
@@ -43,8 +58,11 @@ def today_record(*, tenant, staff: Staff):
 
 
 def staff_attendance_status(*, tenant, user) -> dict[str, Any]:
+    from apps.accounts.webauthn_service import webauthn_status
+
     staff = staff_for_user(user)
     fence = get_geofence(tenant)
+    wa = webauthn_status(user)
     payload = {
         "has_staff_profile": staff is not None,
         "staff_id": str(staff.id) if staff else None,
@@ -57,6 +75,10 @@ def staff_attendance_status(*, tenant, user) -> dict[str, Any]:
         "check_out": None,
         "status": None,
         "record_id": None,
+        # Dual-role aware: one check-in for the person, all staff roles
+        "shared_across_roles": True,
+        "webauthn": wa,
+        "requires_webauthn": True,
     }
     if staff is None:
         payload["message"] = "No staff HR profile is linked to this account."
@@ -74,11 +96,25 @@ def staff_attendance_status(*, tenant, user) -> dict[str, Any]:
             "check_in_lng": float(rec.check_in_lng) if rec.check_in_lng is not None else None,
             "check_in_accuracy_m": float(rec.check_in_accuracy_m) if rec.check_in_accuracy_m is not None else None,
         })
+        if payload["checked_in"] and not payload["checked_out"]:
+            payload["message"] = (
+                f"Already signed in today at {payload['check_in']}. "
+                "This applies to all your portal roles — no need to sign in again after switching role."
+            )
     return payload
 
 
 @transaction.atomic
-def staff_check_in(*, tenant, user, lat, lng, accuracy_m=None) -> dict[str, Any]:
+def staff_check_in(
+    *,
+    tenant,
+    user,
+    lat,
+    lng,
+    accuracy_m=None,
+    webauthn_assertion=None,
+    request=None,
+) -> dict[str, Any]:
     staff = staff_for_user(user)
     if staff is None:
         raise StaffAttendanceError(
@@ -96,11 +132,30 @@ def staff_check_in(*, tenant, user, lat, lng, accuracy_m=None) -> dict[str, Any]
     now = timezone.localtime()
     today = now.date()
     rec = today_record(tenant=tenant, staff=staff)
+    # Idempotent across dual roles: already signed in → friendly success, not error
     if rec and rec.check_in and not rec.check_out:
-        raise StaffAttendanceError(
-            f"Already signed in today at {rec.check_in.strftime('%H:%M')}.",
-            code="already_checked_in",
-        )
+        status = staff_attendance_status(tenant=tenant, user=user)
+        return {
+            **status,
+            "already_checked_in": True,
+            "evaluation": evaluation,
+            "message": (
+                f"Already signed in today at {rec.check_in.strftime('%H:%M')}. "
+                "Your check-in is shared across all roles on this account."
+            ),
+        }
+
+    # Biometric second factor (prevents colleague proxy sign-in)
+    webauthn_result = None
+    from django.conf import settings as dj_settings
+
+    if request is not None and getattr(dj_settings, "WEBAUTHN_REQUIRED_FOR_STAFF_CHECKIN", True):
+        from apps.accounts.webauthn_service import WebAuthnError, require_verified_webauthn
+
+        try:
+            webauthn_result = require_verified_webauthn(request, user, webauthn_assertion)
+        except WebAuthnError as exc:
+            raise StaffAttendanceError(exc.message, code=exc.code) from exc
 
     lat_d = Decimal(str(round(float(lat), 7))) if lat is not None else None
     lng_d = Decimal(str(round(float(lng), 7))) if lng is not None else None
@@ -123,7 +178,7 @@ def staff_check_in(*, tenant, user, lat, lng, accuracy_m=None) -> dict[str, Any]
             check_in_lng=lng_d,
             check_in_accuracy_m=acc_d,
             marked_by=user,
-            remarks="Self check-in (GPS)",
+            remarks="Self check-in (GPS + biometric)",
             created_by=user,
             updated_by=user,
         )
@@ -140,13 +195,14 @@ def staff_check_in(*, tenant, user, lat, lng, accuracy_m=None) -> dict[str, Any]
         rec.check_out_accuracy_m = None
         rec.marked_by = user
         rec.updated_by = user
-        rec.remarks = "Self check-in (GPS)"
+        rec.remarks = "Self check-in (GPS + biometric)"
         rec.save()
 
     return {
         **staff_attendance_status(tenant=tenant, user=user),
         "evaluation": evaluation,
-        "message": f"Signed in at {rec.check_in.strftime('%H:%M')}.",
+        "webauthn_verified": bool(webauthn_result),
+        "message": f"Signed in at {rec.check_in.strftime('%H:%M')} (location + biometric verified).",
     }
 
 

@@ -17,6 +17,7 @@ import { PARENT_DIRECTORY_FILTERS } from '../../config/directoryTableFilters';
 import { buildParentDirectoryColumns } from '../../config/directoryTableColumns.jsx';
 import { COL_WIDTH, nameColumn } from '../../utils/tableDisplay';
 import { PersonNameCell } from '../../components/PersonAvatar';
+import SearchableSelect from '../../components/SearchableSelect';
 
 const TABS = [
   { key: 'directory', label: 'Parent Directory' },
@@ -32,6 +33,7 @@ export function Parents() {
   const [activeTab, setActiveTab] = useState('directory');
   const [selectedParentId, setSelectedParentId] = useState('');
   const [studentSearch, setStudentSearch] = useState('');
+  const [unmatchedSearch, setUnmatchedSearch] = useState('');
   const [linking, setLinking] = useState(false);
 
   const { data: parents = [], isLoading, isError } = useQuery({
@@ -69,6 +71,20 @@ export function Parents() {
     [selectedParent],
   );
 
+  const parentOptions = useMemo(() => (
+    (parents || []).map((p) => ({
+      value: p.id,
+      label: p.full_name || `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Parent',
+      meta: [
+        p.phone,
+        p.email,
+        p.children_count ? `${p.children_count} linked` : 'no learners',
+        p.also_staff || p.is_dual_role ? (p.dual_role_label || 'Dual role') : '',
+      ].filter(Boolean).join(' · '),
+      keywords: [p.full_name, p.first_name, p.last_name, p.email, p.phone, p.id].filter(Boolean).join(' '),
+    }))
+  ), [parents]);
+
   const linkableStudents = useMemo(() => {
     const q = studentSearch.trim().toLowerCase();
     return students.filter((s) => {
@@ -78,6 +94,16 @@ export function Parents() {
       return hay.includes(q);
     });
   }, [students, studentSearch, linkedChildIds]);
+
+  const unmatchedFiltered = useMemo(() => {
+    const rows = matchingSummary?.unmatched_students || [];
+    const q = unmatchedSearch.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((s) => {
+      const hay = `${s.full_name || ''} ${s.admission_number || ''} ${s.class_name || ''}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [matchingSummary?.unmatched_students, unmatchedSearch]);
 
   const invalidateParentData = async () => {
     await Promise.all([
@@ -249,19 +275,19 @@ export function Parents() {
           <div className="col-lg-5">
             <div className="apex-card p-3 p-md-4 h-100">
               <h6 className="fw-bold mb-3">Select Parent / Guardian</h6>
-              <select
-                className="form-select mb-3"
-                value={selectedParentId}
-                onChange={(e) => setSelectedParentId(e.target.value)}
-              >
-                <option value="">Choose a parent…</option>
-                {parents.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.full_name || `${p.first_name} ${p.last_name}`.trim()}
-                    {p.children_count ? ` (${p.children_count} linked)` : ' (no learners)'}
-                  </option>
-                ))}
-              </select>
+              <div className="mb-3">
+                <SearchableSelect
+                  options={parentOptions}
+                  value={selectedParentId}
+                  onChange={(val) => setSelectedParentId(val || '')}
+                  placeholder="Search parent by name, phone, or email…"
+                  emptyLabel="No parents match your search"
+                  allowClear
+                />
+                <p className="form-text mb-0 mt-1">
+                  Type to filter — dual-role staff who are also parents appear here too.
+                </p>
+              </div>
 
               {selectedParentId && (
                 <div className="small text-muted mb-3">
@@ -288,14 +314,28 @@ export function Parents() {
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
                 disabled={!selectedParentId || !canManage}
+                autoComplete="off"
               />
-              <div className="list-group list-group-flush" style={{ maxHeight: 280, overflowY: 'auto' }}>
+              {selectedParentId && (
+                <p className="form-text mb-2">
+                  {linkableStudents.length} learner{linkableStudents.length === 1 ? '' : 's'} available
+                  {studentSearch.trim() ? ' matching your search' : ''}.
+                  {!studentSearch.trim() && linkableStudents.length > 40
+                    ? ' Type to narrow the list.'
+                    : ''}
+                </p>
+              )}
+              <div className="list-group list-group-flush" style={{ maxHeight: 320, overflowY: 'auto' }}>
                 {!selectedParentId ? (
                   <div className="text-muted small py-3">Select a parent to start matching learners.</div>
                 ) : linkableStudents.length === 0 ? (
-                  <div className="text-muted small py-3">No available learners to link.</div>
+                  <div className="text-muted small py-3">
+                    {studentSearch.trim()
+                      ? 'No learners match your search.'
+                      : 'No available learners to link.'}
+                  </div>
                 ) : (
-                  linkableStudents.slice(0, 20).map((s) => (
+                  (studentSearch.trim() ? linkableStudents : linkableStudents.slice(0, 40)).map((s) => (
                     <div key={s.id} className="list-group-item d-flex align-items-center justify-content-between px-0">
                       <div>
                         <div className="fw-medium">{s.full_name}</div>
@@ -347,20 +387,32 @@ export function Parents() {
           {matchingSummary?.unmatched_students?.length > 0 && (
             <div className="col-12">
               <div className="apex-card p-3 p-md-4">
-                <h6 className="fw-bold mb-2">Learners Without a Parent Link</h6>
-                <p className="text-muted small mb-3">
-                  {matchingSummary.unmatched_students.length} active learners still need at least one parent or guardian assigned.
+                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                  <h6 className="fw-bold mb-0">Learners Without a Parent Link</h6>
+                  <span className="badge text-bg-warning-subtle border text-warning">
+                    {matchingSummary.unmatched_students.length} unmatched
+                  </span>
+                </div>
+                <p className="text-muted small mb-2">
+                  Search to find a learner quickly, then select their parent above to link.
                 </p>
-                <div className="d-flex flex-wrap gap-2">
-                  {matchingSummary.unmatched_students.slice(0, 12).map((s) => (
-                    <span key={s.id} className="badge text-bg-light border text-dark">
-                      {s.full_name} ({s.admission_number})
-                    </span>
-                  ))}
-                  {matchingSummary.unmatched_students.length > 12 && (
-                    <span className="badge text-bg-secondary">
-                      +{matchingSummary.unmatched_students.length - 12} more
-                    </span>
+                <input
+                  type="search"
+                  className="form-control form-control-sm mb-3"
+                  placeholder="Search unmatched learners by name or admission no.…"
+                  value={unmatchedSearch}
+                  onChange={(e) => setUnmatchedSearch(e.target.value)}
+                  autoComplete="off"
+                />
+                <div className="d-flex flex-wrap gap-2" style={{ maxHeight: 160, overflowY: 'auto' }}>
+                  {unmatchedFiltered.length === 0 ? (
+                    <span className="text-muted small">No unmatched learners match that search.</span>
+                  ) : (
+                    unmatchedFiltered.slice(0, unmatchedSearch.trim() ? 80 : 24).map((s) => (
+                      <span key={s.id} className="badge text-bg-light border text-dark">
+                        {s.full_name} ({s.admission_number})
+                      </span>
+                    ))
                   )}
                 </div>
               </div>

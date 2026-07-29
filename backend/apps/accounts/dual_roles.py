@@ -37,54 +37,75 @@ DUAL_ROLE_CHOICES = [
 
 
 def ensure_primary_assignment(user: User, *, actor=None) -> UserRoleAssignment | None:
-    """Ensure the user's current role is recorded as a primary assignment."""
+    """
+    Ensure the user's current active role has a primary assignment row.
+
+    Important: never re-activate a dual-role assignment that was intentionally
+    revoked (is_active=False). Doing so made the first revoke look like a no-op.
+    """
     if not user or not user.tenant_id or not user.role:
         return None
     if user.role == UserRole.SUPER_ADMIN:
         return None
     role = normalize_role(user.role)
-    assignment, created = UserRoleAssignment.objects.get_or_create(
-        user=user,
-        tenant_id=user.tenant_id,
-        role=role,
-        defaults={
-            "is_primary": True,
-            "is_active": True,
-            "source": "system",
-            "granted_by": actor if getattr(actor, "is_authenticated", False) else None,
-        },
-    )
-    if created:
+
+    existing = UserRoleAssignment.objects.filter(
+        user=user, tenant_id=user.tenant_id, role=role,
+    ).first()
+
+    if existing is not None and not existing.is_active:
+        # This role was revoked — do not resurrect it. Prefer another active role.
+        active = (
+            UserRoleAssignment.objects.filter(
+                user=user, tenant_id=user.tenant_id, is_active=True, is_primary=True,
+            ).first()
+            or UserRoleAssignment.objects.filter(
+                user=user, tenant_id=user.tenant_id, is_active=True,
+            ).first()
+        )
+        if active:
+            if not active.is_primary:
+                UserRoleAssignment.objects.filter(
+                    user=user, tenant_id=user.tenant_id, is_active=True,
+                ).update(is_primary=False)
+                active.is_primary = True
+                active.save(update_fields=["is_primary", "updated_at"])
+            return active
+        return None
+
+    if existing is None:
+        assignment = UserRoleAssignment.objects.create(
+            user=user,
+            tenant_id=user.tenant_id,
+            role=role,
+            is_primary=True,
+            is_active=True,
+            source="system",
+            granted_by=actor if getattr(actor, "is_authenticated", False) else None,
+        )
         UserRoleAssignment.objects.filter(
             user=user, tenant_id=user.tenant_id, is_active=True,
         ).exclude(pk=assignment.pk).update(is_primary=False)
         return assignment
-    if not assignment.is_active:
-        assignment.is_active = True
-        assignment.save(update_fields=["is_active", "updated_at"])
+
+    # existing is active
     if not UserRoleAssignment.objects.filter(
         user=user, tenant_id=user.tenant_id, is_active=True, is_primary=True,
     ).exists():
-        assignment.is_primary = True
-        assignment.save(update_fields=["is_primary", "updated_at"])
-    return assignment
+        existing.is_primary = True
+        existing.save(update_fields=["is_primary", "updated_at"])
+    return existing
 
 
-def list_user_roles(user: User) -> list[str]:
-    """Active roles the user may switch into (includes current User.role)."""
-    if not user:
+def _active_assignment_roles(user: User) -> list[str]:
+    """Active dual-role assignments only (no auto-heal side effects)."""
+    if not user or not user.tenant_id:
         return []
-    ensure_primary_assignment(user)
-    if not user.tenant_id:
-        return [normalize_role(user.role)] if user.role else []
     roles = list(
         UserRoleAssignment.objects.filter(
             user=user, tenant_id=user.tenant_id, is_active=True,
         ).values_list("role", flat=True)
     )
-    current = normalize_role(user.role)
-    if current and current not in roles:
-        roles.append(current)
     seen: set[str] = set()
     out: list[str] = []
     for r in roles:
@@ -93,6 +114,32 @@ def list_user_roles(user: User) -> list[str]:
             seen.add(nr)
             out.append(nr)
     return out
+
+
+def list_user_roles(user: User) -> list[str]:
+    """Active roles the user may switch into."""
+    if not user:
+        return []
+    if not user.tenant_id:
+        return [normalize_role(user.role)] if user.role else []
+
+    ensure_primary_assignment(user)
+    roles = _active_assignment_roles(user)
+
+    # Legacy users with no assignment rows yet: expose User.role once.
+    # Never re-add a role that has an inactive (revoked) assignment.
+    current = normalize_role(user.role)
+    if current and current not in roles:
+        revoked = UserRoleAssignment.objects.filter(
+            user=user, tenant_id=user.tenant_id, role=current, is_active=False,
+        ).exists()
+        any_assignment = UserRoleAssignment.objects.filter(
+            user=user, tenant_id=user.tenant_id,
+        ).exists()
+        if not revoked and not any_assignment:
+            roles.append(current)
+
+    return roles
 
 
 def role_payload(user: User) -> dict[str, Any]:
@@ -118,16 +165,62 @@ def role_payload(user: User) -> dict[str, Any]:
 
 def _safe_staff(user: User):
     try:
-        return user.staff_profile
+        staff = user.staff_profile
+        if staff and getattr(staff, "is_deleted", False):
+            return None
+        return staff
     except Exception:
         return None
 
 
 def _safe_parent(user: User):
     try:
-        return user.parent_profile
+        parent = user.parent_profile
+        if parent and getattr(parent, "is_deleted", False):
+            return None
+        return parent
     except Exception:
         return None
+
+
+def is_staff_like_role(role: str) -> bool:
+    role = normalize_role(role)
+    return role in UserRole.STAFF_ROLES or role == UserRole.SCHOOL_ADMIN
+
+
+def dual_identity_for_user(user: User | None) -> dict[str, Any]:
+    """
+    Canonical identity flags used by parent/staff directories and profile UIs.
+    One User may own both a Staff row and a Parent row.
+    """
+    if not user:
+        return {
+            "user_id": None,
+            "available_roles": [],
+            "is_dual_role": False,
+            "has_staff_profile": False,
+            "has_parent_profile": False,
+            "also_staff": False,
+            "also_parent": False,
+        }
+    roles = list_user_roles(user)
+    staff = _safe_staff(user)
+    parent = _safe_parent(user)
+    has_staff = staff is not None or any(is_staff_like_role(r) for r in roles)
+    has_parent = parent is not None or UserRole.PARENT in roles
+    return {
+        "user_id": str(user.id),
+        "available_roles": roles,
+        "is_dual_role": len(roles) > 1,
+        "has_staff_profile": staff is not None,
+        "has_parent_profile": parent is not None,
+        "also_staff": has_staff and has_parent,
+        "also_parent": has_staff and has_parent,
+        "active_role": normalize_role(user.role),
+        "role_labels": {
+            r: dict(UserRole.CHOICES).get(r, r.replace("_", " ").title()) for r in roles
+        },
+    }
 
 
 def search_dual_role_candidates(*, tenant, q: str = "", limit: int = 60) -> list[dict[str, Any]]:
@@ -456,6 +549,9 @@ def grant_roles(
 
     ensure_primary_assignment(user, actor=actor)
     existing = set(list_user_roles(user))
+    # Ensure native directory rows exist for every role already held (one person, many lists)
+    for held in list(existing):
+        _ensure_profile_for_role(user, held, actor=actor)
     added: list[str] = []
 
     for raw in roles or []:
@@ -520,6 +616,10 @@ def grant_roles_to_candidate(
     data = grant_roles(user=user, roles=roles, actor=actor)
     data["portal_account_created"] = created
     data["credentials_reused"] = not created
+    data["identity"] = dual_identity_for_user(user)
+    # Convenience for admin UIs / tests
+    data["has_staff_profile"] = data["identity"]["has_staff_profile"]
+    data["has_parent_profile"] = data["identity"]["has_parent_profile"]
     if created and temp_password:
         data["temporary_password"] = temp_password
         data["message"] = (
@@ -543,7 +643,7 @@ def grant_roles_to_candidate(
 
 
 def _ensure_profile_for_role(user: User, role: str, *, actor=None) -> None:
-    """Create minimal Parent/Teacher linkage when dual-granting those portals."""
+    """Create or restore Parent/Staff directory rows so the person appears in native lists."""
     role = normalize_role(role)
     actor_ok = actor if getattr(actor, "is_authenticated", False) else None
 
@@ -552,124 +652,402 @@ def _ensure_profile_for_role(user: User, role: str, *, actor=None) -> None:
 
         parent = _safe_parent(user)
         if parent is None:
-            # Prefer matching by email within tenant
-            parent = Parent.objects.filter(
-                tenant_id=user.tenant_id, email__iexact=user.email, is_deleted=False,
-            ).first()
-            if parent and parent.user_id is None:
-                parent.user = user
+            # Restore soft-deleted parent for this user if dual-role was revoked earlier
+            parent = Parent.all_objects.filter(
+                tenant_id=user.tenant_id, user=user,
+            ).order_by("-updated_at").first()
+            if parent and parent.is_deleted:
+                parent.restore(user=actor_ok)
                 parent.has_portal_access = True
-                parent.save(update_fields=["user", "has_portal_access", "updated_at"])
-            elif parent is None:
-                Parent.objects.create(
-                    tenant_id=user.tenant_id,
-                    user=user,
-                    first_name=user.first_name or "Parent",
-                    last_name=user.last_name or "User",
-                    email=user.email,
-                    phone=user.phone or "",
-                    has_portal_access=True,
-                    created_by=actor_ok,
-                    updated_by=actor_ok,
-                )
+                parent.first_name = parent.first_name or user.first_name or "Parent"
+                parent.last_name = parent.last_name or user.last_name or "User"
+                parent.email = parent.email or user.email
+                parent.phone = parent.phone or user.phone or ""
+                parent.save(update_fields=[
+                    "has_portal_access", "first_name", "last_name", "email", "phone", "updated_at",
+                ])
+            else:
+                parent = Parent.objects.filter(
+                    tenant_id=user.tenant_id, email__iexact=user.email, is_deleted=False,
+                ).first()
+                if parent and (parent.user_id is None or parent.user_id == user.id):
+                    parent.user = user
+                    parent.has_portal_access = True
+                    # Keep names in sync with the single person
+                    parent.first_name = user.first_name or parent.first_name
+                    parent.last_name = user.last_name or parent.last_name
+                    parent.phone = parent.phone or user.phone or ""
+                    parent.save(update_fields=[
+                        "user", "has_portal_access", "first_name", "last_name", "phone", "updated_at",
+                    ])
+                elif parent is None:
+                    Parent.objects.create(
+                        tenant_id=user.tenant_id,
+                        user=user,
+                        first_name=user.first_name or "Parent",
+                        last_name=user.last_name or "User",
+                        email=user.email,
+                        phone=user.phone or "",
+                        has_portal_access=True,
+                        created_by=actor_ok,
+                        updated_by=actor_ok,
+                    )
         else:
+            updates = []
             if parent.user_id is None:
                 parent.user = user
-            parent.has_portal_access = True
-            parent.save(update_fields=["user", "has_portal_access", "updated_at"])
+                updates.append("user")
+            if not parent.has_portal_access:
+                parent.has_portal_access = True
+                updates.append("has_portal_access")
+            # Single person — mirror name/phone from portal user when blank
+            if user.first_name and parent.first_name in ("", "Parent"):
+                parent.first_name = user.first_name
+                updates.append("first_name")
+            if user.last_name and parent.last_name in ("", "User"):
+                parent.last_name = user.last_name
+                updates.append("last_name")
+            if updates:
+                parent.updated_by = actor_ok
+                updates.extend(["updated_at", "updated_by"])
+                parent.save(update_fields=list(dict.fromkeys(updates)))
         return
 
     # Staff / teaching roles — ensure Staff + Teacher where needed
-    if role in UserRole.STAFF_ROLES or role == UserRole.SCHOOL_ADMIN:
+    if is_staff_like_role(role):
         from apps.staff.models import Staff, Teacher
         from apps.staff.staff_roles import get_role_definition, role_requires_teacher_profile
 
         staff = _safe_staff(user)
         if staff is None:
-            staff = Staff.objects.filter(
-                tenant_id=user.tenant_id, email__iexact=user.email, is_deleted=False,
-            ).first()
-            if staff and staff.user_id is None:
-                staff.user = user
+            staff = Staff.all_objects.filter(
+                tenant_id=user.tenant_id, user=user,
+            ).order_by("-updated_at").first()
+            if staff and staff.is_deleted:
+                staff.restore(user=actor_ok)
                 staff.has_portal_access = True
-                if role in dict(UserRole.CHOICES):
-                    staff.portal_role = role
-                staff.save(update_fields=["user", "has_portal_access", "portal_role", "updated_at"])
-            elif staff is None:
-                role_def = get_role_definition(role) if role != UserRole.SCHOOL_ADMIN else {
-                    "category": "management",
-                    "default_designation": "School Administrator",
-                }
-                # employee_id unique per tenant
-                base = (user.email.split("@")[0] or "EMP")[:20].upper()
-                emp_id = base
-                n = 1
-                while Staff.all_objects.filter(tenant_id=user.tenant_id, employee_id=emp_id).exists():
-                    n += 1
-                    emp_id = f"{base}{n}"
-                staff = Staff.objects.create(
-                    tenant_id=user.tenant_id,
-                    user=user,
-                    employee_id=emp_id,
-                    first_name=user.first_name or "Staff",
-                    last_name=user.last_name or "Member",
-                    email=user.email,
-                    phone=user.phone or "",
-                    portal_role=role if role != UserRole.SCHOOL_ADMIN else UserRole.SCHOOL_ADMIN,
-                    staff_category=role_def.get("category", "administrative"),
-                    designation=role_def.get("default_designation", "Staff"),
-                    date_joined=timezone.localdate(),
-                    has_portal_access=True,
-                    created_by=actor_ok,
-                    updated_by=actor_ok,
-                )
-        else:
-            if staff.portal_role != role and role != UserRole.PARENT:
                 staff.portal_role = role
-                staff.save(update_fields=["portal_role", "updated_at"])
+                staff.first_name = staff.first_name or user.first_name or "Staff"
+                staff.last_name = staff.last_name or user.last_name or "Member"
+                staff.email = staff.email or user.email
+                staff.phone = staff.phone or user.phone or ""
+                staff.save(update_fields=[
+                    "has_portal_access", "portal_role", "first_name", "last_name",
+                    "email", "phone", "updated_at",
+                ])
+            else:
+                staff = Staff.objects.filter(
+                    tenant_id=user.tenant_id, email__iexact=user.email, is_deleted=False,
+                ).first()
+                if staff and (staff.user_id is None or staff.user_id == user.id):
+                    staff.user = user
+                    staff.has_portal_access = True
+                    if role in dict(UserRole.CHOICES):
+                        staff.portal_role = role
+                    staff.first_name = user.first_name or staff.first_name
+                    staff.last_name = user.last_name or staff.last_name
+                    staff.save(update_fields=[
+                        "user", "has_portal_access", "portal_role",
+                        "first_name", "last_name", "updated_at",
+                    ])
+                elif staff is None:
+                    role_def = get_role_definition(role) if role != UserRole.SCHOOL_ADMIN else {
+                        "category": "management",
+                        "default_designation": "School Administrator",
+                    }
+                    base = (user.email.split("@")[0] or "EMP")[:20].upper()
+                    emp_id = base
+                    n = 1
+                    while Staff.all_objects.filter(tenant_id=user.tenant_id, employee_id=emp_id).exists():
+                        n += 1
+                        emp_id = f"{base}{n}"
+                    staff = Staff.objects.create(
+                        tenant_id=user.tenant_id,
+                        user=user,
+                        employee_id=emp_id,
+                        first_name=user.first_name or "Staff",
+                        last_name=user.last_name or "Member",
+                        email=user.email,
+                        phone=user.phone or "",
+                        portal_role=role if role != UserRole.SCHOOL_ADMIN else UserRole.SCHOOL_ADMIN,
+                        staff_category=role_def.get("category", "administrative"),
+                        designation=role_def.get("default_designation", "Staff"),
+                        date_joined=timezone.localdate(),
+                        has_portal_access=True,
+                        created_by=actor_ok,
+                        updated_by=actor_ok,
+                    )
+        else:
+            # Align portal_role if empty or non-staff; otherwise keep existing staff role
+            if is_staff_like_role(role) and not is_staff_like_role(staff.portal_role or ""):
+                staff.portal_role = role
+                staff.has_portal_access = True
+                staff.save(update_fields=["portal_role", "has_portal_access", "updated_at"])
 
         if role_requires_teacher_profile(role) or role in {
             UserRole.TEACHER, UserRole.CLASS_TEACHER, UserRole.HEAD_OF_DEPARTMENT,
             UserRole.DIRECTOR_OF_STUDIES,
         }:
-            if not Teacher.objects.filter(staff=staff).exists():
+            teacher = Teacher.all_objects.filter(staff=staff).order_by("-updated_at").first()
+            if teacher is None:
                 Teacher.objects.create(
                     tenant_id=user.tenant_id,
                     staff=staff,
                     created_by=actor_ok,
                     updated_by=actor_ok,
                 )
+            elif getattr(teacher, "is_deleted", False):
+                teacher.restore(user=actor_ok)
+
+
+def preview_revoke_role(*, user: User, role: str) -> dict[str, Any]:
+    """
+    Describe what removing a dual role will clean up — used for admin warnings.
+    """
+    role = normalize_role(role)
+    labels = dict(UserRole.CHOICES)
+    current = list_user_roles(user)
+    if role not in current:
+        raise DualRoleError("That role is not assigned.", code="not_assigned")
+    if len(current) <= 1:
+        raise DualRoleError("Cannot remove the only role on this account.", code="last_role")
+
+    remaining = [r for r in current if r != role]
+    remaining_staff = [r for r in remaining if is_staff_like_role(r)]
+    impact: dict[str, Any] = {
+        "user_id": str(user.id),
+        "full_name": user.full_name,
+        "email": user.email,
+        "role": role,
+        "role_label": labels.get(role, role),
+        "remaining_roles": remaining,
+        "remaining_role_labels": {r: labels.get(r, r) for r in remaining},
+        "will_switch_active_role": normalize_role(user.role) == role,
+        "new_active_role": remaining[0] if normalize_role(user.role) == role else normalize_role(user.role),
+        "cleanup": [],
+        "warnings": [],
+        "linked_students": [],
+        "linked_students_count": 0,
+        "will_remove_parent_profile": False,
+        "will_remove_staff_profile": False,
+    }
+
+    if role == UserRole.PARENT:
+        parent = _safe_parent(user)
+        if parent:
+            children = list(parent.children.filter(is_deleted=False).order_by("last_name", "first_name")[:20])
+            impact["linked_students"] = [
+                {
+                    "id": str(c.id),
+                    "full_name": c.full_name,
+                    "admission_number": c.admission_number,
+                }
+                for c in children
+            ]
+            impact["linked_students_count"] = parent.children.filter(is_deleted=False).count()
+            impact["will_remove_parent_profile"] = True
+            impact["cleanup"].append(
+                "Parent/guardian directory record will be removed from the Parents list."
+            )
+            if impact["linked_students_count"]:
+                impact["cleanup"].append(
+                    f"{impact['linked_students_count']} learner link(s) will be unlinked "
+                    "(students stay enrolled; only this guardian link is removed)."
+                )
+                impact["warnings"].append(
+                    "Linked learners will no longer show this person as a parent/guardian."
+                )
+            impact["cleanup"].append("Parent portal access for this role ends immediately.")
+        else:
+            impact["cleanup"].append("Parent role assignment will be removed (no parent directory row found).")
+
+    if is_staff_like_role(role):
+        if not remaining_staff:
+            staff = _safe_staff(user)
+            impact["will_remove_staff_profile"] = staff is not None
+            if staff:
+                impact["cleanup"].append(
+                    "Staff directory record will be removed from the Staff list "
+                    "(this was the last staff portal role)."
+                )
+                impact["cleanup"].append(
+                    "Teaching profile linked to this staff record will be retired if present."
+                )
+                impact["warnings"].append(
+                    "Historical attendance/marks marked by this person remain; "
+                    "they will no longer appear as active staff."
+                )
+            else:
+                impact["cleanup"].append("Staff role assignment will be removed.")
+        else:
+            impact["cleanup"].append(
+                f"Only the “{labels.get(role, role)}” assignment is removed. "
+                f"Staff profile is kept for remaining role(s): "
+                + ", ".join(labels.get(r, r) for r in remaining_staff)
+            )
+
+    if impact["will_switch_active_role"]:
+        impact["warnings"].append(
+            f"Their active session role is “{labels.get(role, role)}”; "
+            f"it will switch to “{labels.get(impact['new_active_role'], impact['new_active_role'])}”."
+        )
+
+    impact["summary"] = (
+        f"Remove “{impact['role_label']}” from {user.full_name}. "
+        + (" ".join(impact["warnings"][:2]) if impact["warnings"] else "Directory records for this role will be cleaned up.")
+    )
+    return impact
+
+
+def _cleanup_after_revoke(*, user: User, role: str, actor=None) -> dict[str, Any]:
+    """Remove directory dependencies for a revoked dual role."""
+    cleaned: dict[str, Any] = {
+        "parent_removed": False,
+        "students_unlinked": 0,
+        "staff_removed": False,
+        "teacher_removed": False,
+    }
+    actor_ok = actor if getattr(actor, "is_authenticated", False) else None
+    remaining = list_user_roles(user)
+
+    if role == UserRole.PARENT:
+        parent = _safe_parent(user)
+        if parent:
+            count = parent.children.count()
+            parent.children.clear()
+            cleaned["students_unlinked"] = count
+            # Keep user FK so re-grant can restore the same person row
+            parent.has_portal_access = False
+            parent.save(update_fields=["has_portal_access", "updated_at"])
+            parent.soft_delete(user=actor_ok)
+            cleaned["parent_removed"] = True
+
+    if is_staff_like_role(role):
+        remaining_staff = [r for r in remaining if is_staff_like_role(r)]
+        staff = _safe_staff(user)
+        if remaining_staff and staff:
+            # Point portal_role at a remaining staff role
+            preferred = remaining_staff[0]
+            for candidate in (
+                UserRole.SCHOOL_ADMIN, UserRole.HEAD_TEACHER, UserRole.DIRECTOR_OF_STUDIES,
+                UserRole.HEAD_OF_DEPARTMENT, UserRole.CLASS_TEACHER, UserRole.TEACHER,
+            ):
+                if candidate in remaining_staff:
+                    preferred = candidate
+                    break
+            if staff.portal_role != preferred:
+                staff.portal_role = preferred
+                staff.save(update_fields=["portal_role", "updated_at"])
+        elif not remaining_staff and staff:
+            from apps.staff.models import Teacher
+
+            teacher = Teacher.objects.filter(staff=staff).first()
+            if teacher:
+                teacher.soft_delete(user=actor_ok)
+                cleaned["teacher_removed"] = True
+            # Keep user FK for clean re-grant restore; hide from active staff directory
+            staff.has_portal_access = False
+            staff.save(update_fields=["has_portal_access", "updated_at"])
+            staff.soft_delete(user=actor_ok)
+            cleaned["staff_removed"] = True
+
+    return cleaned
 
 
 @transaction.atomic
-def revoke_role(*, user: User, role: str, actor=None) -> dict[str, Any]:
+def revoke_role(*, user: User, role: str, actor=None, cleanup: bool = True) -> dict[str, Any]:
+    """
+    Remove a dual role and (by default) clean associated Parent/Staff directory rows
+    when that role is no longer needed.
+
+    Order matters: switch User.role off the revoked role *before* deactivating the
+    assignment, so ensure_primary_assignment cannot resurrect the revoked role.
+    """
     role = normalize_role(role)
     if not role:
         raise DualRoleError("Role is required.", code="role_required")
+
+    impact = preview_revoke_role(user=user, role=role)
+
     qs = UserRoleAssignment.objects.filter(
         user=user, tenant_id=user.tenant_id, role=role, is_active=True,
     )
     if not qs.exists():
         raise DualRoleError("That role is not assigned.", code="not_assigned")
-    remaining = list_user_roles(user)
-    if len(remaining) <= 1:
+
+    # Remaining roles from DB only (no ensure_primary side effects)
+    remaining = [
+        r for r in _active_assignment_roles(user) if normalize_role(r) != role
+    ]
+    if not remaining:
         raise DualRoleError("Cannot remove the only role on this account.", code="last_role")
-    qs.update(is_active=False, updated_at=timezone.now())
+
+    # 1) Move active portal context off the role being removed
     if normalize_role(user.role) == role:
-        primary = (
-            UserRoleAssignment.objects.filter(
-                user=user, tenant_id=user.tenant_id, is_active=True, is_primary=True,
-            ).first()
-            or UserRoleAssignment.objects.filter(
-                user=user, tenant_id=user.tenant_id, is_active=True,
-            ).first()
-        )
-        if primary:
-            switch_role(user=user, role=primary.role, actor=actor)
+        next_role = remaining[0]
+        # Set role without going through list_user_roles (assignment still active)
+        user.role = next_role
+        if next_role == UserRole.PARENT:
+            user.is_staff = False
+        elif is_staff_like_role(next_role):
+            user.is_staff = True
+        user.save(update_fields=["role", "is_staff", "updated_at"])
+        staff = _safe_staff(user)
+        if staff is not None and is_staff_like_role(next_role) and staff.portal_role != next_role:
+            staff.portal_role = next_role
+            staff.save(update_fields=["portal_role", "updated_at"])
+
+    # 2) Deactivate the revoked assignment (do not delete history row)
+    qs.update(is_active=False, is_primary=False, updated_at=timezone.now())
+    UserRoleAssignment.objects.filter(
+        user=user, tenant_id=user.tenant_id, role=role,
+    ).update(is_primary=False, is_active=False)
+
+    # 3) Ensure a primary among what remains
+    if not UserRoleAssignment.objects.filter(
+        user=user, tenant_id=user.tenant_id, is_active=True, is_primary=True,
+    ).exists():
+        UserRoleAssignment.objects.filter(
+            user=user, tenant_id=user.tenant_id, role=remaining[0], is_active=True,
+        ).update(is_primary=True)
+
+    # Refresh so list_user_roles / ensure_primary see updated user.role
+    user.refresh_from_db()
+
+    cleanup_result: dict[str, Any] = {}
+    if cleanup:
+        cleanup_result = _cleanup_after_revoke(user=user, role=role, actor=actor)
+
+    user.refresh_from_db()
+    available = list_user_roles(user)
+    # Hard guarantee: revoked role never survives the response payload
+    available = [r for r in available if normalize_role(r) != role]
+
     return {
         "user_id": str(user.id),
         "revoked": role,
-        "available_roles": list_user_roles(user),
+        "role_label": impact.get("role_label", role),
+        "available_roles": available,
+        "impact": impact,
+        "cleanup": cleanup_result,
+        "identity": dual_identity_for_user(user),
+        "dual_role": {
+            **role_payload(user),
+            "available_roles": available,
+        },
+        "message": (
+            f"Removed “{impact.get('role_label', role)}” from {user.full_name}. "
+            + (
+                "Parent directory entry and learner links were cleaned up. "
+                if cleanup_result.get("parent_removed")
+                else ""
+            )
+            + (
+                "Staff directory entry was cleaned up. "
+                if cleanup_result.get("staff_removed")
+                else ""
+            )
+        ).strip(),
     }
 
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FiArrowLeft, FiCheck, FiSearch, FiShield, FiUserCheck } from 'react-icons/fi';
@@ -21,10 +21,11 @@ export function DualRolesSettings() {
   const [selectedUserId, setSelectedUserId] = useState('');
   const [selectedUserCache, setSelectedUserCache] = useState(null);
   const [selectedRoles, setSelectedRoles] = useState([]);
+  /** Bumps after each successful grant/revoke so we never show stale list roles. */
+  const roleStateEpoch = useRef(0);
 
   const canManage = Boolean(isSchoolAdmin || isSuperAdmin);
 
-  // Live search: debounce typing so results update without a Search button
   useEffect(() => {
     const handle = window.setTimeout(() => {
       setDebouncedSearch(search.trim());
@@ -43,24 +44,121 @@ export function DualRolesSettings() {
     queryKey: ['dual-roles', 'candidates', debouncedSearch],
     queryFn: () => dualRolesService.candidates({ q: debouncedSearch || undefined }),
     enabled: canManage,
-    staleTime: 10_000,
-    placeholderData: (prev) => prev,
+    staleTime: 0,
+    // Do not keep previous list forever — stale roles caused "revoke twice" UX
+    gcTime: 30_000,
   });
 
   const candidates = candidatesPayload?.results || [];
+
+  const matchesSelected = useCallback((row, id) => {
+    if (!row || id == null || id === '') return false;
+    const sid = String(id);
+    return String(row.id) === sid
+      || (row.user_id != null && String(row.user_id) === sid);
+  }, []);
+
+  /**
+   * selectedUserCache is authoritative for roles after grant/revoke.
+   * Never fall back to stale candidates list for available_roles.
+   */
   const selected = useMemo(() => {
-    const fromList = candidates.find((u) => String(u.id) === String(selectedUserId));
-    if (fromList) return fromList;
-    if (selectedUserCache && String(selectedUserCache.id) === String(selectedUserId)) {
-      return selectedUserCache;
+    const fromList = candidates.find((u) => matchesSelected(u, selectedUserId));
+    const cacheMatches = selectedUserCache && matchesSelected(selectedUserCache, selectedUserId);
+    if (cacheMatches) {
+      return {
+        ...(fromList || {}),
+        ...selectedUserCache,
+        available_roles: Array.isArray(selectedUserCache.available_roles)
+          ? selectedUserCache.available_roles
+          : (fromList?.available_roles || []),
+        active_role: selectedUserCache.active_role ?? fromList?.active_role,
+        primary_role: selectedUserCache.primary_role ?? fromList?.primary_role,
+        role_labels: selectedUserCache.role_labels ?? fromList?.role_labels ?? {},
+        has_staff_profile: selectedUserCache.has_staff_profile ?? fromList?.has_staff_profile,
+        has_parent_profile: selectedUserCache.has_parent_profile ?? fromList?.has_parent_profile,
+        full_name: selectedUserCache.full_name || fromList?.full_name,
+        email: selectedUserCache.email || fromList?.email,
+      };
     }
-    return null;
-  }, [candidates, selectedUserId, selectedUserCache]);
+    return fromList || null;
+  }, [candidates, selectedUserId, selectedUserCache, matchesSelected]);
 
   const heldRoles = useMemo(
     () => new Set(selected?.available_roles || []),
     [selected],
   );
+
+  const patchCandidatesWithRoleState = useCallback((patch) => {
+    const targetIds = new Set(
+      [patch.id, patch.user_id, selectedUserId, selectedUserCache?.id, selectedUserCache?.user_id]
+        .filter((v) => v != null && v !== '')
+        .map(String),
+    );
+    queryClient.setQueriesData({ queryKey: ['dual-roles', 'candidates'] }, (old) => {
+      if (!old?.results) return old;
+      let changed = false;
+      const results = old.results.map((row) => {
+        const hit = targetIds.has(String(row.id))
+          || (row.user_id != null && targetIds.has(String(row.user_id)));
+        if (!hit) return row;
+        changed = true;
+        return {
+          ...row,
+          available_roles: patch.available_roles ?? row.available_roles,
+          active_role: patch.active_role ?? row.active_role,
+          primary_role: patch.primary_role ?? row.primary_role,
+          role_labels: patch.role_labels ?? row.role_labels,
+          has_staff_profile: patch.has_staff_profile ?? row.has_staff_profile,
+          has_parent_profile: patch.has_parent_profile ?? row.has_parent_profile,
+          user_id: patch.user_id || row.user_id,
+          source: patch.source || row.source,
+          needs_portal_account: patch.needs_portal_account ?? row.needs_portal_account,
+        };
+      });
+      return changed ? { ...old, results, count: results.length } : old;
+    });
+  }, [queryClient, selectedUserId, selectedUserCache?.id, selectedUserCache?.user_id]);
+
+  const applyRoleStateUpdate = useCallback((data, { revokedRole = null } = {}) => {
+    roleStateEpoch.current += 1;
+    const dual = data?.dual_role;
+    const nextId = data?.user_id || dual?.user_id || selectedUserCache?.user_id || selectedUserId;
+
+    let available = dual?.available_roles ?? data?.available_roles;
+    if (!Array.isArray(available)) {
+      available = selectedUserCache?.available_roles || [];
+    }
+    // Always strip revoked role client-side (idempotent)
+    if (revokedRole) {
+      available = available.filter((r) => r !== revokedRole);
+    }
+    available = [...new Set(available.filter(Boolean))];
+
+    const next = {
+      ...(selectedUserCache || {}),
+      id: nextId || selectedUserCache?.id,
+      user_id: nextId || selectedUserCache?.user_id,
+      source: 'user',
+      needs_portal_account: false,
+      available_roles: available,
+      active_role: dual?.active_role ?? data?.active_role ?? selectedUserCache?.active_role,
+      primary_role: dual?.primary_role ?? data?.primary_role ?? selectedUserCache?.primary_role,
+      role_labels: dual?.role_labels || data?.role_labels || selectedUserCache?.role_labels || {},
+      has_staff_profile: data?.identity?.has_staff_profile
+        ?? (data?.user ? Boolean(data.user.staff_profile) : selectedUserCache?.has_staff_profile),
+      has_parent_profile: data?.identity?.has_parent_profile
+        ?? (data?.user ? Boolean(data.user.parent_profile) : selectedUserCache?.has_parent_profile),
+      full_name: selectedUserCache?.full_name || data?.user?.full_name,
+      email: selectedUserCache?.email || data?.user?.email,
+      _epoch: roleStateEpoch.current,
+    };
+
+    setSelectedUserCache(next);
+    if (nextId) setSelectedUserId(String(nextId));
+    patchCandidatesWithRoleState(next);
+    return next;
+  }, [selectedUserCache, selectedUserId, patchCandidatesWithRoleState]);
 
   const grantMutation = useMutation({
     mutationFn: () => {
@@ -72,7 +170,6 @@ export function DualRolesSettings() {
       } else if (selectedUserCache?.source === 'staff' && selectedUserCache?.staff_id) {
         payload.staff_id = selectedUserCache.staff_id;
       } else if (selectedUserId) {
-        // Fallback for composite ids or plain user UUIDs
         payload.id = selectedUserId;
         if (!String(selectedUserId).includes(':')) {
           payload.user_id = selectedUserId;
@@ -80,7 +177,7 @@ export function DualRolesSettings() {
       }
       return dualRolesService.grant(payload);
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       const msg = data?.message || 'Dual roles updated.';
       if (data?.temporary_password) {
         notify.success(msg);
@@ -89,24 +186,11 @@ export function DualRolesSettings() {
         notify.success(msg || 'Dual roles updated. Same login credentials apply.');
       }
       setSelectedRoles([]);
-      if (data?.dual_role) {
-        const nextId = data.user_id || data.dual_role?.user_id || selectedUserCache?.user_id;
-        setSelectedUserCache({
-          ...(selectedUserCache || {}),
-          id: nextId || selectedUserCache?.id,
-          user_id: nextId || selectedUserCache?.user_id,
-          source: 'user',
-          needs_portal_account: false,
-          available_roles: data.dual_role.available_roles,
-          active_role: data.dual_role.active_role,
-          primary_role: data.dual_role.primary_role,
-          role_labels: data.dual_role.role_labels,
-          has_staff_profile: data.user ? Boolean(data.user.staff_profile) : selectedUserCache?.has_staff_profile,
-          has_parent_profile: data.user ? Boolean(data.user.parent_profile) : selectedUserCache?.has_parent_profile,
-        });
-        if (nextId) setSelectedUserId(nextId);
-      }
-      queryClient.invalidateQueries({ queryKey: ['dual-roles', 'candidates'] });
+      applyRoleStateUpdate(data);
+      await queryClient.invalidateQueries({ queryKey: ['dual-roles', 'candidates'] });
+      queryClient.invalidateQueries({ queryKey: ['parents'] });
+      queryClient.invalidateQueries({ queryKey: ['staff'] });
+      queryClient.invalidateQueries({ queryKey: ['hr-staffs'] });
     },
     onError: (err) => notify.error(extractApiError(err, 'Unable to grant dual roles.')),
   });
@@ -116,21 +200,59 @@ export function DualRolesSettings() {
       user_id: selectedUserCache?.user_id || selectedUserId,
       role,
     }),
-    onSuccess: (data) => {
+    onSuccess: async (data, role) => {
       notify.success(data?.message || 'Role removed.');
-      if (data?.dual_role && selectedUserCache) {
-        setSelectedUserCache({
-          ...selectedUserCache,
-          available_roles: data.dual_role.available_roles,
-          active_role: data.dual_role.active_role,
-          primary_role: data.dual_role.primary_role,
-          role_labels: data.dual_role.role_labels,
-        });
-      }
-      queryClient.invalidateQueries({ queryKey: ['dual-roles', 'candidates'] });
+      // Immediate UI update — do not wait for list refetch
+      applyRoleStateUpdate(data, { revokedRole: role });
+      // Refetch server truth after paint
+      await queryClient.invalidateQueries({ queryKey: ['dual-roles', 'candidates'] });
+      queryClient.invalidateQueries({ queryKey: ['parents'] });
+      queryClient.invalidateQueries({ queryKey: ['staff'] });
+      queryClient.invalidateQueries({ queryKey: ['hr-staffs'] });
     },
     onError: (err) => notify.error(extractApiError(err, 'Unable to remove role.')),
   });
+
+  const confirmRevokeRole = async (role) => {
+    const userId = selectedUserCache?.user_id || selectedUserId;
+    if (!userId || String(userId).includes(':')) {
+      notify.error('Select a portal user before removing a role.');
+      return;
+    }
+    const roleLabel = selected?.role_labels?.[role] || getRoleLabel(role);
+    let impact = null;
+    try {
+      impact = await dualRolesService.revokePreview({ user_id: userId, role });
+    } catch (err) {
+      notify.error(extractApiError(err, 'Unable to preview role removal.'));
+      return;
+    }
+    const cleanupLines = (impact?.cleanup || []).map((line) => `• ${line}`).join('\n');
+    const warningLines = (impact?.warnings || []).map((line) => `• ${line}`).join('\n');
+    const learnerHint = impact?.linked_students_count
+      ? `\n\nLinked learners that will be unlinked (${impact.linked_students_count}):\n`
+        + (impact.linked_students || []).slice(0, 8).map((s) => `• ${s.full_name} (${s.admission_number || '—'})`).join('\n')
+        + (impact.linked_students_count > 8 ? `\n• +${impact.linked_students_count - 8} more` : '')
+      : '';
+    const ok = await alert.confirm({
+      title: `Remove “${roleLabel}”?`,
+      text: [
+        `This person stays one account (${selected?.full_name || 'user'}). Only the “${roleLabel}” portal role is removed.`,
+        cleanupLines ? `\nWhat will be cleaned up:\n${cleanupLines}` : '',
+        warningLines ? `\nWarnings:\n${warningLines}` : '',
+        learnerHint,
+        '\n\nThis cannot be undone without re-granting the role.',
+      ].filter(Boolean).join(''),
+      confirmText: 'Yes, remove role',
+      cancelText: 'Keep role',
+      icon: 'warning',
+      danger: true,
+    });
+    // SweetAlert2 returns { isConfirmed, isDenied, isDismissed }
+    if (ok?.isConfirmed) {
+      revokeMutation.mutate(role);
+    }
+  };
 
   const toggleRole = (role) => {
     if (heldRoles.has(role)) return;
@@ -141,9 +263,45 @@ export function DualRolesSettings() {
 
   const selectUser = (u) => {
     setSelectedUserId(u.id);
-    setSelectedUserCache(u);
+    setSelectedUserCache({
+      ...u,
+      available_roles: [...(u.available_roles || [])],
+      role_labels: { ...(u.role_labels || {}) },
+    });
     setSelectedRoles([]);
   };
+
+  // When candidates refetch, merge server roles into cache only if same user
+  // and we are not mid-stale (prefer server after invalidate).
+  useEffect(() => {
+    if (!selectedUserCache || !selectedUserId) return;
+    const fromList = candidates.find((u) => matchesSelected(u, selectedUserId));
+    if (!fromList?.available_roles) return;
+    // If cache epoch was just set by mutation, still accept server if it agrees
+    // on revoked roles (server is shorter or equal).
+    const cacheRoles = selectedUserCache.available_roles || [];
+    const listRoles = fromList.available_roles || [];
+    const same = cacheRoles.length === listRoles.length
+      && cacheRoles.every((r) => listRoles.includes(r));
+    if (same) return;
+    // Prefer fewer roles from server (successful revoke) over stale longer cache
+    // only when server is a subset or equal length and matches selection.
+    if (listRoles.length <= cacheRoles.length) {
+      setSelectedUserCache((prev) => {
+        if (!prev || !matchesSelected(prev, selectedUserId)) return prev;
+        return {
+          ...prev,
+          ...fromList,
+          available_roles: listRoles,
+          active_role: fromList.active_role ?? prev.active_role,
+          primary_role: fromList.primary_role ?? prev.primary_role,
+          role_labels: fromList.role_labels ?? prev.role_labels,
+          has_staff_profile: fromList.has_staff_profile ?? prev.has_staff_profile,
+          has_parent_profile: fromList.has_parent_profile ?? prev.has_parent_profile,
+        };
+      });
+    }
+  }, [candidates, selectedUserId, selectedUserCache, matchesSelected]);
 
   if (!canManage) {
     return (
@@ -212,7 +370,14 @@ export function DualRolesSettings() {
             ) : (
               <div className="list-group list-group-flush border rounded dual-role-user-list" style={{ maxHeight: 420, overflowY: 'auto' }}>
                 {candidates.map((u) => {
-                  const isSelected = String(selectedUserId) === String(u.id);
+                  const isSelected = matchesSelected(u, selectedUserId);
+                  // Prefer live cache chips when this row is selected
+                  const roles = isSelected && selectedUserCache?.available_roles
+                    ? selectedUserCache.available_roles
+                    : (u.available_roles || []);
+                  const labels = isSelected && selectedUserCache?.role_labels
+                    ? selectedUserCache.role_labels
+                    : (u.role_labels || {});
                   return (
                     <button
                       key={u.id}
@@ -237,9 +402,9 @@ export function DualRolesSettings() {
                         {u.phone ? ` · ${u.phone}` : ''}
                       </div>
                       <div className="mt-1 d-flex flex-wrap gap-1">
-                        {(u.available_roles || []).map((r) => (
+                        {roles.map((r) => (
                           <span key={r} className="dual-role-chip">
-                            {u.role_labels?.[r] || getRoleLabel(r)}
+                            {labels?.[r] || getRoleLabel(r)}
                           </span>
                         ))}
                       </div>
@@ -290,25 +455,18 @@ export function DualRolesSettings() {
                         <button
                           type="button"
                           className="dual-role-chip-remove"
-                          title="Remove role"
+                          title="Remove role and clean up directory links"
                           disabled={revokeMutation.isPending}
-                          onClick={async () => {
-                            const ok = await alert.confirm({
-                              title: 'Remove this role?',
-                              text: `Remove “${selected.role_labels?.[r] || getRoleLabel(r)}” from ${selected.full_name}?`,
-                              confirmText: 'Yes, remove',
-                              cancelText: 'Keep',
-                              icon: 'warning',
-                              danger: true,
-                            });
-                            if (ok.isConfirmed) revokeMutation.mutate(r);
-                          }}
+                          onClick={() => confirmRevokeRole(r)}
                         >
                           ×
                         </button>
                       )}
                     </span>
                   ))}
+                  {(selected.available_roles || []).length === 0 && (
+                    <span className="text-muted small">No roles assigned.</span>
+                  )}
                 </div>
 
                 <h6 className="small fw-semibold text-uppercase text-muted mb-2">
@@ -362,9 +520,11 @@ export function DualRolesSettings() {
             </h6>
             <ul className="small text-muted mb-0 ps-3">
               <li className="mb-1">One account, one email, one password — never create a second login.</li>
+              <li className="mb-1">The same person appears in <strong>Staff</strong> and/or <strong>Parents</strong> lists for every role they hold (still one person in the database).</li>
               <li className="mb-1">Users with more than one role see <strong>Switch role</strong> under the avatar menu (above Logout).</li>
+              <li className="mb-1">My Profile spans <strong>all</strong> roles (employment + parent contact) so they can complete every required section.</li>
               <li className="mb-1">Dashboard menus and permissions follow the <strong>active</strong> role and your Permission Settings for that role.</li>
-              <li>Granting <strong>Parent</strong> creates a linked parent profile if needed so the family portal can open.</li>
+              <li>Removing a role is a single step — it cleans up that role&apos;s directory record and links (with a clear warning first).</li>
             </ul>
           </div>
         </div>

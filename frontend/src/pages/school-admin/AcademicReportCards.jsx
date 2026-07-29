@@ -23,6 +23,8 @@ export function AcademicReportCards() {
   const [term, setTerm] = useState('');
   const [schoolClass, setSchoolClass] = useState('');
   const [stream, setStream] = useState('');
+  /** all | published | draft — only published rows are live report cards */
+  const [publishFilter, setPublishFilter] = useState('all');
   const [busy, setBusy] = useState(false);
   const [teacherRemarks, setTeacherRemarks] = useState('');
   const [dosRemarks, setDosRemarks] = useState('');
@@ -55,11 +57,13 @@ export function AcademicReportCards() {
   });
 
   const { data: latest, isLoading, refetch } = useQuery({
-    queryKey: ['report-cards-latest', term, schoolClass, stream],
+    queryKey: ['report-cards-latest', term, schoolClass, stream, publishFilter],
     queryFn: () => academicReportCardsService.latest({
       term: term || undefined,
       school_class: schoolClass || undefined,
       stream: stream || undefined,
+      ...(publishFilter === 'published' ? { published: '1' } : {}),
+      ...(publishFilter === 'draft' ? { published: '0' } : {}),
     }),
     enabled: Boolean(canView) && Boolean(term && schoolClass),
   });
@@ -136,7 +140,7 @@ export function AcademicReportCards() {
     if (!canPrint) return;
     const confirmed = await alert.confirm({
       title: 'Publish report cards?',
-      text: 'Parents will see these report cards on the portal when their fee clearance meets your school results access policy.',
+      text: 'Only after publish do these become live report cards. Parents will see them when fee clearance meets your school results access policy. Unpublished rows remain results only.',
       confirmText: 'Yes, publish',
       cancelText: 'Cancel',
       icon: 'question',
@@ -177,16 +181,22 @@ export function AcademicReportCards() {
   };
 
   const columns = [
+    { key: 'student_name', label: 'Name', accessor: 'student_name', sortable: true },
     { key: 'admission_number', label: 'Adm #', accessor: 'admission_number', sortable: true },
-    { key: 'student_name', label: 'Student', accessor: 'student_name', sortable: true },
+    // Broadsheet-style preview: each subject shows score + grade (blank if missing)
     ...subjectColumns.map((col) => ({
       key: `subj_${col.key}`,
       label: col.code || col.name,
       render: (r) => {
         const cell = r.subject_scores?.[col.key];
-        if (!cell?.total && cell?.total !== 0) return <span className="text-muted">—</span>;
+        if (cell?.total == null || cell?.total === '') {
+          return <span className="text-muted"> </span>;
+        }
         return (
-          <span className="font-monospace small" title={cell.grade || undefined}>
+          <span
+            className="font-monospace small text-nowrap"
+            title={[cell.remarks, col.name].filter(Boolean).join(' · ') || undefined}
+          >
             {cell.total}
             {cell.grade ? (
               <span className="ms-1 badge text-bg-primary-subtle border text-primary">{cell.grade}</span>
@@ -195,6 +205,15 @@ export function AcademicReportCards() {
         );
       },
     })),
+    {
+      key: 'overall_grade',
+      label: 'Overall grade',
+      render: (r) => (
+        r.overall_grade
+          ? <span className="badge text-bg-success-subtle border text-success">{r.overall_grade}</span>
+          : <span className="text-muted">—</span>
+      ),
+    },
     { key: 'average_score', label: 'Average', accessor: 'average_score' },
     { key: 'rank', label: 'Class rank', accessor: 'rank' },
     { key: 'stream_rank', label: 'Stream rank', accessor: 'stream_rank' },
@@ -218,8 +237,8 @@ export function AcademicReportCards() {
       key: 'is_published',
       label: 'Status',
       render: (r) => (r.is_published
-        ? <span className="badge text-bg-success-subtle border text-success">Published</span>
-        : <span className="badge text-bg-warning-subtle border text-warning">Draft</span>),
+        ? <span className="badge text-bg-success-subtle border text-success">Report card</span>
+        : <span className="badge text-bg-warning-subtle border text-warning">Results only</span>),
     },
     {
       key: 'actions',
@@ -266,12 +285,12 @@ export function AcademicReportCards() {
         title="Report cards & broadsheets"
         subtitle={
           canPrint
-            ? 'Subject marks, average, and ranks in one table. Generate branded PDFs with white table headers for clear print contrast.'
-            : 'View subject marks and averages for classes in your scope. Use Results for the live marks matrix.'
+            ? 'Published cards are live report cards (parents & portal). Drafts are internal results only — publish from Results Processing or here.'
+            : 'Only published report cards are live for parents. Use Results Processing for the live marks matrix and to publish.'
         }
         actions={(
           <Link to="/school-admin/examinations/results" className="btn btn-outline-secondary btn-sm">
-            View results
+            Results processing
           </Link>
         )}
       />
@@ -362,7 +381,38 @@ export function AcademicReportCards() {
         </div>
         <div className="col-12 col-lg-8">
           <div className="apex-card apex-card--responsive p-3 p-md-4">
-            <h6 className="fw-semibold mb-3">Latest report cards</h6>
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+              <h6 className="fw-semibold mb-0">Latest cards</h6>
+              <div className="btn-group btn-group-sm" role="group" aria-label="Publish filter">
+                <button
+                  type="button"
+                  className={`btn btn-outline-secondary${publishFilter === 'all' ? ' active' : ''}`}
+                  onClick={() => setPublishFilter('all')}
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-outline-secondary${publishFilter === 'published' ? ' active' : ''}`}
+                  onClick={() => setPublishFilter('published')}
+                >
+                  Report cards
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-outline-secondary${publishFilter === 'draft' ? ' active' : ''}`}
+                  onClick={() => setPublishFilter('draft')}
+                >
+                  Results only
+                </button>
+              </div>
+            </div>
+            <p className="small text-muted mb-3">
+              Preview matches printouts: <strong>Name</strong>, each subject as <strong>score + grade</strong>{' '}
+              (blank if missing), <strong>overall grade</strong>, and <strong>average</strong>.
+              Individual PDFs list Code · Subject · Score · Grade · Remarks, then average and overall grade.
+              Subject remarks are per-subject; class teacher / DoS / head remarks are overall only.
+            </p>
             <DataTable
               columns={columns}
               data={rows}
@@ -373,8 +423,12 @@ export function AcademicReportCards() {
               searchKeys={['admission_number', 'student_name', 'average_score', 'rank']}
               emptyState={(
                 <ModuleEmptyState
-                  title="No report cards yet"
-                  message="Select term and class, then generate from approved marks."
+                  title={publishFilter === 'published' ? 'No published report cards' : 'No cards yet'}
+                  message={
+                    publishFilter === 'published'
+                      ? 'Publish from Results Processing (or Generate + Publish here) so cards appear for parents.'
+                      : 'Select term and class, then generate from approved marks on Results Processing or here.'
+                  }
                 />
               )}
             />

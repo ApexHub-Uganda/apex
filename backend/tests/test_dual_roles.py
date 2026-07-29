@@ -144,3 +144,170 @@ class TestDualRoles:
         assert user.email.lower() == "mary.guardian@parents.test"
         assert UserRole.PARENT in body["available_roles"]
         assert UserRole.TEACHER in body["available_roles"]
+
+    def test_dual_role_appears_in_staff_and_parent_lists(self, tenant, school_admin):
+        from apps.students.models import Parent
+        from apps.staff.models import Staff
+
+        teacher = User.objects.create_user(
+            email="both.roles@test.edu",
+            password="TestPass123!",
+            first_name="Both",
+            last_name="Roles",
+            role=UserRole.TEACHER,
+            tenant=tenant,
+            is_active=True,
+        )
+        grant_roles(user=teacher, roles=[UserRole.PARENT], actor=school_admin)
+        teacher.refresh_from_db()
+
+        assert Parent.objects.filter(tenant=tenant, user=teacher, is_deleted=False).exists()
+        assert Staff.objects.filter(tenant=tenant, user=teacher, is_deleted=False).exists()
+
+    def test_revoke_parent_cleans_directory_and_links(self, tenant, school_admin):
+        from apps.accounts.dual_roles import revoke_role
+        from apps.students.models import Parent, Student
+        from datetime import date
+
+        teacher = User.objects.create_user(
+            email="revoke.parent@test.edu",
+            password="TestPass123!",
+            first_name="Revoke",
+            last_name="Parent",
+            role=UserRole.TEACHER,
+            tenant=tenant,
+            is_active=True,
+        )
+        grant_roles(user=teacher, roles=[UserRole.PARENT], actor=school_admin)
+        parent = Parent.objects.get(user=teacher, tenant=tenant, is_deleted=False)
+        student = Student.objects.create(
+            tenant=tenant,
+            admission_number="REV-001",
+            first_name="Kid",
+            last_name="Revoke",
+            date_of_birth=date(2014, 1, 1),
+            enrollment_date=date(2024, 1, 1),
+            gender="male",
+            status="active",
+        )
+        student.parents.add(parent)
+        assert parent.children.count() == 1
+
+        result = revoke_role(user=teacher, role=UserRole.PARENT, actor=school_admin)
+        assert result["revoked"] == UserRole.PARENT
+        assert result["cleanup"].get("parent_removed") is True
+        assert not Parent.objects.filter(pk=parent.pk, is_deleted=False).exists()
+        assert UserRole.PARENT not in list_user_roles(teacher)
+        assert UserRole.TEACHER in list_user_roles(teacher)
+
+    def test_staff_check_in_shared_across_dual_roles(self, tenant, school_admin):
+        """One GPS check-in for the person is visible under every staff portal role."""
+        from apps.attendance.staff_geo_attendance import staff_attendance_status, staff_check_in
+        from apps.accounts.dual_roles import grant_roles, switch_role
+        from apps.staff.models import Staff
+
+        user = User.objects.create_user(
+            email="shared.signin@test.edu",
+            password="TestPass123!",
+            first_name="Shared",
+            last_name="Signin",
+            role=UserRole.TEACHER,
+            tenant=tenant,
+            is_active=True,
+        )
+        grant_roles(user=user, roles=[UserRole.BURSAR], actor=school_admin)
+        Staff.objects.filter(user=user).update(is_deleted=False)
+        # Ensure staff row
+        from apps.accounts.dual_roles import _ensure_profile_for_role
+        _ensure_profile_for_role(user, UserRole.TEACHER, actor=school_admin)
+
+        # Check-in as teacher without webauthn by calling lower path carefully —
+        # staff_check_in requires request for webauthn; test status sharing via record
+        from apps.attendance.models import AttendanceRecord
+        from django.utils import timezone
+        staff = Staff.objects.filter(user=user, is_deleted=False).first()
+        assert staff is not None
+        AttendanceRecord.objects.create(
+            tenant=tenant,
+            attendee_type="staff",
+            staff=staff,
+            date=timezone.localdate(),
+            status="present",
+            check_in=timezone.localtime().time().replace(microsecond=0),
+            marked_by=user,
+            created_by=user,
+            updated_by=user,
+        )
+        switch_role(user=user, role=UserRole.BURSAR)
+        status = staff_attendance_status(tenant=tenant, user=user)
+        assert status["checked_in"] is True
+        assert status["shared_across_roles"] is True
+
+    def test_revoke_active_role_once_does_not_resurrect(self, tenant, school_admin):
+        """
+        Regression: first revoke used to re-activate the role via ensure_primary_assignment
+        when it was the user's active User.role — requiring a second revoke click.
+        """
+        from apps.accounts.dual_roles import revoke_role
+        from apps.accounts.models import UserRoleAssignment
+
+        teacher = User.objects.create_user(
+            email="once.revoke@test.edu",
+            password="TestPass123!",
+            first_name="Once",
+            last_name="Revoke",
+            role=UserRole.TEACHER,
+            tenant=tenant,
+            is_active=True,
+        )
+        grant_roles(user=teacher, roles=[UserRole.PARENT], actor=school_admin)
+        teacher.refresh_from_db()
+        assert teacher.role == UserRole.TEACHER
+        assert set(list_user_roles(teacher)) >= {UserRole.TEACHER, UserRole.PARENT}
+
+        # Revoke the ACTIVE role once
+        result = revoke_role(user=teacher, role=UserRole.TEACHER, actor=school_admin)
+        teacher.refresh_from_db()
+
+        assert UserRole.TEACHER not in result["available_roles"]
+        assert UserRole.TEACHER not in list_user_roles(teacher)
+        assert UserRole.PARENT in list_user_roles(teacher)
+        assert teacher.role == UserRole.PARENT
+        assert not UserRoleAssignment.objects.filter(
+            user=teacher, role=UserRole.TEACHER, is_active=True,
+        ).exists()
+
+        # Calling list_user_roles again must not resurrect teacher
+        assert UserRole.TEACHER not in list_user_roles(teacher)
+
+    def test_revoke_preview_lists_linked_students(self, tenant, school_admin):
+        from apps.accounts.dual_roles import preview_revoke_role
+        from apps.students.models import Parent, Student
+        from datetime import date
+
+        teacher = User.objects.create_user(
+            email="preview.revoke@test.edu",
+            password="TestPass123!",
+            first_name="Preview",
+            last_name="Revoke",
+            role=UserRole.TEACHER,
+            tenant=tenant,
+            is_active=True,
+        )
+        grant_roles(user=teacher, roles=[UserRole.PARENT], actor=school_admin)
+        parent = Parent.objects.get(user=teacher, is_deleted=False)
+        student = Student.objects.create(
+            tenant=tenant,
+            admission_number="PRV-001",
+            first_name="Linked",
+            last_name="Child",
+            date_of_birth=date(2014, 1, 1),
+            enrollment_date=date(2024, 1, 1),
+            gender="female",
+            status="active",
+        )
+        student.parents.add(parent)
+        impact = preview_revoke_role(user=teacher, role=UserRole.PARENT)
+        assert impact["will_remove_parent_profile"] is True
+        assert impact["linked_students_count"] == 1
+        assert impact["warnings"]

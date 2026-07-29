@@ -41,7 +41,7 @@ export const SCHOOL_MODULES = [
       { feature_key: 'classes', label: 'Classes', path: '/school-admin/classes', icon: 'FiBook' },
       { feature_key: 'departments', label: 'Departments', path: '/school-admin/core/departments', icon: 'FiLayers' },
       { feature_key: 'subjects', label: 'Subjects', path: '/school-admin/academics/subjects', icon: 'FiBookOpen' },
-      { feature_key: 'subject_assignment', label: 'Subject Assignments', path: '/school-admin/academics/subject-assignments', icon: 'FiUserCheck' },
+      { feature_key: 'subject_assignment', label: 'Teacher Assignments', path: '/school-admin/academics/subject-assignments', icon: 'FiUserCheck' },
       { feature_key: 'grading', label: 'Grading', path: '/school-admin/academics/grading', icon: 'FiAward' },
       { feature_key: 'student_promotion', label: 'Student Promotion', path: '/school-admin/examinations/assessments', icon: 'FiTrendingUp' },
       { feature_key: 'report_cards', label: 'Report Cards', path: '/school-admin/academics/report-cards', icon: 'FiFileText' },

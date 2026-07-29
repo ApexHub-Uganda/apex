@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  FiCamera, FiFileText, FiLock, FiMail, FiPhone, FiPrinter, FiSave, FiShield, FiTrash2, FiUser, FiBriefcase,
+  FiCamera, FiFileText, FiLock, FiMail, FiPhone, FiPrinter, FiSave, FiShield, FiTrash2, FiUser, FiBriefcase, FiUsers,
 } from 'react-icons/fi';
 import UserAvatar from '../../components/UserAvatar';
 import { useAuth } from '../../hooks/useAuth';
@@ -24,6 +24,11 @@ const FIELD_LABELS = {
   emergency_phone: 'Emergency phone',
   personal_email: 'Personal email',
   email: 'Email',
+  occupation: 'Occupation',
+  employer: 'Employer',
+  city: 'City',
+  alternate_phone: 'Alternate phone',
+  alternate_email: 'Alternate email',
 };
 
 export function ProfileWorkspace() {
@@ -202,9 +207,15 @@ export function ProfileWorkspace() {
     }
   };
 
+  const availableRoles = profile?.available_roles || user?.available_roles || [];
+  const isDualRole = availableRoles.length > 1
+    || Boolean(staffProfile && parentProfile);
+
   const tabs = useMemo(() => {
     const items = [{ id: 'personal', label: 'Personal', icon: FiUser }];
+    // Dual-role users always see both staff + parent sections when those profiles exist
     if (staffProfile) items.push({ id: 'employment', label: 'Employment', icon: FiBriefcase });
+    if (parentProfile) items.push({ id: 'parent', label: 'Parent / Family', icon: FiUsers });
     if (staffProfile || parentProfile) items.push({ id: 'contact', label: 'Contact & Emergency', icon: FiPhone });
     if (canGetHeadedPaper) items.push({ id: 'stationery', label: 'Stationery', icon: FiFileText });
     items.push({ id: 'security', label: 'Security', icon: FiLock });
@@ -271,23 +282,56 @@ export function ProfileWorkspace() {
         </div>
       )}
     >
+      {isDualRole && (
+        <div className="alert alert-info small mb-4 d-flex flex-wrap align-items-start gap-2">
+          <FiUsers className="mt-1 flex-shrink-0" />
+          <div>
+            <strong>Dual portal roles.</strong>{' '}
+            This profile covers every role on your account
+            {availableRoles.length > 0 && (
+              <>
+                {' '}({availableRoles.map((r) => getRoleLabel(r)).join(', ')})
+              </>
+            )}
+            . Complete <strong>all</strong> sections below so each role works correctly.
+            Switch your active dashboard from the avatar menu.
+          </div>
+        </div>
+      )}
+
       {completion && !completion.is_complete && (
         <div className="apex-card p-4 mb-4 apex-workspace-completion">
           <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <div>
               <h6 className="fw-bold mb-0">Complete your profile</h6>
-              <p className="text-muted small mb-0">Fill in missing details for a complete school record.</p>
+              <p className="text-muted small mb-0">
+                {isDualRole
+                  ? 'Fill missing details across staff and parent sections for a complete school record.'
+                  : 'Fill in missing details for a complete school record.'}
+              </p>
             </div>
             <span className="fw-bold">{completion.percent}%</span>
           </div>
           <ProgressBar value={completion.percent} />
           <div className="d-flex flex-wrap gap-2 mt-2">
-            {(completion.missing_fields || []).slice(0, 6).map((field) => (
+            {(completion.missing_fields || []).slice(0, 8).map((field) => (
               <span key={field} className="badge text-bg-light border">
                 {FIELD_LABELS[field.split('.').pop()] || field}
               </span>
             ))}
           </div>
+          {(completion.sections || []).length > 1 && (
+            <div className="d-flex flex-wrap gap-2 mt-2">
+              {completion.sections.map((sec) => (
+                <span
+                  key={sec.key}
+                  className={`badge border ${sec.complete ? 'text-bg-success-subtle text-success' : 'text-bg-warning-subtle text-warning'}`}
+                >
+                  {sec.label}: {sec.complete ? 'Complete' : 'Incomplete'}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -383,7 +427,17 @@ export function ProfileWorkspace() {
                 <label className="form-label small fw-medium">Phone</label>
                 <input className="form-control" {...register('phone')} />
               </div>
-              <ReadOnlyField label="Role" value={getRoleLabel(profile?.effective_role || profile?.role)} />
+              <ReadOnlyField
+                label="Active role"
+                value={getRoleLabel(profile?.effective_role || profile?.role)}
+              />
+              {isDualRole && availableRoles.length > 0 && (
+                <ReadOnlyField
+                  label="All roles"
+                  value={availableRoles.map((r) => getRoleLabel(r)).join(' · ')}
+                  hint="Switch active role from the avatar menu."
+                />
+              )}
               {staffProfile && (
                 <div className="col-md-6">
                   <label className="form-label small fw-medium">Middle name</label>
@@ -484,6 +538,40 @@ export function ProfileWorkspace() {
                 </a>
               </div>
             )}
+          </WorkspaceSection>
+        )}
+
+        {activeTab === 'parent' && parentProfile && (
+          <WorkspaceSection
+            title="Parent / family details"
+            description="Used when you access the parent portal. Completing this does not change your staff employment record."
+            icon={FiUsers}
+          >
+            <WorkspaceFieldGrid>
+              <div className="col-md-6">
+                <label className="form-label small fw-medium">Occupation</label>
+                <input className="form-control" {...register('parent_profile.occupation')} />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label small fw-medium">Employer</label>
+                <input className="form-control" {...register('parent_profile.employer')} />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label small fw-medium">City</label>
+                <input className="form-control" {...register('parent_profile.city')} />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label small fw-medium">Preferred contact</label>
+                <select className="form-select" {...register('parent_profile.preferred_contact_method')}>
+                  <option value="email">Email</option>
+                  <option value="phone">Phone</option>
+                  <option value="sms">SMS</option>
+                  <option value="whatsapp">WhatsApp</option>
+                </select>
+              </div>
+              <ReadOnlyField label="Primary email" value={parentProfile.email} hint="Login email — admin managed" />
+              <ReadOnlyField label="Relationship to student" value={parentProfile.relationship_to_student} />
+            </WorkspaceFieldGrid>
           </WorkspaceSection>
         )}
 

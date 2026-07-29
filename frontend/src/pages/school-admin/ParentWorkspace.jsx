@@ -97,9 +97,10 @@ export function ParentWorkspace() {
   const linkableStudents = students.filter((s) => {
     if (linkedIds.has(s.id)) return false;
     if (!q) return true;
-    const hay = `${s.full_name || ''} ${s.admission_number || ''}`.toLowerCase();
+    const hay = `${s.full_name || ''} ${s.admission_number || ''} ${s.class_name || ''}`.toLowerCase();
     return hay.includes(q);
   });
+  const visibleLinkable = q ? linkableStudents : linkableStudents.slice(0, 40);
 
   if (isEdit && isLoading) {
     return <div className="py-5 text-center"><ApexLoader label="Loading…" /></div>;
@@ -139,16 +140,24 @@ export function ParentWorkspace() {
               <input
                 type="search"
                 className="form-control mb-2"
-                placeholder="Name or admission number…"
+                placeholder="Search by name, admission no., or class…"
                 value={studentSearch}
                 onChange={(e) => setStudentSearch(e.target.value)}
+                autoComplete="off"
               />
-              <div className="list-group" style={{ maxHeight: 240, overflowY: 'auto' }}>
-                {linkableStudents.slice(0, 15).map((s) => (
+              <p className="form-text mb-2">
+                {linkableStudents.length} available
+                {q ? ' matching your search' : ''}.
+                {!q && linkableStudents.length > 40 ? ' Type to filter the full list.' : ''}
+              </p>
+              <div className="list-group" style={{ maxHeight: 280, overflowY: 'auto' }}>
+                {visibleLinkable.map((s) => (
                   <div key={s.id} className="list-group-item d-flex justify-content-between align-items-center">
                     <div>
                       <div className="fw-medium">{s.full_name}</div>
-                      <div className="small text-muted">{s.admission_number}</div>
+                      <div className="small text-muted">
+                        {s.admission_number}{s.class_name ? ` · ${s.class_name}` : ''}
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -161,7 +170,9 @@ export function ParentWorkspace() {
                   </div>
                 ))}
                 {linkableStudents.length === 0 && (
-                  <div className="list-group-item text-muted small">No learners available to link.</div>
+                  <div className="list-group-item text-muted small">
+                    {q ? 'No learners match your search.' : 'No learners available to link.'}
+                  </div>
                 )}
               </div>
             </div>

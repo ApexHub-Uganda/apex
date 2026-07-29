@@ -8,11 +8,11 @@ from django.db import transaction
 
 from apps.attendance.models import SchoolGeofence
 
-# Default GPS accuracy ceiling (metres). Phones often report 100–300 m early in a fix;
-# ~2000 m is almost always cell/IP and is rejected unless deep inside a large campus.
-DEFAULT_MAX_ACCURACY_M = 400.0
-# Never trust a reading worse than this, even with soft inside checks.
-HARD_MAX_ACCURACY_M = 800.0
+# Default GPS accuracy ceiling (metres). Refined mobile GPS is typically 20–200 m.
+# Frontend waits for a sharper fix; this is the server-side safety net.
+DEFAULT_MAX_ACCURACY_M = 600.0
+# Never trust a reading worse than this (cell/IP-only ±2 km stays rejected).
+HARD_MAX_ACCURACY_M = 1200.0
 
 
 class GeofenceError(Exception):
@@ -240,17 +240,20 @@ def evaluate_location(
     distance_m = 0.0 if inside else edge_dist_m
 
     if acc is not None and acc > threshold:
-        # Soft pass: user is deep inside campus beyond most of the uncertainty radius
-        deep_inside = inside and edge_dist_m >= min(acc * 0.55, acc - 25.0)
-        if not deep_inside or acc > HARD_MAX_ACCURACY_M:
+        # Soft pass A: clearly deep inside campus relative to uncertainty
+        deep_inside = inside and edge_dist_m >= min(acc * 0.45, acc - 20.0)
+        # Soft pass B: reported point is inside polygon and accuracy is not absurd
+        # (still rejects pure cell/IP ~2000 m via HARD_MAX)
+        inside_with_usable_gps = inside and acc <= HARD_MAX_ACCURACY_M and acc <= max(threshold * 1.5, 900.0)
+        if acc > HARD_MAX_ACCURACY_M or not (deep_inside or inside_with_usable_gps):
             return {
                 "allowed": False,
                 "enforced": True,
                 "reason": (
                     f"GPS accuracy is too low (±{acc:.0f} m). "
-                    f"Turn on High accuracy / GPS, step outdoors, and wait until accuracy "
-                    f"is under ±{threshold:.0f} m (your phone often starts at ~1000–2000 m, "
-                    f"then improves within a few seconds)."
+                    f"On your phone: Precise location ON, Location mode = High accuracy, open this site on HTTPS, "
+                    f"stand outdoors, and wait until the red pin accuracy is under ±{threshold:.0f} m "
+                    f"(first readings of ~1–2 km are normal network location — keep waiting)."
                 ),
                 "code": "poor_accuracy",
                 "accuracy_m": acc,
@@ -258,23 +261,39 @@ def evaluate_location(
                 "geofence": payload,
             }
 
-    # Expand effective buffer slightly by a fraction of reported accuracy (GPS drift)
+    # Uncertainty-aware buffer: phone GPS error circles often extend tens–hundreds of metres.
+    # If the reported point is outside but the uncertainty circle still intersects campus,
+    # treat as on-site (professional mobile geofencing practice).
     acc_pad = 0.0
     if acc is not None and acc > 0:
-        acc_pad = min(acc * 0.25, 40.0)
+        # Cap pad so pure ±2 km cell fixes cannot "reach" a distant campus
+        acc_pad = min(float(acc) * 0.85, 350.0)
     effective_buffer = buffer_m + acc_pad
 
     if inside or distance_m <= effective_buffer:
+        if inside:
+            reason = "Within school perimeter."
+            code = "inside"
+        elif acc is not None and distance_m <= acc_pad:
+            reason = (
+                f"GPS places you near campus (about {distance_m:.0f} m from the boundary) "
+                f"within your phone’s accuracy of ±{acc:.0f} m — accepted."
+            )
+            code = "inside_uncertainty"
+        else:
+            reason = f"Within {buffer_m:.0f} m buffer of the boundary."
+            code = "inside"
         return {
             "allowed": True,
             "enforced": True,
-            "reason": "Within school perimeter." if inside else f"Within {buffer_m:.0f} m buffer of the boundary.",
-            "code": "inside",
+            "reason": reason,
+            "code": code,
             "inside_polygon": inside,
             "distance_m": round(distance_m, 1),
             "accuracy_m": acc,
             "max_accuracy_m": threshold,
             "buffer_meters": buffer_m,
+            "effective_buffer_m": round(effective_buffer, 1),
             "geofence": payload,
             "lat": lat_f,
             "lng": lng_f,
@@ -284,9 +303,10 @@ def evaluate_location(
         "allowed": False,
         "enforced": True,
         "reason": (
-            f"You are outside the school boundary"
-            f"{f' (about {distance_m:.0f} m away)' if distance_m < 50_000 else ''}. "
-            "Move onto campus and try again."
+            f"You appear outside the school boundary"
+            f"{f' (about {distance_m:.0f} m from the perimeter)' if distance_m < 50_000 else ''}"
+            f"{f' with GPS accuracy ±{acc:.0f} m' if acc is not None else ''}. "
+            "Move further onto campus, wait for a sharper GPS lock (smaller red circle), then try again."
         ),
         "code": "outside",
         "inside_polygon": False,
@@ -294,6 +314,7 @@ def evaluate_location(
         "accuracy_m": acc,
         "max_accuracy_m": threshold,
         "buffer_meters": buffer_m,
+        "effective_buffer_m": round(effective_buffer, 1),
         "geofence": payload,
         "lat": lat_f,
         "lng": lng_f,

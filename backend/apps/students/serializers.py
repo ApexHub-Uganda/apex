@@ -32,6 +32,11 @@ class ParentListSerializer(serializers.ModelSerializer):
     children_names = serializers.SerializerMethodField()
     avatar_url = serializers.SerializerMethodField()
     has_avatar = serializers.SerializerMethodField()
+    user_id = serializers.SerializerMethodField()
+    is_dual_role = serializers.SerializerMethodField()
+    also_staff = serializers.SerializerMethodField()
+    available_roles = serializers.SerializerMethodField()
+    dual_role_label = serializers.SerializerMethodField()
 
     class Meta:
         model = Parent
@@ -40,7 +45,41 @@ class ParentListSerializer(serializers.ModelSerializer):
             "email", "phone", "mpesa_phone", "relationship_to_student",
             "county", "is_fee_payer", "has_portal_access", "preferred_contact_method",
             "children_count", "children_names", "avatar_url", "has_avatar",
+            "user_id", "is_dual_role", "also_staff", "available_roles", "dual_role_label",
         ]
+
+    def _identity(self, obj):
+        if not obj.user_id:
+            return None
+        if not hasattr(self, "_identity_cache"):
+            self._identity_cache = {}
+        key = str(obj.user_id)
+        if key not in self._identity_cache:
+            from apps.accounts.dual_roles import dual_identity_for_user
+            self._identity_cache[key] = dual_identity_for_user(obj.user)
+        return self._identity_cache[key]
+
+    def get_user_id(self, obj) -> str | None:
+        return str(obj.user_id) if obj.user_id else None
+
+    def get_is_dual_role(self, obj) -> bool:
+        ident = self._identity(obj)
+        return bool(ident and ident.get("is_dual_role"))
+
+    def get_also_staff(self, obj) -> bool:
+        ident = self._identity(obj)
+        return bool(ident and ident.get("has_staff_profile"))
+
+    def get_available_roles(self, obj) -> list:
+        ident = self._identity(obj)
+        return list(ident.get("available_roles") or []) if ident else []
+
+    def get_dual_role_label(self, obj) -> str:
+        if self.get_also_staff(obj):
+            return "Also staff"
+        if self.get_is_dual_role(obj):
+            return "Dual role"
+        return ""
 
     def get_avatar_url(self, obj) -> str | None:
         if obj.user_id:

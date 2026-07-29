@@ -306,7 +306,9 @@ class ClassViewSet(AcademicScopeMixin, BaseModelViewSet):
 
 class StreamViewSet(AcademicScopeMixin, BaseModelViewSet):
     required_feature_key = "classes"
-    queryset = Stream.objects.select_related("school_class", "school_class__academic_year")
+    queryset = Stream.objects.select_related(
+        "school_class", "school_class__academic_year", "class_teacher", "class_teacher__staff",
+    )
     serializer_class = StreamSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
     filterset_fields = ["school_class"]
