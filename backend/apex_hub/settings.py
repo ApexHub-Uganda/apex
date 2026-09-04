@@ -154,7 +154,7 @@ else:
     DATABASES = {
         "default": env.db(
             "DATABASE_URL",
-            default="postgres://apex_user:apex_secure_password@localhost:5432/apex_hub",
+            default="postgres://apex_user:emmie@localhost:5432/apex_hub",
         )
     }
     DATABASES["default"]["CONN_MAX_AGE"] = 60
@@ -226,6 +226,9 @@ else:
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
             "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "protocol": 2,  # Direct parameter for Django built-in RedisCache
+            },
         }
     }
 
