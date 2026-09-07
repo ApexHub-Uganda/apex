@@ -33,7 +33,7 @@ def avatar_upload_path(user_id: uuid.UUID, filename: str) -> str:
     ext = os.path.splitext(filename)[1].lower()
     if ext not in ALLOWED_AVATAR_EXTENSIONS:
         ext = ".jpg"
-    return f"avatars/{user_id}{ext}"
+    return f"{user_id}{ext}"
 
 
 def validate_avatar_file(uploaded: UploadedFile) -> None:
@@ -51,22 +51,32 @@ def validate_avatar_file(uploaded: UploadedFile) -> None:
 
 
 def resolve_avatar_url(user: User, request: Request | None = None) -> str | None:
+    url: str | None = None
+    updated_at = getattr(user, "avatar_updated_at", None)
+
     try:
         record = user.profile_picture
         if record and record.image:
             url = record.image.url
-            if request is not None:
-                return request.build_absolute_uri(url)
-            return url
+            updated_at = getattr(record, "updated_at", None) or updated_at
     except UserProfilePicture.DoesNotExist:
         pass
 
-    if user.avatar:
+    if not url and user.avatar:
         url = user.avatar.url
-        if request is not None:
-            return request.build_absolute_uri(url)
-        return url
-    return None
+
+    if not url:
+        return None
+
+    # Append cache-busting timestamp so new uploads display immediately in client browsers
+    if updated_at:
+        timestamp = int(updated_at.timestamp())
+        separator = "&" if "?" in url else "?"
+        url = f"{url}{separator}v={timestamp}"
+
+    if request is not None and not url.startswith("http"):
+        return request.build_absolute_uri(url)
+    return url
 
 
 def user_has_avatar(user: User) -> bool:
