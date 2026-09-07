@@ -214,8 +214,9 @@ if TRUST_PROXY_HEADERS:
 
 # Redis & Cache
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
+USE_REDIS_CACHE = env.bool("USE_REDIS_CACHE", default=False)
 
-if "pytest" in sys.modules or DEBUG:
+if "pytest" in sys.modules or DEBUG or not USE_REDIS_CACHE or "runserver" in sys.argv:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",

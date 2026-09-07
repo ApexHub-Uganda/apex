@@ -45,7 +45,7 @@ const TERMS_SECTIONS = [
   },
   {
     title: '11. Contact',
-    body: 'For questions about these Terms and Conditions, contact your Apex Hub account representative or email sales@apexhub.io.',
+    body: 'For questions about these Terms and Conditions, contact your Apex Hub account representative or email client.apexhub@gmail.com.',
   },
 ];
 
