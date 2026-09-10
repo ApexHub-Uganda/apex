@@ -69,7 +69,16 @@ export function buildStaffDirectoryColumns({ canManage, navigate }) {
       label: 'Staff',
       accessor: 'full_name',
       sortable: true,
-      render: (row) => <PersonNameCell row={row} compact />,
+      render: (row) => (
+        <div className="d-flex flex-wrap align-items-center gap-1">
+          <PersonNameCell row={row} compact />
+          {row.also_parent || row.is_dual_role ? (
+            <span className="badge text-bg-info-subtle border text-info apex-table-badge">
+              {row.dual_role_label || 'Dual role'}
+            </span>
+          ) : null}
+        </div>
+      ),
     }),
     {
       key: 'portal_role',
@@ -107,7 +116,16 @@ export function buildParentDirectoryColumns({ canManage, navigate }) {
       label: 'Parent / Guardian',
       accessor: 'full_name',
       sortable: true,
-      render: (row) => <PersonNameCell row={row} compact />,
+      render: (row) => (
+        <div className="d-flex flex-wrap align-items-center gap-1">
+          <PersonNameCell row={row} compact />
+          {row.also_staff || row.is_dual_role ? (
+            <span className="badge text-bg-info-subtle border text-info apex-table-badge">
+              {row.dual_role_label || 'Dual role'}
+            </span>
+          ) : null}
+        </div>
+      ),
     }),
     {
       key: 'phone',

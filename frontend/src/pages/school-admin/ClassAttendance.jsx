@@ -8,7 +8,7 @@ import { classAttendanceService } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
 import { extractApiError, notify } from '../../utils/notify';
 import { PageLoader } from '../../components/ApexLoader';
-import { formatAccuracy, getAttendancePosition } from '../../utils/geolocation';
+import { formatAccuracy, getAttendancePosition, isSecureGeolocationContext } from '../../utils/geolocation';
 
 function nowDefaults() {
   const current = new Date();
@@ -118,7 +118,10 @@ export function ClassAttendance({ initialClassId = '' }) {
     try {
       let geoPayload = {};
       if (geofenceEnforced) {
-        notify.info('Getting a precise GPS fix for campus check…');
+        if (!isSecureGeolocationContext()) {
+          throw new Error('Campus check needs HTTPS. Open this portal with https:// on your phone.');
+        }
+        notify.info('Getting a precise GPS fix for campus check… (may take up to ~30s outdoors)');
         const fix = await getAttendancePosition();
         geoPayload = {
           lat: fix.lat,

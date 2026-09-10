@@ -243,3 +243,7 @@ class LoginHistory(models.Model):
         ordering = ["-created_at"]
         verbose_name_plural = "Login histories"
         indexes = [models.Index(fields=["email", "success", "created_at"])]
+
+
+# WebAuthn / passkey models (staff attendance identity verification)
+from apps.accounts.webauthn_models import WebAuthnChallenge, WebAuthnCredential  # noqa: E402,F401

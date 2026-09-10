@@ -89,6 +89,15 @@ class Stream(BaseModel):
     school_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name="streams")
     name = models.CharField(max_length=50)
     capacity = models.PositiveIntegerField(default=40)
+    # Stream-level class teacher (e.g. S.1 East). Whole-class heads use Class.class_teacher.
+    class_teacher = models.ForeignKey(
+        "staff.Teacher",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="headed_streams",
+        help_text="Class teacher for this stream only (optional).",
+    )
 
     class Meta:
         unique_together = [("tenant", "school_class", "name")]

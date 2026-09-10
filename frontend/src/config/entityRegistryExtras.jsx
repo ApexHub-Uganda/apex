@@ -466,10 +466,10 @@ export const ENTITY_REGISTRY_EXTRAS = {
       { key: 'rank', label: 'Rank', accessor: 'rank' },
       {
         key: 'is_published',
-        label: 'Published',
+        label: 'Status',
         render: (row) => (row.is_published
-          ? <span className="badge text-bg-success-subtle border text-success">Published</span>
-          : '—'),
+          ? <span className="badge text-bg-success-subtle border text-success">Report card</span>
+          : <span className="badge text-bg-warning-subtle border text-warning">Results only</span>),
       },
     ],
     formFields: [
@@ -478,7 +478,7 @@ export const ENTITY_REGISTRY_EXTRAS = {
       { name: 'school_class', label: 'Class', type: 'select', required: true, optionsFrom: 'classes' },
       { name: 'remarks', label: 'Remarks', type: 'textarea' },
       { name: 'teacher_remarks', label: 'Teacher Remarks', type: 'textarea' },
-      { name: 'is_published', label: 'Published', type: 'checkbox', checkboxLabel: 'Publish to parents' },
+      { name: 'is_published', label: 'Published', type: 'checkbox', checkboxLabel: 'Publish as report card (parents / portal)' },
     ],
     emptyForm: {
       student: '', term: '', school_class: '', remarks: '',

@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { FiArrowLeft, FiAward, FiPrinter } from 'react-icons/fi';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { FiArrowLeft, FiAward, FiFileText, FiPrinter, FiSend } from 'react-icons/fi';
 import PageHeader from '../../components/PageHeader';
 import SearchableSelect from '../../components/SearchableSelect';
 import ModuleEmptyState from '../../components/ModuleEmptyState';
@@ -13,24 +13,29 @@ import {
   termsService,
 } from '../../services/moduleService';
 import { usePermissions } from '../../hooks/usePermissions';
-import { extractApiError } from '../../utils/notify';
+import { alert, extractApiError, notify } from '../../utils/notify';
 
 /**
- * Results workspace — class marks matrix with one column per subject + average.
- * Subject teachers see approved marks for all subjects in taught classes;
- * they only edit their assigned subjects via Marks Entry.
+ * Results Processing — live class marks matrix + publish pipeline.
+ *
+ * Until published, data here is "results" only.
+ * After publish, the same work becomes report cards on Report Cards / parent portal.
  */
 export function ExaminationResults() {
+  const queryClient = useQueryClient();
   const { canReadFeature } = usePermissions();
   const featureView = canReadFeature('result_processing')
     || canReadFeature('report_cards')
     || canReadFeature('class_report_cards')
-    || canReadFeature('marks_entry');
+    || canReadFeature('marks_entry')
+    || canReadFeature('marks_approval');
 
   const [term, setTerm] = useState('');
   const [schoolClass, setSchoolClass] = useState('');
   const [stream, setStream] = useState('');
   const [showExamDetail, setShowExamDetail] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [autoPicked, setAutoPicked] = useState({ term: false, class: false });
 
   const { data: caps, isLoading: capsLoading } = useQuery({
     queryKey: ['results-capabilities'],
@@ -39,7 +44,7 @@ export function ExaminationResults() {
     enabled: Boolean(featureView),
   });
 
-  const canPrint = Boolean(caps?.can_print_report_cards);
+  const canPrint = Boolean(caps?.can_print_report_cards || caps?.is_dos || caps?.is_school_admin);
   const canEnter = Boolean(caps?.can_enter_marks);
   const canView = featureView || canEnter || canPrint || Boolean(caps?.is_class_teacher);
 
@@ -65,6 +70,15 @@ export function ExaminationResults() {
         list = list.filter((c) => allowed.has(String(c.id)));
       }
     }
+    // Prefer headed classes first for class teachers
+    if (caps?.headed_class_ids?.length) {
+      const headed = new Set(caps.headed_class_ids.map(String));
+      list = [...list].sort((a, b) => {
+        const ah = headed.has(String(a.id)) ? 0 : 1;
+        const bh = headed.has(String(b.id)) ? 0 : 1;
+        return ah - bh;
+      });
+    }
     return list.map((c) => ({
       value: c.id,
       label: `${c.name}${c.code ? ` (${c.code})` : ''}`,
@@ -77,12 +91,32 @@ export function ExaminationResults() {
     meta: t.is_current ? 'Current' : (t.academic_year_name || undefined),
   })), [terms]);
 
+  // Auto-select current term and first in-scope class so the matrix appears without extra clicks
+  useEffect(() => {
+    if (autoPicked.term || term || !termOptions.length) return;
+    const current = termOptions.find((t) => {
+      const raw = (terms || []).find((x) => String(x.id) === String(t.value));
+      return raw?.is_current;
+    });
+    setTerm(String(current?.value || termOptions[0].value));
+    setAutoPicked((p) => ({ ...p, term: true }));
+  }, [termOptions, terms, term, autoPicked.term]);
+
+  useEffect(() => {
+    if (autoPicked.class || schoolClass || !classOptions.length) return;
+    // Prefer a headed class when the user is a class teacher
+    const headed = new Set((caps?.headed_class_ids || []).map(String));
+    const preferred = classOptions.find((c) => headed.has(String(c.value))) || classOptions[0];
+    setSchoolClass(String(preferred.value));
+    setAutoPicked((p) => ({ ...p, class: true }));
+  }, [classOptions, schoolClass, autoPicked.class, caps]);
+
   const streamOptions = useMemo(() => {
     const c = (classes || []).find((x) => String(x.id) === String(schoolClass));
     return (c?.streams || []).map((s) => ({ value: s.id, label: s.name }));
   }, [classes, schoolClass]);
 
-  const { data: overview, isLoading, isError, error } = useQuery({
+  const { data: overview, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['class-results-overview', term, schoolClass, stream],
     queryFn: () => classResultsService.overview({
       term,
@@ -94,6 +128,10 @@ export function ExaminationResults() {
 
   const subjects = overview?.subjects || [];
   const students = overview?.students || [];
+  const pipeline = overview?.report_pipeline || {};
+  const showPublishPanel = Boolean(
+    term && schoolClass && (canPrint || pipeline.can_print || pipeline.can_generate || pipeline.can_publish),
+  );
 
   const examColumns = useMemo(() => {
     const cols = [];
@@ -115,6 +153,102 @@ export function ExaminationResults() {
     return cols;
   }, [subjects]);
 
+  const scoredStudentCount = useMemo(() => {
+    return students.filter((s) => s.average != null && s.average !== '').length;
+  }, [students]);
+
+  const generateAndRefresh = async () => {
+    if (!term || !schoolClass) {
+      notify.warning('Select term and class first.');
+      return;
+    }
+    if (!pipeline.can_generate && !(canPrint && students.length)) {
+      notify.warning(
+        pipeline.approved_exam_count === 0
+          ? 'No approved assessments yet. Approve marks before generating report cards.'
+          : 'You cannot generate report cards for this class.',
+      );
+      return;
+    }
+    const confirmed = await alert.confirm({
+      title: 'Generate report cards from results?',
+      text: 'Creates draft report cards from approved marks. They stay as drafts (results only) until you publish — parents will not see them yet.',
+      confirmText: 'Generate drafts',
+      cancelText: 'Cancel',
+      icon: 'question',
+    });
+    if (!confirmed.isConfirmed) return;
+    setBusy(true);
+    try {
+      const data = await academicReportCardsService.generate({
+        term,
+        school_class: schoolClass,
+        stream: stream || undefined,
+      });
+      notify.success(`Generated ${data?.count ?? 0} draft report card(s). Publish when ready.`);
+      await refetch();
+      await queryClient.invalidateQueries({ queryKey: ['report-cards-latest'] });
+      await queryClient.invalidateQueries({ queryKey: ['report-cards'] });
+    } catch (err) {
+      notify.error(extractApiError(err, 'Could not generate report cards.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const publishResults = async () => {
+    if (!term || !schoolClass) return;
+    if (!pipeline.can_publish && !(pipeline.draft_count > 0) && (pipeline.total_cards || 0) > 0) {
+      if (pipeline.published_count > 0 && pipeline.draft_count === 0) {
+        notify.info('All report cards for this selection are already published.');
+        return;
+      }
+    }
+    if ((pipeline.total_cards || 0) === 0 && !pipeline.can_generate && !(canPrint && (pipeline.approved_exam_count || 0) > 0)) {
+      notify.warning(
+        (pipeline.approved_exam_count || 0) === 0
+          ? 'Approve at least one assessment’s marks, then generate and publish.'
+          : 'Generate draft report cards from results first, then publish.',
+      );
+      return;
+    }
+    const confirmed = await alert.confirm({
+      title: 'Publish as report cards?',
+      text: 'Published report cards appear on the Report Cards workspace and for parents (subject to fee clearance). Until then they remain internal results only.',
+      confirmText: 'Yes, publish',
+      cancelText: 'Cancel',
+      icon: 'question',
+    });
+    if (!confirmed.isConfirmed) return;
+    setBusy(true);
+    try {
+      // Generate first if none exist but we can generate
+      if ((pipeline.total_cards || 0) === 0 && (pipeline.can_generate || canPrint)) {
+        await academicReportCardsService.generate({
+          term,
+          school_class: schoolClass,
+          stream: stream || undefined,
+        });
+      }
+      const data = await academicReportCardsService.publish({
+        term,
+        school_class: schoolClass,
+        stream: stream || undefined,
+      });
+      notify.success(
+        `Published ${data?.published ?? 0} report card(s). They now appear under Report Cards and the parent portal.`,
+      );
+      await refetch();
+      await queryClient.invalidateQueries({ queryKey: ['report-cards-latest'] });
+      await queryClient.invalidateQueries({ queryKey: ['report-cards'] });
+      await queryClient.invalidateQueries({ queryKey: ['parent-portal-academics'] });
+    } catch (err) {
+      notify.error(extractApiError(err, 'Publish failed.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!canView && !capsLoading) {
     return (
       <div className="apex-card p-5">
@@ -128,7 +262,28 @@ export function ExaminationResults() {
 
   const visibilityNote = overview?.visibility?.approved_only_for_other_subjects
     ? 'Other subjects appear only after their marks are approved. You can edit scores only for subjects assigned to you.'
-    : 'Read-only class matrix. Use Marks Entry to edit scores for subjects you teach.';
+    : 'Live results matrix. Generate draft report cards, then publish when parents should see them.';
+
+  const pipelineBadge = (() => {
+    const st = pipeline.status || 'none';
+    if (st === 'published') {
+      return <span className="badge text-bg-success-subtle border text-success">Published report cards</span>;
+    }
+    if (st === 'draft') {
+      return <span className="badge text-bg-warning-subtle border text-warning">Draft (results only)</span>;
+    }
+    if (st === 'partial') {
+      return <span className="badge text-bg-info-subtle border text-info">Partially published</span>;
+    }
+    return <span className="badge text-bg-secondary-subtle border text-secondary">Results only</span>;
+  })();
+
+  const publishDisabled = busy || isLoading
+    || (
+      !pipeline.can_publish
+      && (pipeline.draft_count || 0) === 0
+      && !((pipeline.total_cards || 0) === 0 && (pipeline.can_generate || (canPrint && (pipeline.approved_exam_count || 0) > 0)))
+    );
 
   return (
     <div>
@@ -139,8 +294,8 @@ export function ExaminationResults() {
       </div>
 
       <PageHeader
-        title="Results"
-        subtitle="All subjects in separate columns with class average. Approved marks are visible class-wide; edits stay on assigned subjects only."
+        title="Results processing"
+        subtitle="View class marks and averages. Publish here to turn results into report cards for parents and the Report Cards module."
         actions={(
           <div className="d-flex flex-wrap gap-2">
             {canEnter && (
@@ -153,8 +308,8 @@ export function ExaminationResults() {
                 Grade calculation
               </Link>
             )}
-            {canPrint && (
-              <Link to="/school-admin/academics/report-cards" className="btn btn-primary btn-sm d-inline-flex align-items-center gap-1">
+            {(canPrint || canReadFeature('report_cards') || canReadFeature('class_report_cards')) && (
+              <Link to="/school-admin/academics/report-cards" className="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1">
                 <FiPrinter size={14} /> Report cards
               </Link>
             )}
@@ -200,12 +355,66 @@ export function ExaminationResults() {
         </div>
       </div>
 
+      {/* Publish pipeline — primary place to turn results into report cards */}
+      {showPublishPanel && (
+        <div className="apex-card p-3 p-md-4 mb-4 border-start border-4 border-primary">
+          <div className="d-flex flex-wrap justify-content-between align-items-start gap-3">
+            <div className="min-w-0">
+              <h6 className="fw-semibold mb-1 d-flex flex-wrap align-items-center gap-2">
+                Publish results as report cards
+                {pipelineBadge}
+              </h6>
+              <p className="text-muted small mb-1">
+                {pipeline.label
+                  || 'Results stay internal until you generate and publish report cards.'}
+              </p>
+              <p className="small mb-0">
+                <span className="text-muted">Draft (results only):</span>{' '}
+                <strong>{pipeline.draft_count ?? 0}</strong>
+                <span className="text-muted ms-3">Published report cards:</span>{' '}
+                <strong>{pipeline.published_count ?? 0}</strong>
+                <span className="text-muted ms-3">Approved assessments:</span>{' '}
+                <strong>{pipeline.approved_exam_count ?? 0}</strong>
+                {students.length > 0 && (
+                  <>
+                    <span className="text-muted ms-3">Students with averages:</span>{' '}
+                    <strong>{scoredStudentCount}/{students.length}</strong>
+                  </>
+                )}
+              </p>
+            </div>
+            <div className="d-flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1"
+                disabled={busy || isLoading || ((pipeline.approved_exam_count || 0) === 0 && !pipeline.can_generate)}
+                onClick={generateAndRefresh}
+                title="Create draft report cards from approved marks (not visible to parents yet)"
+              >
+                <FiFileText size={14} />
+                {busy ? 'Working…' : 'Generate drafts'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+                disabled={publishDisabled}
+                onClick={publishResults}
+                title="Publish so cards appear under Report Cards and for parents"
+              >
+                <FiSend size={14} />
+                {busy ? 'Publishing…' : 'Publish as report cards'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!term || !schoolClass ? (
         <div className="apex-card p-5">
           <ModuleEmptyState
             icon={FiAward}
             title="Select term and class"
-            message="Choose a term and class to view subject marks and averages."
+            message="Choose a term and class to view subject marks and averages, then publish when ready."
           />
         </div>
       ) : isLoading ? (
@@ -227,8 +436,8 @@ export function ExaminationResults() {
             title="No assessments with marks yet"
             message={
               canEnter
-                ? 'Enter marks under Marks Entry, then apply a grading scheme under Grade Calculation. Other subjects appear here once approved.'
-                : 'No approved (or own-subject) marks are available for this class and term yet.'
+                ? 'Enter marks under Marks Entry, then apply grading under Grade Calculation. Other teachers’ subjects appear once approved.'
+                : 'No marks are available for this class and term yet (or none are approved for subjects outside your assignment). Ensure exams are linked to this term and class.'
             }
             actionLabel={canEnter ? 'Go to marks entry' : undefined}
             actionHref={canEnter ? '/school-admin/examinations/marks' : undefined}
@@ -243,15 +452,16 @@ export function ExaminationResults() {
               </h5>
               <p className="text-muted small mb-0">
                 {overview?.student_count} student(s) · {subjects.length} subject(s) · {overview?.exam_count} assessment(s)
+                {pipeline.status === 'published' ? ' · Report cards published' : ' · Results (not yet report cards)'}
               </p>
               <p className="text-muted small mb-0 mt-1">{visibilityNote}</p>
             </div>
-            {canPrint && (
+            {(canPrint || canReadFeature('report_cards')) && (
               <Link
                 to="/school-admin/academics/report-cards"
                 className="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 flex-shrink-0"
               >
-                <FiPrinter size={14} /> Report cards
+                <FiPrinter size={14} /> Open report cards
               </Link>
             )}
           </div>

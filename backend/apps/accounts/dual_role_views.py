@@ -8,9 +8,11 @@ from rest_framework.views import APIView
 
 from apps.accounts.dual_roles import (
     DualRoleError,
+    dual_identity_for_user,
     dual_role_options,
     grant_roles_to_candidate,
     issue_tokens_for_user,
+    preview_revoke_role,
     revoke_role,
     role_payload,
     search_dual_role_candidates,
@@ -134,6 +136,36 @@ class DualRoleGrantView(APIView):
         })
 
 
+class DualRoleRevokePreviewView(APIView):
+    """Return dependency impact before removing a dual role (for admin warnings)."""
+
+    permission_classes = [IsAuthenticated, TenantActivePermission]
+
+    def get(self, request: Request) -> Response:
+        return self._preview(request)
+
+    def post(self, request: Request) -> Response:
+        return self._preview(request)
+
+    def _preview(self, request: Request) -> Response:
+        if not _require_school_admin(request.user):
+            return Response({"success": False, "message": "School admin only."}, status=403)
+        tenant = request.user.tenant
+        user_id = request.query_params.get("user_id") or request.data.get("user_id") or request.data.get("user")
+        role = request.query_params.get("role") or request.data.get("role")
+        target = User.objects.filter(pk=user_id, tenant=tenant).first()
+        if not target:
+            return Response({"success": False, "message": "User not found."}, status=404)
+        try:
+            data = preview_revoke_role(user=target, role=role)
+        except DualRoleError as exc:
+            return Response(
+                {"success": False, "message": exc.message, "code": exc.code},
+                status=400,
+            )
+        return Response({"success": True, "data": data})
+
+
 class DualRoleRevokeView(APIView):
     permission_classes = [IsAuthenticated, TenantActivePermission]
 
@@ -147,15 +179,28 @@ class DualRoleRevokeView(APIView):
         if not target:
             return Response({"success": False, "message": "User not found."}, status=404)
         try:
-            data = revoke_role(user=target, role=role, actor=request.user)
+            data = revoke_role(user=target, role=role, actor=request.user, cleanup=True)
         except DualRoleError as exc:
             return Response(
                 {"success": False, "message": exc.message, "code": exc.code},
                 status=400,
             )
         target.refresh_from_db()
-        data["dual_role"] = role_payload(target)
-        return Response({"success": True, "data": data, "message": f"Role “{role}” removed."})
+        # Prefer payload computed inside revoke_role (already strips revoked role)
+        if not data.get("dual_role"):
+            dual = role_payload(target)
+            revoked = normalize_role(role)
+            dual["available_roles"] = [
+                r for r in dual.get("available_roles") or [] if normalize_role(r) != revoked
+            ]
+            data["dual_role"] = dual
+        data["identity"] = data.get("identity") or dual_identity_for_user(target)
+        data["available_roles"] = data["dual_role"].get("available_roles") or data.get("available_roles") or []
+        return Response({
+            "success": True,
+            "data": data,
+            "message": data.get("message") or f"Role “{role}” removed.",
+        })
 
 
 class SwitchRoleView(APIView):

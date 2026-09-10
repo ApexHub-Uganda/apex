@@ -130,6 +130,35 @@ class ClassSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"academic_year": "Academic year is required."})
         return attrs
 
+    def create(self, validated_data):
+        instance = super().create(validated_data)
+        if instance.class_teacher_id:
+            from apps.academics.services.class_teachers import apply_class_teacher_from_class_update
+
+            request = self.context.get("request")
+            apply_class_teacher_from_class_update(
+                tenant=instance.tenant,
+                school_class=instance,
+                previous_teacher_id=None,
+                actor=getattr(request, "user", None) if request else None,
+            )
+        return instance
+
+    def update(self, instance, validated_data):
+        previous_teacher_id = instance.class_teacher_id
+        instance = super().update(instance, validated_data)
+        if "class_teacher" in validated_data or previous_teacher_id != instance.class_teacher_id:
+            from apps.academics.services.class_teachers import apply_class_teacher_from_class_update
+
+            request = self.context.get("request")
+            apply_class_teacher_from_class_update(
+                tenant=instance.tenant,
+                school_class=instance,
+                previous_teacher_id=previous_teacher_id,
+                actor=getattr(request, "user", None) if request else None,
+            )
+        return instance
+
 
 class ClassPrefectSerializer(serializers.ModelSerializer):
     student_name = serializers.CharField(source="student.full_name", read_only=True)
@@ -190,17 +219,42 @@ class ClassPrefectSerializer(serializers.ModelSerializer):
 class StreamSerializer(serializers.ModelSerializer):
     school_class_name = serializers.CharField(source="school_class.name", read_only=True)
     school_class_code = serializers.CharField(source="school_class.code", read_only=True)
+    class_teacher_name = serializers.SerializerMethodField()
     student_count = serializers.SerializerMethodField()
+    class_teacher = serializers.PrimaryKeyRelatedField(
+        queryset=Teacher.objects.none(),
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = Stream
         fields = "__all__"
         read_only_fields = READ_ONLY
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        tenant = getattr(request.user, "tenant", None) if request and getattr(request.user, "is_authenticated", False) else None
+        if tenant is not None:
+            self.fields["class_teacher"].queryset = Teacher.objects.filter(
+                tenant=tenant,
+                is_deleted=False,
+                staff__is_deleted=False,
+                staff__status="active",
+            )
+
+    def get_class_teacher_name(self, obj) -> str | None:
+        if obj.class_teacher_id and obj.class_teacher and obj.class_teacher.staff_id:
+            return obj.class_teacher.staff.full_name
+        return None
+
     def get_student_count(self, obj) -> int:
         return obj.students.filter(status="active").count()
 
     def validate(self, attrs: dict) -> dict:
+        if attrs.get("class_teacher") == "":
+            attrs["class_teacher"] = None
         name = attrs.get("name") or getattr(self.instance, "name", None)
         school_class = attrs.get("school_class") or getattr(self.instance, "school_class", None)
         if not name or not str(name).strip():
@@ -208,6 +262,21 @@ class StreamSerializer(serializers.ModelSerializer):
         if school_class is None and self.instance is None:
             raise serializers.ValidationError({"school_class": "Class is required."})
         return attrs
+
+    def update(self, instance, validated_data):
+        previous_teacher = instance.class_teacher
+        instance = super().update(instance, validated_data)
+        if "class_teacher" in validated_data:
+            from apps.academics.services.class_teachers import _after_assignment_change
+
+            request = self.context.get("request")
+            _after_assignment_change(
+                tenant=instance.tenant,
+                teacher=instance.class_teacher,
+                previous=previous_teacher,
+                actor=getattr(request, "user", None) if request else None,
+            )
+        return instance
 
 
 class SubjectPaperSerializer(serializers.ModelSerializer):

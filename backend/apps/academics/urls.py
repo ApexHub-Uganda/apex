@@ -61,6 +61,12 @@ from apps.academics.dos_ops_views import (
     UnebCandidateExportView,
     UgandaSeedView,
 )
+from apps.academics.class_teacher_views import (
+    ClassTeacherAssignView,
+    ClassTeacherAssignmentListView,
+    ClassTeacherFormOptionsView,
+    ClassTeacherUnassignView,
+)
 from apps.academics.views import (
     AcademicWorkspaceView,
     AcademicYearViewSet,
@@ -113,6 +119,10 @@ urlpatterns = [
     path("report-cards/class-teacher-remarks/", ClassTeacherRemarksView.as_view(), name="report-cards-class-teacher-remarks"),
     path("results/capabilities/", ResultsCapabilitiesView.as_view(), name="results-capabilities"),
     path("results/class-overview/", ClassResultsOverviewView.as_view(), name="results-class-overview"),
+    path("class-teacher-assignments/", ClassTeacherAssignmentListView.as_view(), name="class-teacher-assignments-list"),
+    path("class-teacher-assignments/form-options/", ClassTeacherFormOptionsView.as_view(), name="class-teacher-assignments-options"),
+    path("class-teacher-assignments/assign/", ClassTeacherAssignView.as_view(), name="class-teacher-assignments-assign"),
+    path("class-teacher-assignments/unassign/", ClassTeacherUnassignView.as_view(), name="class-teacher-assignments-unassign"),
     path("report-cards/broadsheet.pdf", ClassBroadsheetPdfView.as_view(), name="report-cards-broadsheet"),
     path("dos/performance/", DosPerformanceView.as_view(), name="dos-performance"),
     path("dos/marks-completeness/", DosMarksCompletenessView.as_view(), name="dos-marks-completeness"),

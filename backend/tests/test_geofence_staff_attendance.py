@@ -148,6 +148,26 @@ class TestGeofenceMath:
         )
         assert result["allowed"] is True
 
+    def test_near_boundary_within_gps_uncertainty_accepted(self, geo_tenant, school_admin):
+        """Point slightly outside but within phone accuracy circle should pass."""
+        save_geofence(
+            tenant=geo_tenant,
+            user=school_admin,
+            vertices=SQUARE,
+            buffer_meters=5,
+            is_enabled=True,
+        )
+        # Just north of the square (outside polygon)
+        near = (0.34805, 32.5825)
+        result = evaluate_location(
+            tenant=geo_tenant,
+            lat=near[0],
+            lng=near[1],
+            accuracy_m=80,
+        )
+        assert result["allowed"] is True
+        assert result["code"] in ("inside", "inside_uncertainty")
+
 
 @pytest.mark.django_db
 class TestStaffGeoApi:

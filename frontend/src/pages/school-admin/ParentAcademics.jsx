@@ -214,16 +214,51 @@ export function ParentAcademics() {
                         <div className="col-lg-5">
                           <h6 className="small text-muted text-uppercase">Report cards</h6>
                           {(active.sections.results.report_cards || []).length === 0 ? (
-                            <p className="small text-muted">No published report cards yet.</p>
+                            <p className="small text-muted">
+                              No published report cards yet. Schools publish from Results processing; until then marks stay as internal results only.
+                            </p>
                           ) : (
                             <ul className="list-group list-group-flush">
                               {active.sections.results.report_cards.map((c, i) => (
                                 <li key={i} className="list-group-item px-0">
-                                  <div className="fw-medium">{c.term} · avg {c.average_score}</div>
-                                  <div className="small text-muted">
-                                    Rank {c.rank ?? '—'}
-                                    {c.teacher_remarks ? ` · ${c.teacher_remarks}` : ''}
+                                  <div className="fw-medium">
+                                    {c.term} · {c.class_name}
+                                    {c.stream_name ? ` · ${c.stream_name}` : ''}
                                   </div>
+                                  <div className="small text-muted mb-2">
+                                    Average {c.average_score}
+                                    {c.overall_grade ? ` · Overall grade ${c.overall_grade}` : ''}
+                                    {c.rank != null ? ` · Rank ${c.rank}` : ''}
+                                  </div>
+                                  {(c.subjects || []).length > 0 && (
+                                    <div className="table-responsive">
+                                      <table className="table table-sm mb-1">
+                                        <thead>
+                                          <tr>
+                                            <th>Code</th>
+                                            <th>Subject</th>
+                                            <th>Score</th>
+                                            <th>Grade</th>
+                                            <th>Remarks</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {c.subjects.map((s, si) => (
+                                            <tr key={si}>
+                                              <td className="font-monospace small">{s.code || '—'}</td>
+                                              <td>{s.name}</td>
+                                              <td className="font-monospace">{s.total ?? '—'}</td>
+                                              <td>{s.grade || '—'}</td>
+                                              <td className="small text-muted">{s.remarks || '—'}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  )}
+                                  {c.teacher_remarks ? (
+                                    <div className="small text-muted">Class teacher: {c.teacher_remarks}</div>
+                                  ) : null}
                                 </li>
                               ))}
                             </ul>

@@ -204,9 +204,12 @@ class ReportCardGenerateView(APIView):
     permission_classes = [IsAuthenticated, IsStaffMember, TenantActivePermission]
 
     def get_permissions(self):
+        from apps.core.permissions import RequiresAnyFeature
+
         return [
             IsAuthenticated(), IsStaffMember(), TenantActivePermission(),
-            RequiresFeature("report_cards")(),
+            # Results Processing is the primary generate/publish surface
+            RequiresAnyFeature("report_cards", "class_report_cards", "result_processing")(),
         ]
 
     def post(self, request: Request) -> Response:
@@ -244,9 +247,12 @@ class ReportCardPublishView(APIView):
     permission_classes = [IsAuthenticated, IsStaffMember, TenantActivePermission]
 
     def get_permissions(self):
+        from apps.core.permissions import RequiresAnyFeature
+
         return [
             IsAuthenticated(), IsStaffMember(), TenantActivePermission(),
-            RequiresFeature("report_cards")(),
+            # Publish lives on Results Processing; feature gate matches that module
+            RequiresAnyFeature("report_cards", "class_report_cards", "result_processing")(),
         ]
 
     def post(self, request: Request) -> Response:
@@ -261,22 +267,33 @@ class ReportCardPublishView(APIView):
             school_class_id=class_id,
             stream_id=request.data.get("stream"),
         )
-        return Response({"success": True, "data": data, "message": f"Published {data['published']} report card(s)."})
+        return Response({
+            "success": True,
+            "data": data,
+            "message": (
+                f"Published {data['published']} report card(s). "
+                "They now appear wherever report cards are shown (parents, report cards workspace)."
+            ),
+        })
 
 
 class ReportCardPdfView(APIView):
     permission_classes = [IsAuthenticated, IsStaffMember, TenantActivePermission]
 
     def get_permissions(self):
+        from apps.core.permissions import RequiresAnyFeature
+
         return [
             IsAuthenticated(), IsStaffMember(), TenantActivePermission(),
-            RequiresFeature("report_cards")(),
+            RequiresAnyFeature("report_cards", "class_report_cards", "result_processing")(),
         ]
 
     def get(self, request: Request, pk=None):
         rc = (
             ReportCard.objects.filter(tenant=request.user.tenant, pk=pk, is_deleted=False)
-            .select_related("student", "term", "school_class", "stream", "term__academic_year")
+            .select_related(
+                "student", "term", "school_class", "stream", "term__academic_year", "tenant",
+            )
             .prefetch_related("subject_lines")
             .first()
         )
@@ -296,9 +313,11 @@ class ClassBroadsheetPdfView(APIView):
     permission_classes = [IsAuthenticated, IsStaffMember, TenantActivePermission]
 
     def get_permissions(self):
+        from apps.core.permissions import RequiresAnyFeature
+
         return [
             IsAuthenticated(), IsStaffMember(), TenantActivePermission(),
-            RequiresFeature("class_report_cards")(),
+            RequiresAnyFeature("class_report_cards", "report_cards", "result_processing")(),
         ]
 
     def get(self, request: Request):
@@ -308,7 +327,11 @@ class ClassBroadsheetPdfView(APIView):
         stream_id = request.query_params.get("stream")
         if not _can_print_or_generate_reports(request.user, class_id):
             return Response({"success": False, "message": "Permission denied for this class."}, status=403)
-        term = Term.objects.filter(tenant=tenant, pk=term_id, is_deleted=False).first()
+        term = (
+            Term.objects.filter(tenant=tenant, pk=term_id, is_deleted=False)
+            .select_related("academic_year")
+            .first()
+        )
         school_class = Class.objects.filter(tenant=tenant, pk=class_id, is_deleted=False).first()
         if not term or not school_class:
             return Response({"success": False, "message": "term and school_class required."}, status=400)
@@ -317,7 +340,9 @@ class ClassBroadsheetPdfView(APIView):
             stream = Stream.objects.filter(tenant=tenant, pk=stream_id).first()
         qs = ReportCard.objects.filter(
             tenant=tenant, term=term, school_class=school_class, is_deleted=False, is_latest=True,
-        ).select_related("student").prefetch_related("subject_lines").order_by("rank", "student__last_name")
+        ).select_related("student", "stream").prefetch_related("subject_lines").order_by(
+            "rank", "student__last_name", "student__first_name",
+        )
         if stream:
             qs = qs.filter(stream=stream)
         cards = list(qs)
@@ -338,9 +363,11 @@ class ReportCardListLatestView(APIView):
     permission_classes = [IsAuthenticated, IsStaffMember, TenantActivePermission]
 
     def get_permissions(self):
+        from apps.core.permissions import RequiresAnyFeature
+
         return [
             IsAuthenticated(), IsStaffMember(), TenantActivePermission(),
-            RequiresFeature("report_cards")(),
+            RequiresAnyFeature("report_cards", "class_report_cards", "result_processing")(),
         ]
 
     def get(self, request: Request) -> Response:
@@ -365,6 +392,8 @@ class ReportCardListLatestView(APIView):
             qs = qs.filter(school_class_id=class_id)
         if request.query_params.get("stream"):
             qs = qs.filter(stream_id=request.query_params["stream"])
+        # Default for report-cards workspace: show all latest (draft + published) for staff generators.
+        # Pass published=1 to list only portal-facing report cards.
         if request.query_params.get("published") == "1":
             qs = qs.filter(is_published=True)
         if request.query_params.get("published") == "0":
@@ -376,7 +405,7 @@ class ReportCardListLatestView(APIView):
         for rc in qs.order_by("rank", "student__last_name")[:500]:
             subject_scores: dict[str, dict] = {}
             for line in rc.subject_lines.filter(is_deleted=False).order_by("sort_order"):
-                key = line.subject_code or line.subject_name
+                key = (line.subject_code or "").strip() or line.subject_name
                 if key not in seen_subjects:
                     seen_subjects.add(key)
                     subject_columns.append({
@@ -387,9 +416,12 @@ class ReportCardListLatestView(APIView):
                 subject_scores[key] = {
                     "total": str(line.total_score) if line.total_score is not None else None,
                     "grade": line.grade or "",
+                    "remarks": line.remarks or "",
                     "ca": str(line.ca_score) if line.ca_score is not None else None,
                     "exam": str(line.exam_score) if line.exam_score is not None else None,
                 }
+            meta = rc.generation_meta or {}
+            overall_grade = meta.get("overall_grade") or rc.division or ""
             rows.append({
                 "id": str(rc.id),
                 "student_id": str(rc.student_id),
@@ -399,6 +431,8 @@ class ReportCardListLatestView(APIView):
                 "class_name": rc.school_class.name if rc.school_class_id else "",
                 "stream_name": rc.stream.name if rc.stream_id else "",
                 "average_score": str(rc.average_score),
+                "total_score": str(rc.total_score),
+                "overall_grade": overall_grade,
                 "rank": rc.rank,
                 "stream_rank": rc.stream_rank,
                 "version": rc.version,
@@ -408,6 +442,9 @@ class ReportCardListLatestView(APIView):
                 "teacher_remarks": rc.teacher_remarks or "",
                 "subject_scores": subject_scores,
             })
+        subject_columns.sort(
+            key=lambda s: (s.get("code") or s.get("name") or "").lower(),
+        )
         return Response({
             "success": True,
             "data": {
@@ -497,24 +534,34 @@ class ResultsCapabilitiesView(APIView):
 
 class ClassResultsOverviewView(APIView):
     """
-    Read-only class results matrix for a term.
+    Read-only class results matrix for a term (Results Processing workspace).
 
     Visibility:
     - Class teachers / DoS / leadership: all subjects and statuses for in-scope classes.
     - Subject teachers: own subjects at any marks status; other subjects only when
       marks are approved or locked. Never write outside teaching pairs (this view is read-only).
 
-    Response includes per-subject totals and student average as separate columns.
+    Response includes per-subject totals, averages, and report-card pipeline status
+    (draft vs published) so staff can publish from Results Processing.
     """
 
     permission_classes = [IsAuthenticated, IsStaffMember, TenantActivePermission]
 
     def get_permissions(self):
+        from apps.core.permissions import RequiresAnyFeature
+
         return [
             IsAuthenticated(),
             IsStaffMember(),
             TenantActivePermission(),
-            RequiresFeature("result_processing")(),
+            # Align with frontend route gates — not only result_processing
+            RequiresAnyFeature(
+                "result_processing",
+                "report_cards",
+                "class_report_cards",
+                "marks_entry",
+                "marks_approval",
+            )(),
         ]
 
     def get(self, request: Request) -> Response:
@@ -698,6 +745,36 @@ class ClassResultsOverviewView(APIView):
                 "average": str(average) if average is not None else None,
             })
 
+        # Report-card pipeline: until published these stay "results", not portal report cards
+        from apps.examinations.models import ReportCard
+
+        rc_qs = ReportCard.objects.filter(
+            tenant=tenant,
+            term_id=term_id,
+            school_class_id=class_id,
+            is_deleted=False,
+            is_latest=True,
+        )
+        if stream_id:
+            rc_qs = rc_qs.filter(stream_id=stream_id)
+        draft_count = rc_qs.filter(is_published=False).count()
+        published_count = rc_qs.filter(is_published=True).count()
+        total_cards = draft_count + published_count
+        if published_count and not draft_count:
+            pipeline_status = "published"
+        elif draft_count and published_count:
+            pipeline_status = "partial"
+        elif draft_count:
+            pipeline_status = "draft"
+        else:
+            pipeline_status = "none"
+
+        can_print = bool(caps.get("can_print_report_cards") or is_heading or caps.get("is_dos") or caps.get("is_school_admin"))
+        # Count approved exams for generate readiness
+        approved_exam_count = sum(
+            1 for e in all_exams if e.marks_status in approved_statuses
+        )
+
         return Response({
             "success": True,
             "data": {
@@ -718,6 +795,25 @@ class ClassResultsOverviewView(APIView):
                 "visibility": {
                     "sees_all_statuses": can_see_all_statuses,
                     "approved_only_for_other_subjects": not can_see_all_statuses,
+                },
+                "report_pipeline": {
+                    "status": pipeline_status,
+                    "label": {
+                        "none": "Results only — not yet generated as report cards",
+                        "draft": "Draft report cards (not published to parents)",
+                        "partial": "Some published, some still draft",
+                        "published": "Published as report cards",
+                    }.get(pipeline_status, pipeline_status),
+                    "draft_count": draft_count,
+                    "published_count": published_count,
+                    "total_cards": total_cards,
+                    "approved_exam_count": approved_exam_count,
+                    "can_generate": can_print and approved_exam_count > 0 and len(student_rows) > 0,
+                    "can_publish": can_print and draft_count > 0,
+                    "can_print": can_print,
+                    # Semantic split used by UI
+                    "is_report_card": pipeline_status == "published",
+                    "is_results_only": pipeline_status in ("none", "draft", "partial"),
                 },
             },
         })

@@ -91,9 +91,17 @@ class StaffCheckInView(APIView):
                 lat=request.data.get("lat"),
                 lng=request.data.get("lng"),
                 accuracy_m=request.data.get("accuracy_m") or request.data.get("accuracy"),
+                webauthn_assertion=request.data.get("webauthn") or request.data.get("assertion"),
+                request=request,
             )
         except StaffAttendanceError as exc:
-            return Response({"success": False, "message": exc.message, "code": exc.code}, status=400)
+            status_code = 400
+            # Soft success-style codes still returned as 200 for dual-role already signed in
+            return Response(
+                {"success": False, "message": exc.message, "code": exc.code},
+                status=status_code,
+            )
+        # already_checked_in is success for dual-role UX
         return Response({"success": True, "message": data.get("message"), "data": data})
 
 

@@ -320,6 +320,24 @@ export const teachingAssignmentsService = {
       return { ...(body?.data ?? body), message: body?.message };
     }),
 };
+
+/** Class teacher (whole class or stream) assignment */
+export const classTeacherAssignmentsService = {
+  list: (params = {}) =>
+    api.get('/academics/class-teacher-assignments/', { params }).then((r) => unwrapData(r)),
+  formOptions: () =>
+    api.get('/academics/class-teacher-assignments/form-options/').then((r) => unwrapData(r)),
+  assign: (payload) =>
+    api.post('/academics/class-teacher-assignments/assign/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+    }),
+  unassign: (payload) =>
+    api.post('/academics/class-teacher-assignments/unassign/', payload).then((r) => {
+      const body = r?.data ?? r;
+      return { ...(body?.data ?? body), message: body?.message, success: body?.success };
+    }),
+};
 export const timetablesService = createCrudService('/academics/timetables/');
 export const timetableWizardService = {
   // Class-by-class grid builder (primary wizard)

@@ -36,7 +36,7 @@ class AttendanceRecord(BaseModel):
         indexes = [models.Index(fields=["tenant", "date", "attendee_type"])]
         constraints = [
             models.CheckConstraint(
-                check=(
+                condition=(
                     models.Q(attendee_type="student", student_id__isnull=False)
                     | models.Q(attendee_type="staff", staff_id__isnull=False)
                 ),

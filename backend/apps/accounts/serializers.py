@@ -93,7 +93,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         except Exception:
             pass
 
-        data["user"] = UserSerializer(user).data
+        data["user"] = UserSerializer(user, context=self.context).data
         return data
 
 

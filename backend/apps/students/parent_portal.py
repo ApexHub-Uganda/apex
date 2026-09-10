@@ -214,6 +214,11 @@ def build_parent_academics_bundle(*, tenant, user, student_id: str | None = None
                             "stream_name": c.stream.name if getattr(c, "stream_id", None) else "",
                             "average_score": str(c.average_score),
                             "total_score": str(c.total_score),
+                            "overall_grade": (
+                                (c.generation_meta or {}).get("overall_grade")
+                                or c.division
+                                or ""
+                            ),
                             "rank": c.rank,
                             "stream_rank": getattr(c, "stream_rank", None),
                             "days_present": getattr(c, "days_present", 0),
@@ -223,13 +228,15 @@ def build_parent_academics_bundle(*, tenant, user, student_id: str | None = None
                             "dos_remarks": getattr(c, "dos_remarks", "") or "",
                             "subjects": [
                                 {
+                                    "code": ln.subject_code or "",
                                     "name": ln.subject_name,
                                     "total": str(ln.total_score),
                                     "grade": ln.grade,
+                                    "remarks": ln.remarks or "",
                                     "ca": str(ln.ca_score) if ln.ca_score is not None else None,
                                     "exam": str(ln.exam_score) if ln.exam_score is not None else None,
                                 }
-                                for ln in c.subject_lines.filter(is_deleted=False).order_by("sort_order")
+                                for ln in c.subject_lines.filter(is_deleted=False).order_by("sort_order", "subject_code")
                             ],
                         }
                         for c in cards

@@ -39,7 +39,12 @@ class AcademicContext:
     is_class_teacher: bool = False
     assigned_subject_ids: set = field(default_factory=set)
     assigned_class_ids: set = field(default_factory=set)
+    # Whole-class heads (Class.class_teacher) — see all students in the class
+    class_teacher_whole_class_ids: set = field(default_factory=set)
+    # Parent class ids for any class/stream head (tools, report cards, notices)
     class_teacher_class_ids: set = field(default_factory=set)
+    # Stream heads only (Stream.class_teacher)
+    class_teacher_stream_ids: set = field(default_factory=set)
     department_id: UUID | None = None
     department_subject_ids: set = field(default_factory=set)
     teaching_pairs: set = field(default_factory=set)
@@ -307,9 +312,24 @@ def get_academic_context(user) -> AcademicContext | None:
                     ctx.teaching_pairs.add((subject_id, class_id))
 
         ctx.assigned_subject_ids = subject_ids
-        ctx.class_teacher_class_ids = set(
-            Class.objects.filter(tenant=tenant, class_teacher=teacher).values_list("id", flat=True),
+        # Whole-class class teachers
+        from apps.academics.models import Stream
+
+        whole = set(
+            Class.objects.filter(
+                tenant=tenant, class_teacher=teacher, is_deleted=False,
+            ).values_list("id", flat=True),
         )
+        stream_pairs = list(
+            Stream.objects.filter(
+                tenant=tenant, class_teacher=teacher, is_deleted=False,
+            ).values_list("id", "school_class_id"),
+        )
+        stream_ids = {sid for sid, _ in stream_pairs}
+        stream_class_ids = {cid for _, cid in stream_pairs}
+        ctx.class_teacher_whole_class_ids = whole
+        ctx.class_teacher_stream_ids = stream_ids
+        ctx.class_teacher_class_ids = whole | stream_class_ids
         ctx.is_class_teacher = bool(ctx.class_teacher_class_ids)
 
     if role == UserRole.HEAD_OF_DEPARTMENT and staff is not None:
@@ -439,10 +459,25 @@ def filter_queryset_for_user(queryset: models.QuerySet, user) -> models.QuerySet
         return queryset.filter(school_class_id__in=class_ids)
 
     if model_name == "Student":
-        class_ids = set(ctx.assigned_class_ids) | set(ctx.class_teacher_class_ids)
-        if not class_ids:
+        # Subject teachers: all students in taught classes
+        # Whole-class heads: all students in headed classes
+        # Stream heads: only students in their streams
+        clauses = Q()
+        teaching = set(ctx.assigned_class_ids)
+        whole = set(ctx.class_teacher_whole_class_ids or [])
+        streams = set(ctx.class_teacher_stream_ids or [])
+        if teaching:
+            clauses |= Q(school_class_id__in=teaching)
+        if whole:
+            clauses |= Q(school_class_id__in=whole)
+        if streams:
+            clauses |= Q(stream_id__in=streams)
+        # Legacy: class_teacher_class_ids without whole/stream split (tests / older ctx)
+        if not teaching and not whole and not streams and ctx.class_teacher_class_ids:
+            clauses |= Q(school_class_id__in=ctx.class_teacher_class_ids)
+        if not clauses:
             return queryset.none()
-        return queryset.filter(school_class_id__in=class_ids)
+        return queryset.filter(clauses)
 
     if model_name == "AttendanceRecord":
         class_ids = set(ctx.assigned_class_ids) | set(ctx.class_teacher_class_ids)

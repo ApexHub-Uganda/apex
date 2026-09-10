@@ -185,7 +185,7 @@ class MeProfileSerializer(AvatarFieldsMixin, serializers.ModelSerializer):
             staff = obj.staff_profile
         except Exception:
             staff = None
-        if not staff:
+        if not staff or getattr(staff, "is_deleted", False):
             return None
         return StaffSelfProfileSerializer(staff).data
 
@@ -194,7 +194,7 @@ class MeProfileSerializer(AvatarFieldsMixin, serializers.ModelSerializer):
             parent = obj.parent_profile
         except Exception:
             parent = None
-        if not parent:
+        if not parent or getattr(parent, "is_deleted", False):
             return None
         return ParentSelfProfileSerializer(parent).data
 

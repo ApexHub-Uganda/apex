@@ -3,13 +3,25 @@ import api, { setStoredTokens, clearStoredTokens } from './api';
 export const authService = {
   async login(credentials) {
     const email = credentials.email?.trim();
-    const password = credentials.password?.trim();
+    // Do not trim password — some users intentionally use trailing spaces
+    const password = credentials.password ?? '';
     const remember = credentials.remember ?? true;
 
     clearStoredTokens();
     localStorage.removeItem('apex_tenant_id');
 
-    const { data } = await api.post('/auth/login/', { email, password });
+    const { data: raw } = await api.post('/auth/login/', { email, password });
+    // Support both flat JWT payload and { success, data } wrappers
+    const data = raw?.access ? raw : (raw?.data?.access ? raw.data : raw);
+    if (!data?.access || !data?.user) {
+      const err = new Error(
+        raw?.error?.message
+          || raw?.message
+          || 'Login response was incomplete. Is the API running?',
+      );
+      err.response = { status: 502, data: raw };
+      throw err;
+    }
     setStoredTokens(data.access, data.refresh, remember);
     const tenantId = data.user?.tenant || data.user?.tenant_id;
     if (tenantId) {
@@ -131,7 +143,23 @@ export const dualRolesService = {
     const body = r?.data ?? r;
     return { ...(body?.data ?? body), message: body?.message };
   }),
+  revokePreview: (payload) => api.post('/auth/dual-roles/revoke/preview/', payload).then((r) => unwrap(r)),
   revoke: (payload) => api.post('/auth/dual-roles/revoke/', payload).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
+};
+
+/** WebAuthn / fingerprint enrollment for staff attendance identity checks. */
+export const webauthnService = {
+  status: () => api.get('/auth/webauthn/status/').then((r) => unwrap(r)),
+  registerOptions: () => api.post('/auth/webauthn/register/options/', {}).then((r) => unwrap(r)),
+  registerVerify: (payload) => api.post('/auth/webauthn/register/verify/', payload).then((r) => {
+    const body = r?.data ?? r;
+    return { ...(body?.data ?? body), message: body?.message };
+  }),
+  authenticateOptions: () => api.post('/auth/webauthn/authenticate/options/', {}).then((r) => unwrap(r)),
+  deleteCredential: (id) => api.delete(`/auth/webauthn/credentials/${id}/`).then((r) => {
     const body = r?.data ?? r;
     return { ...(body?.data ?? body), message: body?.message };
   }),

@@ -331,14 +331,31 @@ class GradeViewSet(AcademicScopeMixin, BaseModelViewSet):
 
 
 class ReportCardViewSet(AcademicScopeMixin, BaseModelViewSet):
-    """Report card CRUD is read-oriented; generation/print use dedicated endpoints."""
+    """Report card CRUD is read-oriented; generation/print use dedicated endpoints.
+
+    Unpublished rows are draft results only. Portal / parent surfaces use is_published=True.
+    Pass published=1 (or is_published=true) to list only live report cards.
+    """
 
     required_feature_key = "report_cards"
     queryset = ReportCard.objects.select_related("student", "term", "school_class")
     serializer_class = ReportCardSerializer
     permission_classes = [IsStaffMember, TenantActivePermission]
-    filterset_fields = ["student", "term", "school_class", "is_published"]
+    filterset_fields = ["student", "term", "school_class", "is_published", "is_latest"]
     http_method_names = ["get", "head", "options"]
+
+    def get_queryset(self):
+        qs = super().get_queryset().filter(is_deleted=False)
+        # Default list: latest version only (avoid historical drafts cluttering the table)
+        if self.request.query_params.get("all_versions") not in ("1", "true", "True"):
+            qs = qs.filter(is_latest=True)
+        # published=1 → only cards that appear on report-card surfaces
+        published = self.request.query_params.get("published")
+        if published in ("1", "true", "True"):
+            qs = qs.filter(is_published=True)
+        elif published in ("0", "false", "False"):
+            qs = qs.filter(is_published=False)
+        return qs
 
 
 class MarksApprovalQueueView(APIView):

@@ -393,6 +393,14 @@ class TestClassResultsOverview:
         assert "ENG" in subject_codes
         assert data["read_only"] is True
         assert data["student_count"] == 1
+        # Results Processing exposes publish pipeline (draft vs report cards)
+        pipe = data.get("report_pipeline") or {}
+        assert "status" in pipe
+        assert "can_generate" in pipe
+        assert "can_publish" in pipe
+        assert pipe.get("is_results_only") is True or pipe.get("status") in (
+            "none", "draft", "partial", "published",
+        )
 
     def test_subject_teacher_sees_own_subject_even_when_draft(self, api_client, results_setup):
         """Own subjects visible at any marks_status; unapproved other subjects hidden."""

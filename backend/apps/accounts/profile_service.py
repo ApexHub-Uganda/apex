@@ -75,10 +75,14 @@ def build_profile_completion(user) -> dict[str, Any]:
 
     try:
         staff = user.staff_profile
+        if staff and getattr(staff, "is_deleted", False):
+            staff = None
     except Exception:
         staff = None
     try:
         parent = user.parent_profile
+        if parent and getattr(parent, "is_deleted", False):
+            parent = None
     except Exception:
         parent = None
     sections: list[dict[str, Any]] = []

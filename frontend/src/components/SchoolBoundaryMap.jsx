@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Polygon, Marker, Popup, Circle, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -16,8 +16,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: markerShadow,
 });
 
-/** Distinct blue pin for "you are here" (not a boundary corner). */
-const youAreHereIcon = L.divIcon({
+/** Blue pin for admin boundary editor "you are here". */
+const youAreHereIconBlue = L.divIcon({
   className: 'school-boundary-you-are-here',
   html: `<div style="
     width:16px;height:16px;border-radius:50%;
@@ -26,6 +26,18 @@ const youAreHereIcon = L.divIcon({
   "></div>`,
   iconSize: [16, 16],
   iconAnchor: [8, 8],
+});
+
+/** Red pointer for staff attendance current location (live GPS). */
+const youAreHereIconRed = L.divIcon({
+  className: 'school-boundary-you-are-here-red',
+  html: `<div style="
+    width:18px;height:18px;border-radius:50%;
+    background:#dc2626;border:3px solid #fff;
+    box-shadow:0 0 0 3px rgba(220,38,38,.35),0 2px 8px rgba(0,0,0,.35);
+  "></div>`,
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
 });
 
 // Neutral world fallback only if GPS is unavailable (never used as the preferred open view)
@@ -95,15 +107,43 @@ function MapClickHandler({ onMapClick, enabled }) {
   return null;
 }
 
-function FitBounds({ vertices }) {
+function FitBounds({ vertices, userPosition, includeUser = false }) {
   const map = useMap();
+  const lastFitKey = useRef('');
   useEffect(() => {
-    if (!vertices?.length) return;
-    const bounds = L.latLngBounds(vertices.map((v) => [v.lat, v.lng]));
+    const pts = (vertices || []).map((v) => [Number(v.lat), Number(v.lng)]);
+    const hasUser = includeUser && userPosition?.lat != null && userPosition?.lng != null;
+    if (hasUser) {
+      pts.push([Number(userPosition.lat), Number(userPosition.lng)]);
+    }
+    if (!pts.length) return;
+    // Fit when polygon changes, or once when user first appears (not on every GPS tick)
+    const key = `${vertices?.length || 0}:${hasUser ? 'u' : 'n'}`;
+    if (key === lastFitKey.current && !hasUser) return;
+    if (key === lastFitKey.current && hasUser && lastFitKey.current.endsWith(':u')) {
+      // already fitted with user — skip continuous re-zoom
+      return;
+    }
+    lastFitKey.current = key;
+    if (pts.length === 1) {
+      map.setView(pts[0], USER_ZOOM, { animate: true });
+      return;
+    }
+    const bounds = L.latLngBounds(pts);
     if (bounds.isValid()) {
       map.fitBounds(bounds.pad(0.2));
     }
-  }, [map, vertices]);
+  }, [map, vertices, includeUser, userPosition?.lat, userPosition?.lng]);
+  return null;
+}
+
+/** Keep map centered on live user when following. */
+function FollowUser({ position, enabled, zoom = USER_ZOOM }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!enabled || position?.lat == null || position?.lng == null) return;
+    map.panTo([position.lat, position.lng], { animate: true });
+  }, [map, enabled, position?.lat, position?.lng, zoom]);
   return null;
 }
 
@@ -196,6 +236,14 @@ export function SchoolBoundaryMap({
   /** When true (default for interactive maps), pan to user GPS if no corners yet */
   locateUser = true,
   showUserMarker = true,
+  /** Controlled live position from parent (staff attendance). Overrides internal locate. */
+  userPosition = null,
+  /** Marker color: 'red' for staff live pin, 'blue' for admin editor */
+  userMarkerColor = 'blue',
+  /** Fit map to polygon + user pin together */
+  fitUserWithBoundary = false,
+  /** Gently pan toward live user (staff map) */
+  followUser = false,
   /** Show Map / Satellite / Hybrid switcher (default true) */
   showBasemapSwitcher = true,
   /** Initial basemap: streets | satellite | hybrid */
@@ -209,6 +257,10 @@ export function SchoolBoundaryMap({
   });
 
   const layer = BASEMAP_LAYERS[basemap] || BASEMAP_LAYERS.streets;
+  const displayUser = userPosition?.lat != null ? userPosition : userFix;
+  const userIcon = userMarkerColor === 'red' ? youAreHereIconRed : youAreHereIconBlue;
+  const accuracyColor = userMarkerColor === 'red' ? '#dc2626' : '#2563eb';
+  const accuracyFill = userMarkerColor === 'red' ? '#ef4444' : '#3b82f6';
 
   const handleBasemapChange = useCallback((id) => {
     if (!BASEMAP_LAYERS[id]) return;
@@ -228,13 +280,15 @@ export function SchoolBoundaryMap({
   const hasVertices = positions.length >= 1;
   // Prefer user GPS as initial center once known; else optional prop; else neutral fallback
   const initialCenter = useMemo(() => {
-    if (userFix) return [userFix.lat, userFix.lng];
+    if (displayUser) return [displayUser.lat, displayUser.lng];
     if (Array.isArray(center) && center.length === 2) return center;
     if (positions.length) return positions[0];
     return GPS_FALLBACK_CENTER;
-  }, [userFix, center, positions]);
+  }, [displayUser, center, positions]);
 
-  const shouldLocateUser = Boolean(locateUser) && !hasVertices;
+  // Internal GPS only when parent is not driving position
+  const shouldLocateUser = Boolean(locateUser) && !userPosition && !hasVertices;
+  const shouldLocateWithBoundary = Boolean(locateUser) && !userPosition && hasVertices && showUserMarker;
 
   // Brighter polygon outline on dark satellite tiles
   const isSatellite = basemap === 'satellite' || basemap === 'hybrid';
@@ -332,8 +386,7 @@ export function SchoolBoundaryMap({
             onLocateError={handleLocateError}
           />
         )}
-        {/* Existing polygon stays framed; still show "you are here" without re-centering */}
-        {locateUser && hasVertices && showUserMarker && !userFix && (
+        {shouldLocateWithBoundary && !userFix && (
           <LocateUserGps
             enabled
             panToUser={false}
@@ -362,36 +415,45 @@ export function SchoolBoundaryMap({
             </Popup>
           </Marker>
         ))}
-        {showUserMarker && userFix && (
+        {showUserMarker && displayUser && (
           <>
-            {userFix.accuracy_m != null && Number(userFix.accuracy_m) > 0 && (
+            {displayUser.accuracy_m != null && Number(displayUser.accuracy_m) > 0 && (
               <Circle
-                center={[userFix.lat, userFix.lng]}
-                radius={Math.min(Number(userFix.accuracy_m), 200)}
+                center={[displayUser.lat, displayUser.lng]}
+                radius={Math.min(Number(displayUser.accuracy_m), 400)}
                 pathOptions={{
-                  color: '#2563eb',
+                  color: accuracyColor,
                   weight: 1,
-                  fillColor: '#3b82f6',
+                  fillColor: accuracyFill,
                   fillOpacity: 0.12,
                 }}
               />
             )}
-            <Marker position={[userFix.lat, userFix.lng]} icon={youAreHereIcon}>
+            <Marker position={[displayUser.lat, displayUser.lng]} icon={userIcon} zIndexOffset={1000}>
               <Popup>
                 <strong>You are here</strong>
                 <br />
-                {userFix.lat.toFixed(6)}, {userFix.lng.toFixed(6)}
-                {userFix.accuracy_m != null && (
+                {Number(displayUser.lat).toFixed(6)}, {Number(displayUser.lng).toFixed(6)}
+                {displayUser.accuracy_m != null && (
                   <>
                     <br />
-                    Accuracy: ±{Math.round(userFix.accuracy_m)} m
+                    Accuracy: ±{Math.round(Number(displayUser.accuracy_m))} m
                   </>
                 )}
               </Popup>
             </Marker>
           </>
         )}
-        {positions.length >= 2 && <FitBounds vertices={vertices} />}
+        {followUser && displayUser && (
+          <FollowUser position={displayUser} enabled zoom={USER_ZOOM} />
+        )}
+        {positions.length >= 2 && (
+          <FitBounds
+            vertices={vertices}
+            userPosition={fitUserWithBoundary ? displayUser : null}
+            includeUser={Boolean(fitUserWithBoundary && displayUser)}
+          />
+        )}
       </MapContainer>
     </div>
   );
